@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{9c15969f-46ea-4415-96e8-179d7a9c6638}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details">
+      <UniqueIdentifier>{970bac86-f24c-4195-a4e8-b328a260413a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\executors">
+      <UniqueIdentifier>{421fe61a-0e0c-4bf8-9fc0-9000434b8d34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\result">
+      <UniqueIdentifier>{272984ed-7627-4975-95e3-fa7ff0f2be7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\runtime">
+      <UniqueIdentifier>{18d4292b-dc65-48c4-a1ca-15d92db3cf3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\threads">
+      <UniqueIdentifier>{6c948c5c-daaa-41da-9621-9921182a8019}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\timers">
+      <UniqueIdentifier>{8f6789c2-a812-4293-8f92-239931b2df03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="details\utils">
+      <UniqueIdentifier>{c3920d6c-4235-4dfe-8d0e-9ecac21b7e6a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\concurrencpp.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="details\errors.h">
+      <Filter>details</Filter>
+    </ClInclude>
+    <ClInclude Include="details\forward_declerations.h">
+      <Filter>details</Filter>
+    </ClInclude>
+    <ClInclude Include="details\platform_defs.h">
+      <Filter>details</Filter>
+    </ClInclude>
+    <ClInclude Include="details\executors\executors.h">
+      <Filter>details\executors</Filter>
+    </ClInclude>
+    <ClInclude Include="details\executors\task.h">
+      <Filter>details\executors</Filter>
+    </ClInclude>
+    <ClInclude Include="details\utils\array_deque.h">
+      <Filter>details\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="details\utils\scope_guard.h">
+      <Filter>details\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="details\utils\spinlock.h">
+      <Filter>details\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="details\timers\timer.h">
+      <Filter>details\timers</Filter>
+    </ClInclude>
+    <ClInclude Include="details\timers\timer_queue.h">
+      <Filter>details\timers</Filter>
+    </ClInclude>
+    <ClInclude Include="details\threads\single_worker_thread.h">
+      <Filter>details\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="details\threads\thread_group.h">
+      <Filter>details\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="details\threads\thread_pool.h">
+      <Filter>details\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="details\threads\thread_pool_listener.h">
+      <Filter>details\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="details\runtime\runtime.h">
+      <Filter>details\runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\coroutines.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\result_fwd_declerations.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\executor_exception.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\result_state.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\result_awaitable.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\executors\executor.h">
+      <Filter>details\executors</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\result.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\result\result_all.h">
+      <Filter>details\result</Filter>
+    </ClInclude>
+    <ClInclude Include="details\utils\bind.h">
+      <Filter>details\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="details\executors\constants.h">
+      <Filter>details\executors</Filter>
+    </ClInclude>
+    <ClInclude Include="details\threads\constants.h">
+      <Filter>details\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="details\runtime\constants.h">
+      <Filter>details\runtime</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="details\executors\executors.cpp">
+      <Filter>details\executors</Filter>
+    </ClCompile>
+    <ClCompile Include="details\timers\timer.cpp">
+      <Filter>details\timers</Filter>
+    </ClCompile>
+    <ClCompile Include="details\timers\timer_queue.cpp">
+      <Filter>details\timers</Filter>
+    </ClCompile>
+    <ClCompile Include="details\threads\single_worker_thread.cpp">
+      <Filter>details\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="details\threads\thread_group.cpp">
+      <Filter>details\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="details\threads\thread_pool.cpp">
+      <Filter>details\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="details\runtime\runtime.cpp">
+      <Filter>details\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="details\executors\task.cpp">
+      <Filter>details\executors</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

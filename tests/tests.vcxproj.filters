@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="tester\tester.cpp">
+      <Filter>tester</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\all_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\array_deque_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\spin_lock_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\task_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\result_promise_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\result_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\result_resolve_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\coroutine_adapters_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\result_await_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\background_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\inline_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\manual_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\thread_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\worker_thread_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\executor_tests\thread_pool_executor_tests.cpp">
+      <Filter>tests\executor_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\assertions.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\thread_tests\thread_group_tests.cpp">
+      <Filter>tests\thread_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\thread_tests\thread_pool_tests.cpp">
+      <Filter>tests\thread_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\timer_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers\object_observer.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="tester">
+      <UniqueIdentifier>{83b09f25-f864-4231-b7e2-631b29571422}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{b4639b33-8ada-4962-9829-b42cce0a00a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{64587502-3823-4296-bc64-63f6ff54bd98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\result_tests">
+      <UniqueIdentifier>{13a28400-8058-4959-82a3-18b3aa6a8566}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\executor_tests">
+      <UniqueIdentifier>{f8cb7b88-65fd-4965-a4a3-bd6c2c47d345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\thread_tests">
+      <UniqueIdentifier>{05d46fcf-9f78-4fc0-b218-dff8ee23a9a8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="tester\tester.h">
+      <Filter>tester</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\assertions.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\fast_randomizer.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\object_observer.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\result_generator.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers\thread_helpers.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="tests\all_tests.h">
+      <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="tests\result_tests\result_test_helpers.h">
+      <Filter>tests\result_tests</Filter>
+    </ClInclude>
+    <ClInclude Include="tests\executor_tests\executor_test_helpers.h">
+      <Filter>tests\executor_tests</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
