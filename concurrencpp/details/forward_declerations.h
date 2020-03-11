@@ -13,7 +13,6 @@ namespace concurrencpp {
 	struct executor;
 	class inline_executor;
 	class thread_pool_executor;
-	class parallel_executor;
 	class background_executor;
 	class thread_executor;
 	class worker_thread_executor;

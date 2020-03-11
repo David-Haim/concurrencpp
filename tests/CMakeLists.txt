@@ -13,17 +13,19 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CLANG_COROUTINES_COMPILE_FLAGS}")
 include_directories(../concurrencpp/include)
 
 add_executable(
-  tests
-  main.cpp
-  helpers/assertions.cpp
-  helpers/object_observer.cpp
+	tests
+	main.cpp
+	helpers/assertions.cpp
+	helpers/object_observer.cpp
 
-  tester/tester.cpp
-  tests/all_tests.cpp
-  tests/array_deque_tests.cpp
-  tests/spin_lock_tests.cpp
-	tests/task_tests.cpp
+	tester/tester.cpp
+	tests/all_tests.cpp
+
 	tests/timer_tests.cpp
+
+	tests/utils_tests/array_deque_tests.cpp
+	tests/utils_tests/spin_lock_tests.cpp
+	tests/utils_tests/task_tests.cpp
 
 	tests/executor_tests/background_executor_tests.cpp
 	tests/executor_tests/inline_executor_tests.cpp
@@ -39,6 +41,6 @@ add_executable(
 	tests/result_tests/coroutine_adapters_tests.cpp
 
 	tests/thread_tests/thread_group_tests.cpp
-    tests/thread_tests/thread_pool_tests.cpp
-   )
+	tests/thread_tests/thread_pool_tests.cpp
+)
 target_link_libraries(tests concurrencpp pthread rt)

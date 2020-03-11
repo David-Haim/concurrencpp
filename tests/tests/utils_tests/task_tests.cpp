@@ -1,9 +1,9 @@
 #include "concurrencpp.h"
-#include "all_tests.h"
+#include "../all_tests.h"
 
-#include "../tester/tester.h"
-#include "../helpers/assertions.h"
-#include "../helpers/object_observer.h"
+#include "../../tester/tester.h"
+#include "../../helpers/assertions.h"
+#include "../../helpers/object_observer.h"
 
 #include <array>
 #include <atomic>

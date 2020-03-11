@@ -163,7 +163,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tester\tester.cpp" />
     <ClCompile Include="tests\all_tests.cpp" />
-    <ClCompile Include="tests\array_deque_tests.cpp" />
     <ClCompile Include="tests\executor_tests\background_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\thread_pool_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\inline_executor_tests.cpp" />
@@ -175,11 +174,12 @@
     <ClCompile Include="tests\result_tests\result_promise_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_resolve_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_tests.cpp" />
-    <ClCompile Include="tests\spin_lock_tests.cpp" />
-    <ClCompile Include="tests\task_tests.cpp" />
     <ClCompile Include="tests\thread_tests\thread_group_tests.cpp" />
     <ClCompile Include="tests\thread_tests\thread_pool_tests.cpp" />
     <ClCompile Include="tests\timer_tests.cpp" />
+    <ClCompile Include="tests\utils_tests\array_deque_tests.cpp" />
+    <ClCompile Include="tests\utils_tests\spin_lock_tests.cpp" />
+    <ClCompile Include="tests\utils_tests\task_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helpers\assertions.h" />

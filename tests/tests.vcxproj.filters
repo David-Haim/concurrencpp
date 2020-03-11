@@ -8,15 +8,6 @@
     <ClCompile Include="tests\all_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
-    <ClCompile Include="tests\array_deque_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
-    <ClCompile Include="tests\spin_lock_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
-    <ClCompile Include="tests\task_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
     <ClCompile Include="tests\result_tests\result_promise_tests.cpp">
       <Filter>tests\result_tests</Filter>
     </ClCompile>
@@ -65,6 +56,15 @@
     <ClCompile Include="helpers\object_observer.cpp">
       <Filter>helpers</Filter>
     </ClCompile>
+    <ClCompile Include="tests\utils_tests\array_deque_tests.cpp">
+      <Filter>tests\utils_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\utils_tests\spin_lock_tests.cpp">
+      <Filter>tests\utils_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\utils_tests\task_tests.cpp">
+      <Filter>tests\utils_tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="tester">
@@ -84,6 +84,9 @@
     </Filter>
     <Filter Include="tests\thread_tests">
       <UniqueIdentifier>{05d46fcf-9f78-4fc0-b218-dff8ee23a9a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\utils_tests">
+      <UniqueIdentifier>{bfc8ea4f-3be7-4b94-8633-d3901647c8e3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

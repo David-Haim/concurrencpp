@@ -34,7 +34,6 @@ using concurrencpp::runtime_options;
 
 using concurrencpp::inline_executor;
 using concurrencpp::thread_pool_executor;
-using concurrencpp::parallel_executor;
 using concurrencpp::background_executor;
 using concurrencpp::thread_executor;
 using concurrencpp::worker_thread_executor;

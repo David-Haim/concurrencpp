@@ -47,24 +47,6 @@ namespace concurrencpp {
 		virtual void enqueue(task task);
 	};
 
-	class parallel_executor final : public executor {
-
-		friend class ::concurrencpp::runtime;
-
-		struct context {};
-
-	private:
-		std::shared_ptr<details::thread_pool> m_cpu_thread_pool;
-
-	public:
-		parallel_executor(
-			std::shared_ptr<details::thread_pool> cpu_thread_pool,
-			const parallel_executor::context&) noexcept;
-
-		virtual std::string_view name() const noexcept;
-		virtual void enqueue(task task);
-	};
-
 	class background_executor final : public executor {
 
 		friend class ::concurrencpp::runtime;

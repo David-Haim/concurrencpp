@@ -1,11 +1,11 @@
 #include "concurrencpp.h"
-#include "all_tests.h"
+#include "../all_tests.h"
 
-#include "../tester/tester.h"
-#include "../helpers/assertions.h"
-#include "../helpers/fast_randomizer.h"
-#include "../helpers/object_observer.h"
-#include "../helpers/result_generator.h"
+#include "../../tester/tester.h"
+#include "../../helpers/assertions.h"
+#include "../../helpers/fast_randomizer.h"
+#include "../../helpers/object_observer.h"
+#include "../../helpers/result_generator.h"
 
 #include <tuple>
 #include <deque>
