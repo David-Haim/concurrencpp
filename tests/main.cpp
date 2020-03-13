@@ -3,7 +3,5 @@
 
 int main() {
 	concurrencpp::tests::test_all();
-
-	std::getchar();
 	return 0;
 }

@@ -123,10 +123,6 @@ namespace concurrencpp::details {
 		void mark_thread_waiting(thread_pool_worker& waiting_thread) noexcept;
 		const std::shared_ptr<thread_pool_listener_base>& get_listener() const noexcept;
 		std::chrono::seconds max_waiting_time() const noexcept;
-
-		//mostly for testing:
-		size_t index_of(thread_pool_worker* worker) const noexcept;
-		bool is_current_thread_worker_thread() const noexcept;
 	};
 }
 

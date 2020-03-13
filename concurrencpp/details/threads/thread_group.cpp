@@ -11,7 +11,7 @@ namespace concurrencpp::details {
 		task m_task;
 		std::thread m_thread;
 		thread_group& m_parent_pool;
-		std::list<thread_group_worker>::iterator m_self_it;
+		typename std::list<thread_group_worker>::iterator m_self_it;
 
 		void execute_and_retire();
 

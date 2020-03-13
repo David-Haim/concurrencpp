@@ -365,14 +365,35 @@ std::thread::id thread_pool::enqueue(task task) {
 }
 
 bool thread_pool::try_steal_task(thread_pool_worker& worker) {
-	for (auto& target_worker : m_workers) {
-		if (std::addressof(target_worker) == std::addressof(worker)) {
-			continue;
+	/*
+		if this_thread's index is index0, try to steal from range [index0 + 1, ..., m_workers.size()]
+		if no task was found, try steam from range [0, ..., index0 - 1]. this ensure low contention and nice distribution
+		of tasks across thread pool threads
+	*/
+
+	auto try_steal_impl = [&](size_t index) noexcept{
+		auto task = m_workers[index].try_donate_task();
+		
+		if (!static_cast<bool>(task)) {
+			return false;
 		}
 
-		auto task = target_worker.try_donate_task();
-		if (static_cast<bool>(task)) {
-			worker.enqueue(task, true);
+		worker.enqueue(task, true);
+		return true;
+	};
+
+	const auto worker_index = std::addressof(worker) - std::addressof(m_workers[0]);
+	assert(worker_index >= 0);
+	assert(static_cast<size_t>(worker_index) < m_workers.size());
+
+	for (size_t i = static_cast<size_t>(worker_index) + 1; i < m_workers.size(); i++) {
+		if (try_steal_impl(i)) {
+			return true;
+		}
+	}
+
+	for (size_t i = 0; i < static_cast<size_t>(worker_index); i++) {
+		if (try_steal_impl(i)) {
 			return true;
 		}
 	}
@@ -390,18 +411,4 @@ const listener_ptr& thread_pool::get_listener() const noexcept {
 
 std::chrono::seconds thread_pool::max_waiting_time() const noexcept {
 	return m_max_waiting_time;
-}
-
-size_t concurrencpp::details::thread_pool::index_of(thread_pool_worker* worker) const noexcept {
-	return worker - &m_workers[0];
-}
-
-bool concurrencpp::details::thread_pool::is_current_thread_worker_thread() const noexcept {
-	auto self_ptr = thread_pool_worker::this_thread_as_worker();
-	if (self_ptr == nullptr) {
-		return false;
-	}
-
-	const auto& parent_pool = self_ptr->get_parent_pool();
-	return std::addressof(parent_pool) == this;
 }

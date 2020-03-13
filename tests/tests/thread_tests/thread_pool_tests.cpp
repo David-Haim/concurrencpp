@@ -52,16 +52,17 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_1() {
 		Case 1: if this thread is a threadpool thread and its task queue is empty
 				then enqueue to this thread
 	*/
-
+	waiter waiter;
 	thread_pool pool(4, seconds(20), "", nullptr);
 
 	pool.enqueue([&]() mutable {
 		//we are inside a threadpool thread;
 		const auto chosen_id_0 = pool.enqueue([] {}); //this_thread is a tp thread and it's task quue is empty.
 		assert_same(chosen_id_0, std::this_thread::get_id());
+		waiter.notify_all();
 	});
 
-	std::this_thread::sleep_for(seconds(2));
+	waiter.wait();
 }
 
 void concurrencpp::tests::test_thread_pool_enqueue_case_1_not_tp_thread() {
@@ -71,6 +72,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_1_not_tp_thread() {
 }
 
 void concurrencpp::tests::test_thread_pool_enqueue_case_1_task_queue_not_empty() {
+	waiter waiter;
 	thread_pool pool(4, seconds(20), "", nullptr);
 
 	pool.enqueue([&]() mutable {
@@ -80,9 +82,10 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_1_task_queue_not_empty()
 
 		const auto chosen_id_1 = pool.enqueue([] {});
 		assert_not_same(chosen_id_1, std::this_thread::get_id());
+		waiter.notify_all();
 	});
 
-	std::this_thread::sleep_for(seconds(2));
+	waiter.wait();
 }
 
 void concurrencpp::tests::test_thread_pool_enqueue_case_2() {
@@ -101,7 +104,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_2() {
 		});
 	}
 
-	std::this_thread::sleep_for(seconds(5));
+	std::this_thread::sleep_for(seconds(2));
 
 	const auto waiting_thread_id = pool.enqueue([] {});
 
@@ -111,7 +114,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_2() {
 		const auto id = pool.enqueue([] {});
 		assert_same(id, waiting_thread_id);
 
-		std::this_thread::sleep_for(seconds(2));
+		std::this_thread::sleep_for(seconds(1));
 	}
 
 	waiter.notify_all();
@@ -146,7 +149,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_2_tp_thread() {
 
 	assert_not_same(tested_threads[0], tested_threads[1]);
 
-	std::this_thread::sleep_for(seconds(3));
+	std::this_thread::sleep_for(seconds(2));
 
 	pool.enqueue([
 		&pool,
@@ -166,7 +169,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_2_tp_thread() {
 		assert_false(waiting_thread == running_thread_0 || waiting_thread == running_thread_1);
 	});
 
-	std::this_thread::sleep_for(seconds(3));
+	std::this_thread::sleep_for(seconds(2));
 	waiter.notify_all();
 }
 
@@ -192,7 +195,7 @@ void concurrencpp::tests::test_thread_pool_enqueue_case_3() {
 		}
 	});
 
-	std::this_thread::sleep_for(seconds(3));
+	std::this_thread::sleep_for(seconds(2));
 
 	waiter.notify_all();
 }
@@ -376,9 +379,9 @@ void concurrencpp::tests::test_thread_pool_work_stealing() {
 		});
 	}
 
-	std::this_thread::sleep_for(seconds(5));
+	std::this_thread::sleep_for(seconds(2));
 
-	const size_t task_count = 200;
+	const size_t task_count = 400;
 	for (size_t i = 0; i < task_count; i++) {
 		pool.enqueue(observer.get_testing_stub());
 	}
@@ -399,7 +402,7 @@ void concurrencpp::tests::test_thread_pool_combo() {
 	auto pool = std::make_unique<thread_pool>(32, seconds(4),"", listener);
 	
 	for (size_t i = 0; i < 50; i++) {
-		const auto task_count = static_cast<size_t>(randomizer(0, 1'000));
+		const auto task_count = static_cast<size_t>(randomizer(0, 1'500));
 
 		for (size_t j = 0; j < task_count; j++) {
 			const auto sleeping_time = randomizer(0, 10);
@@ -408,7 +411,7 @@ void concurrencpp::tests::test_thread_pool_combo() {
 
 		expected_count += task_count;
 
-		const auto sleeping_time = randomizer(0, 15);
+		const auto sleeping_time = randomizer(0, 5);
 		std::this_thread::sleep_for(seconds(sleeping_time));
 	}
 
