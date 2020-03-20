@@ -4,7 +4,7 @@
 #include "../../helpers/assertions.h"
 #include "../../helpers/fast_randomizer.h"
 
-#include "../../concurrencpp/details/result/result_all.h"
+#include "../../concurrencpp/src/result/result_all.h"
 
 #include <stdexcept>
 #include <type_traits>

@@ -6,7 +6,7 @@
 #include "../../helpers/thread_helpers.h"
 #include "../../helpers/object_observer.h"
 
-#include "../../../concurrencpp/details/threads/thread_group.h"
+#include "../../../concurrencpp/src/threads/thread_group.h"
 
 namespace concurrencpp::tests {
 	void test_thread_group_enqueue_worker();

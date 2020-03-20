@@ -6,7 +6,7 @@
 #include "../../helpers/object_observer.h"
 
 #include "executor_test_helpers.h"
-#include "../../concurrencpp/details/executors/constants.h"
+#include "../../concurrencpp/src/executors/constants.h"
 
 namespace concurrencpp::tests {
 	void test_manual_executor_name();

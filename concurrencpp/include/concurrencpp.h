@@ -1,12 +1,12 @@
 #ifndef  CONCURRENCPP_H
 #define CONCURRENCPP_H
 
-#include "../details/forward_declerations.h"
-#include "../details/platform_defs.h"
+#include "../src/forward_declerations.h"
+#include "../src/platform_defs.h"
 
-#include "../details/executors/executors.h"
-#include "../details/timers/timer.h"
-#include "../details/runtime/runtime.h"
-#include "../details/result/result_all.h"
+#include "../src/executors/executors.h"
+#include "../src/timers/timer.h"
+#include "../src/runtime/runtime.h"
+#include "../src/result/result_all.h"
 
 #endif

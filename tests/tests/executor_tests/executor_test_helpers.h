@@ -2,8 +2,8 @@
 #define CONCURRENCPP_EXECUTOR_TEST_HELPERS_H
 
 #include "../../helpers/assertions.h"
-#include "../../concurrencpp/details/executors/constants.h"
-#include "../../concurrencpp/details/executors/executor.h"
+#include "../../concurrencpp/src/executors/constants.h"
+#include "../../concurrencpp/src/executors/executor.h"
 
 namespace concurrencpp::tests {
 	class cancellation_tester {

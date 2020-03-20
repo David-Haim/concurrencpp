@@ -7,8 +7,8 @@
 #include "../../helpers/fast_randomizer.h"
 #include "../../helpers/object_observer.h"
 
-#include "../details/executors/constants.h"
-#include "../details/threads/thread_pool.h"
+#include "../src/executors/constants.h"
+#include "../src/threads/thread_pool.h"
 #include "../executor_tests/executor_test_helpers.h"
 
 #include <mutex>

@@ -2,7 +2,7 @@
 #define CONCURRENCPP_THREAD_HELPERS_H
 
 #include "concurrencpp.h"
-#include "../details/threads/thread_pool_listener.h"
+#include "../src/threads/thread_pool_listener.h"
 
 #include <memory>
 #include <atomic>

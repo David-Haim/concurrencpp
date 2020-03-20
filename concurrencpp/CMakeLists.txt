@@ -12,13 +12,13 @@ set(CMAKE_BUILD_TYPE Release)
 
 add_library(
     concurrencpp
-	details/executors/task.cpp
-	details/executors/executors.cpp
-	details/runtime/runtime.cpp
-	details/threads/thread_group.cpp
-	details/threads/thread_pool.cpp
-	details/threads/single_worker_thread.cpp
-	details/timers/timer_queue.cpp
-	details/timers/timer.cpp
+	src/executors/task.cpp
+	src/executors/executors.cpp
+	src/runtime/runtime.cpp
+	src/threads/thread_group.cpp
+	src/threads/thread_pool.cpp
+	src/threads/single_worker_thread.cpp
+	src/timers/timer_queue.cpp
+	src/timers/timer.cpp
 	)
 target_link_libraries(concurrencpp pthread rt)

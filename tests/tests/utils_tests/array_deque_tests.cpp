@@ -10,7 +10,7 @@
 #include <tuple>
 #include <deque>
 
-#include "../../concurrencpp/details/utils/array_deque.h"
+#include "../../concurrencpp/src/utils/array_deque.h"
 
 using namespace concurrencpp::tests;
 using concurrencpp::details::array_deque;

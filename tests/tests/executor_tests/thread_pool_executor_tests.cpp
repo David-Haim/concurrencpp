@@ -7,7 +7,7 @@
 #include "../../helpers/thread_helpers.h"
 
 #include "executor_test_helpers.h"
-#include "../../concurrencpp/details/executors/constants.h"
+#include "../../concurrencpp/src/executors/constants.h"
 
 namespace concurrencpp::tests {
 	void test_thread_pool_executor_name();
