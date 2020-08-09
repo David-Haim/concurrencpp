@@ -40,15 +40,14 @@ namespace concurrencpp::tests {
 
     template<class type>
     void test_rp_assignment_operator_impl_empty_to_empty();
-
     template<class type>
     void test_rp_assignment_operator_impl_non_empty_to_empty();
-
     template<class type>
     void test_rp_assignment_operator_impl_empty_to_non_empty();
-
     template<class type>
     void test_rp_assignment_operator_impl_non_empty_to_non_empty();
+    template<class type>
+    void test_rp_assignment_operator_assign_to_self();
 
     template<class type>
     void test_rp_assignment_operator_impl();
@@ -406,12 +405,20 @@ void concurrencpp::tests::test_rp_assignment_operator_impl_non_empty_to_non_empt
     assert_equal(result2.status(), result_status::idle);
 }
 
+template <class type>
+void concurrencpp::tests::test_rp_assignment_operator_assign_to_self() {
+    result_promise<type> rp;
+    rp = std::move(rp);
+    assert_true(static_cast<bool>(rp));
+}
+
 template<class type>
 void concurrencpp::tests::test_rp_assignment_operator_impl() {
     test_rp_assignment_operator_impl_empty_to_empty<type>();
     test_rp_assignment_operator_impl_non_empty_to_empty<type>();
     test_rp_assignment_operator_impl_empty_to_non_empty<type>();
     test_rp_assignment_operator_impl_non_empty_to_non_empty<type>();
+    test_rp_assignment_operator_assign_to_self<type>();
 }
 
 void concurrencpp::tests::test_rp_assignment_operator() {

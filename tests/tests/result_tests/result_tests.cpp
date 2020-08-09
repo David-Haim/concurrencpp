@@ -33,6 +33,16 @@ namespace concurrencpp::tests {
 	void test_result_wait_until();
 
 	template<class type>
+	void test_result_assignment_operator_empty_to_empty();
+	template<class type>
+	void test_result_assignment_operator_non_empty_to_non_empty();
+	template<class type>
+	void test_result_assignment_operator_empty_to_non_empty();
+	template<class type>
+	void test_result_assignment_operator_non_empty_to_empty();
+	template<class type>
+	void test_result_assignment_operator_assign_to_self();
+	template<class type>
 	void test_result_assignment_operator_impl();
 	void test_result_assignment_operator();
 }
@@ -48,13 +58,13 @@ void concurrencpp::tests::test_result_constructor_impl() {
 	result<type> default_constructed_result;
 	assert_false(static_cast<bool>(default_constructed_result));
 
-	result_promise<type> tcs;
-	auto tcs_result = tcs.get_result();
-	assert_true(static_cast<bool>(tcs_result));
-	assert_equal(tcs_result.status(), result_status::idle);
+	result_promise<type> rp;
+	auto rp_result = rp.get_result();
+	assert_true(static_cast<bool>(rp_result));
+	assert_equal(rp_result.status(), result_status::idle);
 
-	auto new_result = std::move(tcs_result);
-	assert_false(static_cast<bool>(tcs_result));
+	auto new_result = std::move(rp_result);
+	assert_false(static_cast<bool>(rp_result));
 	assert_true(static_cast<bool>(new_result));
 	assert_equal(new_result.status(), result_status::idle);
 }
@@ -77,32 +87,32 @@ void concurrencpp::tests::test_result_status_impl() {
 
 	//idle result
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		assert_equal(result.status(), result_status::idle);
 	}
 
 	//ready by value
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
-		tcs.set_from_function(result_factory<type>::get);
+		result_promise<type> rp;
+		auto result = rp.get_result();
+		rp.set_from_function(result_factory<type>::get);
 		assert_equal(result.status(), result_status::value);
 	}
 
 	//exception result
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
-		tcs.set_from_function(result_factory<type>::throw_ex);
+		result_promise<type> rp;
+		auto result = rp.get_result();
+		rp.set_from_function(result_factory<type>::throw_ex);
 		assert_equal(result.status(), result_status::exception);
 	}
 
 	//multiple calls of status are ok
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
-		tcs.set_from_function(result_factory<type>::get);
+		result_promise<type> rp;
+		auto result = rp.get_result();
+		rp.set_from_function(result_factory<type>::get);
 
 		for (size_t i = 0; i < 10; i++) {
 			assert_equal(result.status(), result_status::value);
@@ -128,13 +138,13 @@ void concurrencpp::tests::test_result_get_impl() {
 
 	//get blocks until value is present and empties the result
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable {
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		result.get();
@@ -149,14 +159,14 @@ void concurrencpp::tests::test_result_get_impl() {
 	//get blocks until exception is present and empties the result
 	{
 		random randomizer;
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto id = randomizer();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), id, unblocking_time]() mutable {
+		std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_exception(std::make_exception_ptr(costume_exception(id)));
+			rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 		});
 
 		try {
@@ -193,13 +203,13 @@ void concurrencpp::tests::test_result_wait_impl() {
 
 	//wait blocks until value is present
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable {
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		result.wait();
@@ -215,14 +225,14 @@ void concurrencpp::tests::test_result_wait_impl() {
 	//wait blocks until exception is present
 	{
 		random randomizer;
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto id = randomizer();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), id, unblocking_time]() mutable {
+		std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_exception(std::make_exception_ptr(costume_exception(id)));
+			rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 		});
 
 		result.wait();
@@ -237,9 +247,9 @@ void concurrencpp::tests::test_result_wait_impl() {
 
 	//if result is ready with value, wait returns immediately
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
-		tcs.set_from_function(result_factory<type>::get);
+		result_promise<type> rp;
+		auto result = rp.get_result();
+		rp.set_from_function(result_factory<type>::get);
 
 		const auto time_before = high_resolution_clock::now();
 		result.wait();
@@ -253,11 +263,11 @@ void concurrencpp::tests::test_result_wait_impl() {
 	//if result is ready with exception, wait returns immediately
 	{
 		random randomizer;
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto id = randomizer();
 
-		tcs.set_exception(std::make_exception_ptr(costume_exception(id)));
+		rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 
 		const auto time_before = high_resolution_clock::now();
 		result.wait();
@@ -270,13 +280,13 @@ void concurrencpp::tests::test_result_wait_impl() {
 
 	//multiple calls to wait are ok
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable {
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		for (size_t i = 0; i < 10; i++) {
@@ -308,10 +318,10 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 	//if the result is ready by value, don't block and return status::value
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
-		tcs.set_from_function(result_factory<type>::get);
+		rp.set_from_function(result_factory<type>::get);
 
 		const auto before = high_resolution_clock::now();
 		const auto status = result.wait_for(seconds(3));
@@ -324,10 +334,10 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 	//if the result is ready by exception, don't block and return status::exception
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
-		tcs.set_from_function(result_factory<type>::throw_ex);
+		rp.set_from_function(result_factory<type>::throw_ex);
 
 		const auto before = high_resolution_clock::now();
 		const auto status = result.wait_for(seconds(3));
@@ -340,8 +350,8 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 	//if timeout reaches and no value/exception - return status::idle
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
 		const auto before = high_resolution_clock::now();
 		const auto status = result.wait_for(seconds(2));
@@ -354,13 +364,13 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 	//if result is set before timeout, unblock, and return status::value
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		result.wait_for(seconds(100));
@@ -375,14 +385,14 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 	//if exception is set before timeout, unblock, and return status::exception
 	{
 		random randomizer;
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto id = randomizer();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time, id]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_exception(std::make_exception_ptr(costume_exception(id)));
+			rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 		});
 
 		result.wait_for(seconds(100));
@@ -397,13 +407,13 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 	//multiple calls of wait_for are ok
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		for (size_t i = 0; i < 10; i++) {
@@ -436,13 +446,13 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//if time_point <= now, the function is equivilent to result::status
 	{
-		result_promise<type> tcs_idle, tcs_val, tcs_err;
-		result<type> idle_result = tcs_idle.get_result(),
-			value_result = tcs_val.get_result(),
-			err_result = tcs_err.get_result();
+		result_promise<type> rp_idle, rp_val, rp_err;
+		result<type> idle_result = rp_idle.get_result(),
+			value_result = rp_val.get_result(),
+			err_result = rp_err.get_result();
 
-		tcs_val.set_from_function(result_factory<type>::get);
-		tcs_err.set_from_function(result_factory<type>::throw_ex);
+		rp_val.set_from_function(result_factory<type>::get);
+		rp_err.set_from_function(result_factory<type>::throw_ex);
 
 		const auto now = high_resolution_clock::now();
 		std::this_thread::sleep_for(seconds(2));
@@ -454,10 +464,10 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//if the result is ready by value, don't block and return status::value
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
-		tcs.set_from_function(result_factory<type>::get);
+		rp.set_from_function(result_factory<type>::get);
 
 		const auto later = high_resolution_clock::now() + seconds(2);
 		const auto before = high_resolution_clock::now();
@@ -471,10 +481,10 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//if the result is ready by exception, don't block and return status::exception
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
-		tcs.set_from_function(result_factory<type>::throw_ex);
+		rp.set_from_function(result_factory<type>::throw_ex);
 
 		const auto later = high_resolution_clock::now() + seconds(2);
 		const auto before = high_resolution_clock::now();
@@ -488,8 +498,8 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//if timeout reaches and no value/exception - return status::idle
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 
 		const auto later = high_resolution_clock::now() + seconds(2);
 		const auto status = result.wait_until(later);
@@ -501,14 +511,14 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//if result is set before timeout, unblock, and return status::value
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 		const auto later = high_resolution_clock::now() + seconds(10);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		result.wait_until(later);
@@ -523,16 +533,16 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 	//if exception is set before timeout, unblock, and return status::exception
 	{
 		random randomizer;
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto id = randomizer();
 
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 		const auto later = high_resolution_clock::now() + seconds(10);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time, id]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_exception(std::make_exception_ptr(costume_exception(id)));
+			rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 		});
 
 		result.wait_until(later);
@@ -546,13 +556,13 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
 	//multiple calls to wait_until are ok
 	{
-		result_promise<type> tcs;
-		auto result = tcs.get_result();
+		result_promise<type> rp;
+		auto result = rp.get_result();
 		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
 
-		std::thread thread([tcs = std::move(tcs), unblocking_time]() mutable{
+		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
-			tcs.set_from_function(result_factory<type>::get);
+			rp.set_from_function(result_factory<type>::get);
 		});
 
 		for (size_t i = 0; i < 10; i++) {
@@ -572,53 +582,77 @@ void concurrencpp::tests::test_result_wait_until() {
 	test_result_wait_until_impl<std::string&>();
 }
 
+
+template<class type>
+void concurrencpp::tests::test_result_assignment_operator_empty_to_empty() {
+	result<type> result_0, result_1;
+	result_0 = std::move(result_1);
+	assert_false(static_cast<bool>(result_0));
+	assert_false(static_cast<bool>(result_1));
+}
+
+template<class type>
+void concurrencpp::tests::test_result_assignment_operator_non_empty_to_non_empty() {
+	result_promise<type> rp_0, rp_1;
+	result<type> result_0 = rp_0.get_result(), result_1 = rp_1.get_result();
+	result_0 = std::move(result_1);
+	assert_true(static_cast<bool>(result_0));
+	assert_false(static_cast<bool>(result_1));
+
+	rp_0.set_from_function(result_factory<type>::get);
+	assert_false(static_cast<bool>(result_1));
+	assert_equal(result_0.status(), result_status::idle);
+
+	rp_1.set_from_function(result_factory<type>::get);
+	assert_false(static_cast<bool>(result_1));
+	test_ready_result_result(std::move(result_0));
+}
+
+template<class type>
+void concurrencpp::tests::test_result_assignment_operator_empty_to_non_empty() {
+	result_promise<type> rp_0;
+	result<type> result_0 = rp_0.get_result(), result_1;
+	result_0 = std::move(result_1);
+	assert_false(static_cast<bool>(result_0));
+	assert_false(static_cast<bool>(result_1));
+
+}
+
+template<class type>
+void concurrencpp::tests::test_result_assignment_operator_non_empty_to_empty() {
+	result_promise<type> rp_1;
+	result<type> result_0, result_1 = rp_1.get_result();
+	result_0 = std::move(result_1);
+	assert_true(static_cast<bool>(result_0));
+	assert_false(static_cast<bool>(result_1));
+
+	rp_1.set_from_function(result_factory<type>::get);
+	test_ready_result_result(std::move(result_0));
+
+}
+
+template<class type>
+void concurrencpp::tests::test_result_assignment_operator_assign_to_self() {
+	result<type> res0;
+
+	res0 = std::move(res0);
+	assert_false(static_cast<bool>(res0));
+
+	result_promise<type> rp_1;
+	auto res1 = rp_1.get_result();
+
+	res1 = std::move(res1);
+	assert_true(static_cast<bool>(res1));
+}
+
+
 template<class type>
 void concurrencpp::tests::test_result_assignment_operator_impl() {
-	//empty result -> empty result
-	{
-		result<type> result_0, result_1;
-		result_0 = std::move(result_1);
-		assert_false(static_cast<bool>(result_0));
-		assert_false(static_cast<bool>(result_1));
-	}
-
-	//non empty result -> empty result
-	{
-		result_promise<type> tcs_1;
-		result<type> result_0, result_1 = tcs_1.get_result();
-		result_0 = std::move(result_1);
-		assert_true(static_cast<bool>(result_0));
-		assert_false(static_cast<bool>(result_1));
-
-		tcs_1.set_from_function(result_factory<type>::get);
-		test_ready_result_result(std::move(result_0));
-	}
-
-	//empty result -> non empty result
-	{
-		result_promise<type> tcs_0;
-		result<type> result_0 = tcs_0.get_result(), result_1;
-		result_0 = std::move(result_1);
-		assert_false(static_cast<bool>(result_0));
-		assert_false(static_cast<bool>(result_1));
-	}
-
-	//non empty result -> non empty result
-	{
-		result_promise<type> tcs_0, tcs_1;
-		result<type> result_0 = tcs_0.get_result(), result_1 = tcs_1.get_result();
-		result_0 = std::move(result_1);
-		assert_true(static_cast<bool>(result_0));
-		assert_false(static_cast<bool>(result_1));
-
-		tcs_0.set_from_function(result_factory<type>::get);
-		assert_false(static_cast<bool>(result_1));
-		assert_equal(result_0.status(), result_status::idle);
-
-		tcs_1.set_from_function(result_factory<type>::get);
-		assert_false(static_cast<bool>(result_1));
-		test_ready_result_result(std::move(result_0));
-	}
+	test_result_assignment_operator_empty_to_empty<type>();
+	test_result_assignment_operator_non_empty_to_empty<type>();
+	test_result_assignment_operator_empty_to_non_empty<type>();
+	test_result_assignment_operator_non_empty_to_non_empty<type>();
+	test_result_assignment_operator_assign_to_self<type>();
 }
 
 void concurrencpp::tests::test_result_assignment_operator() {

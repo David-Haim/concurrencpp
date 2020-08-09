@@ -37,6 +37,9 @@
 
 # End of https://www.toptal.com/developers/gitignore/api/c++
 
+#Others
+.vs
+
 #Specific directories
 /build
 /msvc_intermediate

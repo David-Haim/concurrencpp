@@ -40,7 +40,13 @@ namespace concurrencpp {
 
 		result(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
 
-		result& operator = (result&& rhs) noexcept = default;
+		result& operator = (result&& rhs) noexcept {
+			if (this != &rhs) {
+				m_state = std::move(rhs.m_state);
+			}
+
+			return *this;
+		}
 
 		result(const result& rhs) = delete;
 		result& operator = (const result& rhs) = delete;
