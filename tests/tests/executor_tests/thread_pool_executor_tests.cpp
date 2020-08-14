@@ -14,13 +14,24 @@ namespace concurrencpp::tests {
 
 	void test_thread_pool_executor_shutdown_coro_raii();
 	void test_thread_pool_executor_shutdown_thread_join();
-	void test_thread_pool_executor_shutdown_enqueue();
+	void test_thread_pool_executor_shutdown_method_access();
+	void test_thread_pool_executor_shutdown_method_more_than_once();
 	void test_thread_pool_executor_shutdown();
 
+	void test_thread_pool_executor_post_foreign();
+	void test_thread_pool_executor_post_inline();
 	void test_thread_pool_executor_post();
+
+	void test_thread_pool_executor_submit_foreign();
+	void test_thread_pool_executor_submit_inline();
 	void test_thread_pool_executor_submit();
 
+	void test_thread_pool_executor_bulk_post_foreign();
+	void test_thread_pool_executor_bulk_post_inline();
 	void test_thread_pool_executor_bulk_post();
+
+	void test_thread_pool_executor_bulk_submit_foreign();
+	void test_thread_pool_executor_bulk_submit_inline();
 	void test_thread_pool_executor_bulk_submit();
 
 	void test_thread_pool_executor_enqueue_algorithm();
@@ -47,10 +58,10 @@ void concurrencpp::tests::test_thread_pool_executor_shutdown_coro_raii() {
 	}
 
 	executor->post([] {
-		std::this_thread::sleep_for(std::chrono::seconds(2));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	});
 
-	auto results = executor->template bulk_submit<value_testing_stub>(stubs);
+	auto results = executor->bulk_submit<value_testing_stub>(stubs);
 
 	executor->shutdown();
 	assert_true(executor->shutdown_requested());
@@ -74,19 +85,19 @@ void concurrencpp::tests::test_thread_pool_executor_shutdown_thread_join() {
 
 	for (size_t i = 0; i < 3; i++) {
 		executor->post([] {
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		});
 	}
 
 	//allow threads time to start working
-	std::this_thread::sleep_for(std::chrono::milliseconds(150));
+	std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
 	// 1/3 of the threads are waiting, 1/3 are working, 1/3 are idle. all should be joined when tp is shut-down.
 	executor->shutdown();
 	assert_true(executor->shutdown_requested());
 }
 
-void concurrencpp::tests::test_thread_pool_executor_shutdown_enqueue() {
+void concurrencpp::tests::test_thread_pool_executor_shutdown_method_access() {
 	auto executor = std::make_shared<thread_pool_executor>("threadpool", 4, std::chrono::seconds(10));
 	assert_false(executor->shutdown_requested());
 
@@ -104,15 +115,31 @@ void concurrencpp::tests::test_thread_pool_executor_shutdown_enqueue() {
 	});
 }
 
+void concurrencpp::tests::test_thread_pool_executor_shutdown_method_more_than_once() {
+	const size_t task_count = 64;
+	auto executor = std::make_shared<thread_pool_executor>("threadpool", 4, std::chrono::seconds(10));
+
+	for (size_t i = 0; i < task_count; i++) {
+		executor->post([] {
+			std::this_thread::sleep_for(std::chrono::milliseconds(18));
+		});
+	}
+
+	for (size_t i = 0; i < 4; i++) {
+		executor->shutdown();
+	}
+}
+
 void concurrencpp::tests::test_thread_pool_executor_shutdown() {
 	test_thread_pool_executor_shutdown_coro_raii();
 	test_thread_pool_executor_shutdown_thread_join();
-	test_thread_pool_executor_shutdown_enqueue();
+	test_thread_pool_executor_shutdown_method_access();
+	test_thread_pool_executor_shutdown_method_more_than_once();
 }
 
-void concurrencpp::tests::test_thread_pool_executor_post() {
+void concurrencpp::tests::test_thread_pool_executor_post_foreign() {
 	object_observer observer;
-	const size_t task_count = 100'000;
+	const size_t task_count = 50'000;
 	const size_t worker_count = 6;
 	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
 	executor_shutdowner shutdown(executor);
@@ -127,9 +154,33 @@ void concurrencpp::tests::test_thread_pool_executor_post() {
 	assert_equal(observer.get_execution_map().size(), worker_count);
 }
 
-void concurrencpp::tests::test_thread_pool_executor_submit() {
+void concurrencpp::tests::test_thread_pool_executor_post_inline() {
 	object_observer observer;
-	const size_t task_count = 100'000;
+	const size_t task_count = 50'000;
+	const size_t worker_count = 6;
+	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
+	executor_shutdowner shutdown(executor);
+
+	executor->post([executor, &observer, task_count] {
+		for (size_t i = 0; i < task_count; i++) {
+			executor->post(observer.get_testing_stub());
+		}
+	});
+
+	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
+	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
+
+	assert_equal(observer.get_execution_map().size(), worker_count);
+}
+
+void concurrencpp::tests::test_thread_pool_executor_post() {
+	test_thread_pool_executor_post_foreign();
+	test_thread_pool_executor_post_inline();
+}
+
+void concurrencpp::tests::test_thread_pool_executor_submit_foreign() {
+	object_observer observer;
+	const size_t task_count = 50'000;
 	const size_t worker_count = 6;
 	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
 	executor_shutdowner shutdown(executor);
@@ -151,9 +202,42 @@ void concurrencpp::tests::test_thread_pool_executor_submit() {
 	}
 }
 
-void concurrencpp::tests::test_thread_pool_executor_bulk_post() {
+void concurrencpp::tests::test_thread_pool_executor_submit_inline(){
 	object_observer observer;
-	const size_t task_count = 40'000;
+	const size_t task_count = 50'000;
+	const size_t worker_count = 6;
+	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
+	executor_shutdowner shutdown(executor);
+
+	auto results_res = executor->submit([executor, &observer, task_count] {
+		std::vector<result<size_t>> results;
+		results.resize(task_count);
+		for (size_t i = 0; i < task_count; i++) {
+			results[i] = executor->submit(observer.get_testing_stub(i));
+		}
+
+		return results;
+	});
+
+	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
+	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
+
+	assert_equal(observer.get_execution_map().size(), worker_count);
+
+	auto results = results_res.get();
+	for (size_t i = 0; i < task_count; i++) {
+		assert_equal(results[i].get(), size_t(i));
+	}
+}
+
+void concurrencpp::tests::test_thread_pool_executor_submit() {
+	test_thread_pool_executor_submit_foreign();
+	test_thread_pool_executor_submit_inline();
+}
+
+void concurrencpp::tests::test_thread_pool_executor_bulk_post_foreign() {
+	object_observer observer;
+	const size_t task_count = 50'000;
 	const size_t worker_count = 6;
 	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
 	executor_shutdowner shutdown(executor);
@@ -165,7 +249,7 @@ void concurrencpp::tests::test_thread_pool_executor_bulk_post() {
 		stubs.emplace_back(observer.get_testing_stub());
 	}
 
-	executor->template bulk_post<testing_stub>(stubs);
+	executor->bulk_post<testing_stub>(stubs);
 
 	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
 	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
@@ -173,9 +257,37 @@ void concurrencpp::tests::test_thread_pool_executor_bulk_post() {
 	assert_equal(observer.get_execution_map().size(), worker_count);
 }
 
-void concurrencpp::tests::test_thread_pool_executor_bulk_submit() {
+void concurrencpp::tests::test_thread_pool_executor_bulk_post_inline() {
 	object_observer observer;
-	const size_t task_count = 40'000;
+	const size_t task_count = 1'024;
+	const size_t worker_count = 6;
+	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
+	executor_shutdowner shutdown(executor);
+
+	executor->post([executor, &observer, task_count]() mutable  {
+		std::vector<testing_stub> stubs;
+		stubs.reserve(task_count);
+
+		for (size_t i = 0; i < task_count; i++) {
+			stubs.emplace_back(observer.get_testing_stub());
+		}
+		executor->bulk_post<testing_stub>(stubs);
+	});
+
+	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
+	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
+
+	assert_equal(observer.get_execution_map().size(), worker_count);
+}
+
+void concurrencpp::tests::test_thread_pool_executor_bulk_post() {
+	test_thread_pool_executor_bulk_post_foreign();
+	test_thread_pool_executor_bulk_post_inline();
+}
+
+void concurrencpp::tests::test_thread_pool_executor_bulk_submit_foreign() {
+	object_observer observer;
+	const size_t task_count = 50'000;
 	const size_t worker_count = 6;
 	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
 	executor_shutdowner shutdown(executor);
@@ -187,7 +299,7 @@ void concurrencpp::tests::test_thread_pool_executor_bulk_submit() {
 		stubs.emplace_back(observer.get_testing_stub(i));
 	}
 
-	auto results = executor->template bulk_submit<value_testing_stub>(stubs);
+	auto results = executor->bulk_submit<value_testing_stub>(stubs);
 
 	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
 	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
@@ -197,6 +309,40 @@ void concurrencpp::tests::test_thread_pool_executor_bulk_submit() {
 	for (size_t i = 0; i < task_count; i++) {
 		assert_equal(results[i].get(), i);
 	}
+}
+
+void concurrencpp::tests::test_thread_pool_executor_bulk_submit_inline() {
+	object_observer observer;
+	const size_t task_count = 50'000;
+	const size_t worker_count = 6;
+	auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
+	executor_shutdowner shutdown(executor);
+
+	auto results_res = executor->submit([executor, &observer, task_count] {
+		std::vector<value_testing_stub> stubs;
+		stubs.reserve(task_count);
+
+		for (size_t i = 0; i < task_count; i++) {
+			stubs.emplace_back(observer.get_testing_stub(i));
+		}
+
+		return executor->bulk_submit<value_testing_stub>(stubs);
+	});
+
+	assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(2)));
+	assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(2)));
+
+	assert_equal(observer.get_execution_map().size(), worker_count);
+
+	auto results = results_res.get();
+	for (size_t i = 0; i < task_count; i++) {
+		assert_equal(results[i].get(), i);
+	}
+}
+
+void concurrencpp::tests::test_thread_pool_executor_bulk_submit() {
+	test_thread_pool_executor_bulk_submit_foreign();
+	test_thread_pool_executor_bulk_submit_inline();
 }
 
 void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
