@@ -268,20 +268,18 @@ void thread_pool_worker::work_loop() noexcept {
 }
 
 void thread_pool_worker::destroy_tasks() noexcept {
+	std::unique_lock<std::mutex> lock(m_lock);
 	for (auto task : m_private_queue) {
 		task.destroy();
 	}
 
 	m_private_queue.clear();
 
-	{
-		std::unique_lock<std::mutex> lock(m_lock);
-		m_private_queue = std::move(m_public_queue);
-	}
-
-	for (auto task : m_private_queue) {
+	for (auto task : m_public_queue) {
 		task.destroy();
 	}
+
+	m_public_queue.clear();
 }
 
 void thread_pool_worker::ensure_worker_active(std::unique_lock<std::mutex>& lock) {
@@ -353,6 +351,7 @@ void thread_pool_worker::enqueue_local(std::span<std::experimental::coroutine_ha
 }
 
 void thread_pool_worker::abort() noexcept {
+	assert(m_atomic_abort.load(std::memory_order_relaxed) == false);
 	m_atomic_abort.store(true, std::memory_order_relaxed);
 
 	{
@@ -457,15 +456,14 @@ bool thread_pool_executor::shutdown_requested() const noexcept {
 }
 
 void concurrencpp::thread_pool_executor::shutdown() noexcept {
-	m_abort.store(true, std::memory_order_relaxed);
+	const auto abort = m_abort.exchange(true, std::memory_order_relaxed);
+	if (abort) {
+		//shutdown had been called before.
+		return;
+	}
 
 	for (auto& worker : m_workers) {
 		worker.abort();
-	}
-
-	std::this_thread::yield();
-
-	for (auto& worker : m_workers) {
 		worker.join();
 	}
 }

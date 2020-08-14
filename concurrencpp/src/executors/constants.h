@@ -12,6 +12,7 @@ namespace concurrencpp::details::consts {
 	inline const char* k_thread_pool_executor_name = "concurrencpp::thread_pool_executor";
 	inline const char* k_background_executor_name = "concurrencpp::background_executor";
 
+	constexpr int k_worker_thread_max_concurrency_level = 1;
 	inline const char* k_worker_thread_executor_name = "concurrencpp::worker_thread_executor";
 
 	inline const char* k_manual_executor_name = "concurrencpp::manual_executor";

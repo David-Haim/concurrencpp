@@ -16,7 +16,7 @@ namespace concurrencpp {
 		bool m_abort;
 		std::atomic_bool m_atomic_abort;
 
-		void destroy_tasks() noexcept;
+		void destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept;
 
 	public:
 		manual_executor() :

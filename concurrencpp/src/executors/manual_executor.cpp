@@ -3,10 +3,14 @@
 
 using concurrencpp::manual_executor;
 
-void manual_executor::destroy_tasks() noexcept {
+void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept {
+	assert(lock.owns_lock());
+
 	for (auto task : m_tasks) {
 		task.destroy();
 	}
+
+	m_tasks.clear();
 }
 
 void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
@@ -146,13 +150,17 @@ bool manual_executor::wait_for_task(std::chrono::milliseconds max_waiting_time) 
 }
 
 void manual_executor::shutdown() noexcept {
-	m_atomic_abort.store(true, std::memory_order_relaxed);
+	const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+	if (abort) {
+		//shutdown had been called before.
+		return;
+	}
 
 	{
 		std::unique_lock<decltype(m_lock)> lock(m_lock);
 		m_abort = true;
 
-		destroy_tasks();
+		destroy_tasks(lock);
 	}
 
 	m_condition.notify_all();
