@@ -16,35 +16,39 @@ namespace concurrencpp {
 	class executor {
 
 	private:
-		template<class callable_type, class decayed_type = typename std::decay_t<callable_type>>
-		static null_result post_bridge(executor_tag, executor*, decayed_type callable) {
-			callable();
+		template<class callable_type, class ... argument_types>
+		static null_result post_bridge(
+			executor_tag,
+			executor*,
+			callable_type callable,
+			argument_types... arguments) {
+			callable(arguments...);
 			co_return;
 		}
 
-		template<class callable_type, class decayed_type = typename std::decay_t<callable_type>>
+		template<class callable_type>
 		static null_result bulk_post_bridge(
 			details::executor_bulk_tag,
 			std::vector<std::experimental::coroutine_handle<>>* accumulator,
-			decayed_type callable) {
+			callable_type callable) {
 			callable();
 			co_return;
 		}
 
-		template<class callable_type,
-			class decayed_type = typename std::decay_t<callable_type>,
-			class return_type = typename std::invoke_result_t<decayed_type>>
-			static result<return_type> submit_bridge(executor_tag, executor*, decayed_type callable) {
-			co_return callable();
+		template<class return_type, class callable_type, class ... argument_types>
+		static result<return_type> submit_bridge(
+				executor_tag,
+				executor*,
+				callable_type callable,
+				argument_types... arguments) {
+			co_return callable(arguments...);
 		}
 
-		template<class callable_type,
-			class decayed_type = typename std::decay_t<callable_type>,
-			class return_type = typename std::invoke_result_t<decayed_type>>
+		template<class callable_type, class return_type = typename std::invoke_result_t<callable_type>>
 			static result<return_type> bulk_submit_bridge(
 				details::executor_bulk_tag,
 				std::vector<std::experimental::coroutine_handle<>>* accumulator,
-				decayed_type callable) {
+				callable_type callable) {
 			co_return callable();
 		}
 
@@ -63,14 +67,32 @@ namespace concurrencpp {
 		virtual bool shutdown_requested() const noexcept = 0;
 		virtual void shutdown() noexcept = 0;
 
-		template<class callable_type>
-		void post(callable_type&& callable) {
-			post_bridge<callable_type>(executor_tag{}, this, std::forward<callable_type>(callable));
+		template<class callable_type, class ... argument_types>
+		void post(callable_type&& callable, argument_types&& ... arguments) {
+			static_assert(
+				std::is_invocable_v<callable_type, argument_types...>,
+				"concurrencpp::executor::post - <<callable_type>> is not invocable with <<argument_types...>>");
+
+			post_bridge(
+				executor_tag{},
+				this,
+				std::forward<callable_type>(callable),
+				std::forward<argument_types>(arguments)...);
 		}
 
-		template<class callable_type>
-		auto submit(callable_type&& callable) {
-			return submit_bridge<callable_type>(executor_tag{}, this, std::forward<callable_type>(callable));
+		template<class callable_type, class ... argument_types>
+		auto submit(callable_type&& callable, argument_types&& ... arguments) {
+			static_assert(
+				std::is_invocable_v<callable_type, argument_types...>,
+				"concurrencpp::executor::submit - <<callable_type>> is not invocable with <<argument_types...>>");
+
+			using return_type = typename std::invoke_result_t<callable_type, argument_types...>;
+
+			return submit_bridge<return_type>(
+				executor_tag{},
+				this,
+				std::forward<callable_type>(callable),
+				std::forward<argument_types>(arguments)...);
 		}
 
 		template<class callable_type>
