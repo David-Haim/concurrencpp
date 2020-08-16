@@ -1,14 +1,13 @@
-
 ## concurrencpp, the C++ concurrency library
 
 (note: documentation is still under development)
 
-concurrencpp allows applications to write asynchronous code easily and safetly by using executors and coroutines.
+concurrencpp allows applications to write asynchronous code easily and safely by using executors and coroutines.
 By using concurrencpp applications can break down big procedures that need to be processed asynchronously into smaller tasks that run concurrently and work in a co-operative manner to achieve the wanted result. 
 concurrencpp also allows applications to write parallel algorithms more easily by using parallel coroutines.
 
 concurrencpp main advantages are: 
-* Being able to write non blocking, asynchronous code easily by using the C++20 coroutines and the `co_await` keyword.
+* Being able to write non-blocking, asynchronous code easily by using the C++20 coroutines and the `co_await` keyword.
 * Being able to write modern concurrent code without having to rely on low-level concurrency primitives like locks and condition variables .
 * The concurrency runtime manages all low-level resources such as threads automatically
 * concurrencpp provides various types of commonly used executors with a complete coroutines integration. 
@@ -20,8 +19,8 @@ In concurrencpp, the concept of tasks is represented by coroutines. This allows 
 
 concurrencpp usage is build around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user defined executors.
 Executors are used to schedule new tasks to run, and they might return a `result` object that can be used to marshal the asynchronous result to another task that acts as its consumer.
-Results can be awaited and resolved in a non blocking manner, and even switch the underlying executor in the process.
- When the runtime is destroyed, it iterates over every stored executor and calls its `shutdown` method. every executor then exits gracefully. Unscheduled tasks are destroyed, and attempts to create new tasks will throw an exception. 
+Results can be awaited and resolved in a non-blocking manner, and even switch the underlying executor in the process.
+ When the runtime is destroyed, it iterates over every stored executor and calls its `shutdown` method. Every executor then exits gracefully. Unscheduled tasks are destroyed, and attempts to create new tasks will throw an exception. 
 
 **"Hello world" program using concurrencpp**
 
@@ -194,7 +193,7 @@ class executor {
 As mentioned above, concurrencpp provides commonly used executors. These excutore types are:
 
 * **thread pool executor** - a general purpose executor that maintains a pool of threads. 
-The thread pool executor is suitable for relatively short cpu-bound tasks that don't block. Applications are encouraged to use this executor as the default executor for non blocking functions. 
+The thread pool executor is suitable for relatively short cpu-bound tasks that don't block. Applications are encouraged to use this executor as the default executor for non-blocking functions. 
 The concurrencpp thread pool provides dynamic thread injection and dynamic work balancing for its enqueued tasks.
 
 * **blocking executor** - a thredpool executor with a larger pool of threads. Suitable for launching short blocking tasks like file io and db queries.
@@ -259,7 +258,7 @@ class result{
 	result& operator = (result&& rhs) noexcept = default;
 
 	/*
-		Returns true if this is a non empty result. Applications must not use this object if static_cast<bool>(*this) is false. 
+		Returns true if this is a non-empty result. Applications must not use this object if static_cast<bool>(*this) is false. 
 	*/
 	operator bool() const noexcept;
 
@@ -299,7 +298,7 @@ class result{
 
 	/*
 		Returns an awaitable used to await this result.
-		If the reasult is already ready - the current coroutine resumes immediatly in the calling thread of execution.
+		If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
 		If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready, by the thread which had set the asynchronous value or exception.
 		In either way, after resuming, if the result is a valid value, it is returned. 
 		Otherwise, operator co_await rethrows the asynchronous exception.
@@ -310,13 +309,13 @@ class result{
 	/*
 		Returns an awaitable used to await this result.
 		If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready, by scheduling the current coroutine via executor.
-		If the reasult is already ready - the behaviour depends on the value of force_rescheduling:
+		If the result is already ready - the behaviour depends on the value of force_rescheduling:
 			if force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via execution
-			if force_rescheduling = false, then the current coroutine resumes immediatly in the calling thread of execution.
+			if force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
 
 		In either way, after resuming, if the result is a valid value, it is returned. 
 		Otherwise, operator co_await rethrows the asynchronous exception.
-		throws concurrencpp::errors::empty_result if *this is empty.		
+		Throws concurrencpp::errors::empty_result if *this is empty.		
 		If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.	
 	*/
 	auto await_via(
@@ -326,7 +325,7 @@ class result{
 	/*
 		Returns an awaitable used to resolve this result.
 		Resolving a result means awaiting it to become ready, but unlike awaiting, resolving does not return or re-throw  the asynchronous result. 
-		*this is returned in a non empty form and guaranteed that its status is not result_status::idle. 
+		*this is returned in a non-empty form and guaranteed that its status is not result_status::idle. 
 		Throws concurrencpp::errors::empty_result if *this is empty.
 	*/	
 	auto resolve();
@@ -334,11 +333,11 @@ class result{
 	/*
 		Returns an awaitable used to resolve this result.
 		If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready, by scheduling the current coroutine via executor.
-		If the reasult is already ready - the behaviour depends on the value of force_rescheduling:
+		If the result is already ready - the behaviour depends on the value of force_rescheduling:
 			if force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via execution
-			if force_rescheduling = false, then the current coroutine resumes immediatly in the calling thread of execution.
-		In either way, after resuming, *this is returned in a non empty form and guaranteed that its status is not result_status::idle.
-		throws concurrencpp::errors::empty_result if *this is empty.		
+			if force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
+		In either way, after resuming, *this is returned in a non-empty form and guaranteed that its status is not result_status::idle.
+		Throws concurrencpp::errors::empty_result if *this is empty.		
 		If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.					
 	*/
 	auto resolve_via(
@@ -364,7 +363,7 @@ concurrencpp will start the function suspended and immediately re-schedule it to
 `concurrencpp::executor_tag` is a dummy placeholder to tell the concurrencpp runtime that this function is not a regular function, it needs to start running inside the given executor.
 Applications can then consume the result of the parallel coroutine by using the returned result object. 
 
-***Parallel coroutine example : parallel Fibonacci:*** 
+***Parallel Fibonacci example:*** 
 ```cpp
 #include "concurrencpp.h"
 #include <iostream>
@@ -406,12 +405,12 @@ We start launching each Fibonacci step in it's own parallel coroutine. the first
 Every recursive step invokes a new parallel coroutine that runs in parallel. the result is returned to the parent task and is acquired by using `co_await`.   
 When we deem the input to be small enough to be calculated synchronously (when `curr <= 10`), we stop executing each recursive step in its own task and just solve the algorithm synchronously. 
 
-**Creating and scheduling coroutines**
+***Creating and scheduling coroutines:***
 
 There are few ways to create and schedule coroutines in concurrencpp
 
 -  By calling any of `executor::post`, `executor::submit`, `executor::bulk_post` or `executor::bulk_submit`. 
-In this case the application provides a callable and depending Aon the selected method, might return a result object to the caller. The callable is then turned into a coroutine and scheduled to run in the executor.
+In this case the application provides a callable and depending on the selected method, might return a result object to the caller. The callable is then turned into a coroutine and scheduled to run in the executor.
 
 -  By using a parallel coroutine.
 
@@ -435,11 +434,7 @@ Timers have four properties that describe them:
 1. due time - from the time of creation, the interval in milliseconds in which the timer will be scheduled to run for the first time 
 1. frequency - from the time the timer callable was scheduled for the first time, the interval in milliseconds the callable will be schedule to run periodically, until the timer is destructed or cancelled.
 
-There are two more flavors of timers in concurrencpp: oneshot timers and delay objects. 
-
-*  A oneshot timer is a one-time timer with only a due time - after it schedules its callable to run once it never reschedule it to run again.  
-
-* A delay object is a result object that becomes ready when its due time is reached. Applications can co_await on this result object for a non-blocking way to delay the execution of a coroutine. 
+`timer` and `timer_queue` API:
 
 ```cpp   
 class timer_queue {
@@ -562,6 +557,84 @@ class timer {
 };
 ```
 
+In the following example we will see how to create a regular timer  by using the timer queue. The timer fires its callable after 1.5 seconds, then fires its callable every 2 seconds. The given callable runs in the threadpool executor.
+
+***Regular timer example:***
+```cpp
+#include "concurrencpp.h"
+
+#include <iostream>
+
+int main() {
+	concurrencpp::runtime runtime;
+	std::atomic_size_t counter = 0;
+	concurrencpp::timer timer = runtime.timer_queue()->make_timer(
+		1'500,
+		2'000,
+		runtime.thread_pool_executor(),
+		[&] {
+			const auto c = counter.fetch_add(1);
+			std::cout << "timer was invoked for the " << c << "th time" << std::endl;
+		});
+
+	std::this_thread::sleep_for(std::chrono::seconds(12));
+	return 0;
+}
+```
+There are two more flavors of timers in concurrencpp: **oneshot timers** and **delay objects**. 
+
+*  A oneshot timer is a one-time timer with only a due time - after it schedules its callable to run once it never reschedules it to run again.  
+
+* A delay object is a result object that becomes ready when its due time is reached. Applications can `co_await` this result object to delay the current task in a non-blocking way. The current task is resumed in the executor that was passed to `make_delay_object`. 
+
+***Oneshot timer example:***
+```cpp
+#include "concurrencpp.h"
+
+#include <iostream>
+
+int main() {
+	concurrencpp::runtime runtime;
+	concurrencpp::timer timer = runtime.timer_queue()->make_one_shot_timer(
+		3'000,
+		runtime.thread_executor(),
+		[&]{
+			std::cout << "hello and goodbye" << std::endl;
+		});
+
+	std::this_thread::sleep_for(std::chrono::seconds(4));
+	return 0;
+}
+```
+
+***Delay object example:***
+```cpp
+#include "concurrencpp.h"
+
+#include <iostream>
+
+concurrencpp::null_result delayed_task(
+	std::shared_ptr<concurrencpp::timer_queue> tq,
+	std::shared_ptr<concurrencpp::thread_pool_executor> ex) {
+	size_t counter = 0;
+
+	while(true) {
+		std::cout << "task was invoked " << counter << " times." << std::endl;
+		counter++;
+
+		co_await tq->make_delay_object(1'500, ex);
+	}
+}
+
+int main() {
+	concurrencpp::runtime runtime;
+	delayed_task(runtime.timer_queue(), runtime.thread_pool_executor());
+
+	std::this_thread::sleep_for(std::chrono::seconds(10));
+	return 0;
+}
+```
+
 **The runtime object**
 
 The concurrencpp runtime object is the glue that sticks all the components above to a complete and cohesive mechanism of managing asynchronous actions. 
@@ -637,3 +710,129 @@ class runtime {
 	static std::tuple<unsigned int, unsigned int, unsigned int> version() noexcept;
 };
 ```
+***Example: using a user-defined executor.***
+
+```cpp
+#include "concurrencpp.h"
+
+#include <iostream>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+class logging_executor : public concurrencpp::executor {
+
+private:
+	mutable std::mutex _lock;
+	std::queue<std::experimental::coroutine_handle<>> _queue;
+	std::condition_variable _condition;
+	bool _shutdown_requested;
+	std::thread _thread;
+	const std::string _prefix;
+
+	void work_loop() {
+		while(true) {
+			std::unique_lock<std::mutex> lock(_lock);
+			if (_shutdown_requested) {
+				return;
+			}
+
+			if (!_queue.empty()) {
+				auto task = _queue.front();
+				_queue.pop();
+				lock.unlock();
+				std::cout << _prefix << " A task is being executed" << std::endl;
+				task();
+				continue;
+			}
+
+			_condition.wait(lock, [this]{
+				return !_queue.empty() || _shutdown_requested;
+			});
+		}
+	}
+
+public:
+	logging_executor(std::string_view prefix) :
+		executor("logging_executor"),
+		_shutdown_requested(false),
+		_prefix(prefix){
+		_thread = std::thread([this] {
+			work_loop();
+		});
+	}
+
+	void enqueue(std::experimental::coroutine_handle<> task) override {
+		std::cout << _prefix << " A task is being enqueued!" << std::endl;
+
+		std::unique_lock<std::mutex> lock(_lock);
+		if (_shutdown_requested) {
+			throw concurrencpp::errors::executor_shutdown("logging executor - executor was shutdown.");
+		}
+
+		_queue.emplace(task);
+		_condition.notify_one();
+	}
+
+	void enqueue(std::span<std::experimental::coroutine_handle<>> tasks) override {
+		std::cout << _prefix << tasks.size() << " tasks are being enqueued!" << std::endl;
+
+		std::unique_lock<std::mutex> lock(_lock);
+		if (_shutdown_requested) {
+			throw concurrencpp::errors::executor_shutdown("logging executor - executor was shutdown.");
+		}
+
+		for (auto task : tasks) {
+			_queue.emplace(task);
+		}
+
+		_condition.notify_one();
+	}
+
+	int max_concurrency_level() const noexcept override {
+		return 1;
+	}
+
+	bool shutdown_requested() const noexcept override {
+		std::unique_lock<std::mutex> lock(_lock);
+		return _shutdown_requested;
+	}
+
+	void shutdown() noexcept override {
+		std::cout << _prefix << " shutdown requested" << std::endl;
+
+		std::unique_lock<std::mutex> lock(_lock);
+		if(_shutdown_requested) return; //nothing to do.
+		_shutdown_requested = true;
+		lock.unlock();
+
+		_condition.notify_one();
+		_thread.join();
+	}
+};
+
+int main() {
+	concurrencpp::runtime runtime;
+	auto logging_ex = runtime.make_executor<logging_executor>("Session #1234");
+
+	for (size_t i = 0; i < 10; i++) {
+		logging_ex->post([] {
+			std::cout << "hello world" << std::endl;
+		});
+	}
+
+	std::getchar();
+	return 0;
+}
+```
+
+In this example, we created an executor which logs actions like enqeueuing a task or executing it. We implement the `executor` interface, and we request the runtime to create, store and monitor an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors. Do note that in the case of extending `concurrencpp::executor` we need to take care of shutting down the executor ourselves and keep track of its state for future calls to `shutdown`,`shutdown_requested` and `enqueue`.
+
+***Support***
+
+concurrencpp supported platforms:
+
+**Linux**, **machOS** (requires **Clang-9** and above).
+
+ **Windows** (requires **Visual Studio 2019** and above).
