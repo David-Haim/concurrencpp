@@ -173,6 +173,7 @@
     <ClInclude Include="src\platform_defs.h" />
     <ClInclude Include="src\results\constants.h" />
     <ClInclude Include="src\results\executor_exception.h" />
+    <ClInclude Include="src\results\make_result.h" />
     <ClInclude Include="src\results\promises.h" />
     <ClInclude Include="src\results\result_core.h" />
     <ClInclude Include="src\results\result_fwd_declerations.h" />
