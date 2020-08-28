@@ -217,25 +217,6 @@ namespace concurrencpp {
 			return result<type>(m_state);
 		}
 	};
-
-	template<class type, class ... argument_types>
-	result<type> make_ready_result(argument_types&& ... arguments) {
-		result_promise<type> promise;
-		promise.set_result(std::forward<argument_types>(arguments)...);
-		return promise.get_result();
-	}
-
-	template<class type>
-	result<type> make_exceptional_result(std::exception_ptr exception_ptr) {
-		result_promise<type> promise;
-		promise.set_exception(exception_ptr);
-		return promise.get_result();
-	}
-
-	template<class type, class exception_type>
-	result<type> make_exceptional_result(exception_type exception) {
-		return make_exceptional_result(std::make_exception_ptr(exception));
-	}
 }
 
 #endif

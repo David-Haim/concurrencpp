@@ -17,9 +17,6 @@
     <ClCompile Include="tests\result_tests\result_resolve_tests.cpp">
       <Filter>tests\result_tests</Filter>
     </ClCompile>
-    <ClCompile Include="tests\result_tests\coroutine_adapters_tests.cpp">
-      <Filter>tests\result_tests</Filter>
-    </ClCompile>
     <ClCompile Include="tests\result_tests\result_await_tests.cpp">
       <Filter>tests\result_tests</Filter>
     </ClCompile>
@@ -50,6 +47,15 @@
     <ClCompile Include="tests\runtime_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
+    <ClCompile Include="tests\result_tests\make_result_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\coroutine_adapters_tests.cpp">
+      <Filter>tests\coroutine_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\coroutine_tests\parallel_coroutines_tests.cpp">
+      <Filter>tests\coroutine_tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="tester">
@@ -66,6 +72,9 @@
     </Filter>
     <Filter Include="tests\executor_tests">
       <UniqueIdentifier>{f8cb7b88-65fd-4965-a4a3-bd6c2c47d345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\coroutine_tests">
+      <UniqueIdentifier>{6293e16d-7a10-4fea-adcc-aea1122b86c7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
