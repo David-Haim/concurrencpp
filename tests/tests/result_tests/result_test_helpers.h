@@ -26,6 +26,12 @@ namespace concurrencpp::tests {
 	struct result_factory<int> {
 		static int get() { return 123456789; }
 
+		static std::vector<int> get_many(size_t count) {
+			std::vector<int> res(count);
+			std::iota(res.begin(), res.end(), 0);
+			return res;
+		}
+
 		static int throw_ex() {
 			throw std::underflow_error("");
 			return get();
@@ -35,6 +41,17 @@ namespace concurrencpp::tests {
 	template<>
 	struct result_factory<std::string> {
 		static std::string get() { return "abcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()"; }
+
+		static std::vector<std::string> get_many(size_t count) {
+			std::vector<std::string> res;
+			res.reserve(count);
+
+			for(size_t i = 0 ; i< count; i++) {
+				res.emplace_back(std::to_string(i));
+			}
+
+			return res;
+		}
 
 		static std::string throw_ex() {
 			throw std::underflow_error("");
@@ -56,6 +73,17 @@ namespace concurrencpp::tests {
 			return i;
 		}
 
+		static std::vector<std::reference_wrapper<int>> get_many(size_t count) {
+			static std::vector<int> s_res(64);
+			std::vector<std::reference_wrapper<int>> res;
+			res.reserve(count);
+			for (size_t i = 0; i < count; i++) {
+				res.emplace_back(s_res[i % 64]);
+			}
+
+			return res;
+		}
+
 		static int& throw_ex() {
 			throw std::underflow_error("");
 			return get();
@@ -69,6 +97,17 @@ namespace concurrencpp::tests {
 			return str;
 		}
 
+		static std::vector<std::reference_wrapper<std::string>> get_many(size_t count) {
+			static std::vector<std::string> s_res(64);
+			std::vector<std::reference_wrapper<std::string>> res;
+			res.reserve(count);
+			for (size_t i = 0; i < count; i++) {
+				res.emplace_back(s_res[i % 64]);
+			}
+
+			return res;
+		}
+
 		static std::string& throw_ex() {
 			throw std::underflow_error("");
 			return get();
@@ -79,18 +118,50 @@ namespace concurrencpp::tests {
 namespace concurrencpp::tests {
 
 	template<class type>
-	void test_ready_result_result(::concurrencpp::result<type> result) {
+	void test_ready_result_result(::concurrencpp::result<type> result, const type& o) {
 		assert_true(static_cast<bool>(result));
 		assert_equal(result.status(), concurrencpp::result_status::value);
 
-		if constexpr (std::is_reference_v<type>) {
-			assert_equal(&result.get(), &result_factory<type>::get());
+		try
+		{
+			assert_equal(result.get(), o);
 		}
-		else if constexpr (!std::is_void_v<type>) {
-			assert_equal(result.get(), result_factory<type>::get());
+		catch (...) {
+			assert_true(false);
 		}
-		else {
+	}
+
+	template<class type>
+	void test_ready_result_result(
+		::concurrencpp::result<type> result,
+		std::reference_wrapper<typename std::remove_reference_t<type>> ref) {
+		assert_true(static_cast<bool>(result));
+		assert_equal(result.status(), concurrencpp::result_status::value);
+
+		try
+		{
+			assert_equal(&result.get(), &ref.get());
+		}
+		catch (...) {
+			assert_true(false);
+		}
+	}
+
+	template<class type>
+	void test_ready_result_result(::concurrencpp::result<type> result) {
+		test_ready_result_result<type>(std::move(result), result_factory<type>::get());
+	}
+
+	template<>
+	inline void test_ready_result_result(::concurrencpp::result<void> result) {
+		assert_true(static_cast<bool>(result));
+		assert_equal(result.status(), concurrencpp::result_status::value);
+		try
+		{
 			result.get(); //just make sure no exception is thrown.
+		}
+		catch (...){
+			assert_true(false);
 		}
 	}
 

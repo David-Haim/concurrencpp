@@ -163,12 +163,14 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tester\tester.cpp" />
     <ClCompile Include="tests\all_tests.cpp" />
+    <ClCompile Include="tests\coroutine_tests\parallel_coroutines_tests.cpp" />
     <ClCompile Include="tests\executor_tests\thread_pool_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\inline_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\manual_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\thread_executor_tests.cpp" />
     <ClCompile Include="tests\executor_tests\worker_thread_executor_tests.cpp" />
     <ClCompile Include="tests\result_tests\coroutine_adapters_tests.cpp" />
+    <ClCompile Include="tests\result_tests\make_result_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_await_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_promise_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_resolve_tests.cpp" />

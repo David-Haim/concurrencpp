@@ -34,7 +34,10 @@ add_executable(
 	tests/result_tests/result_await_tests.cpp
 	tests/result_tests/result_resolve_tests.cpp
 	tests/result_tests/result_promise_tests.cpp
-	tests/result_tests/coroutine_adapters_tests.cpp
+	tests/result_tests/make_result_tests.cpp	
+	
+	tests/coroutine_tests/coroutine_adapters_tests.cpp
+	tests/coroutine_tests/parallel_coroutines_tests.cpp
 )
 find_library(LIBRT rt)                                                                                                                                                                                                                                                                                        
 	if(LIBRT)

@@ -11,8 +11,10 @@ void concurrencpp::tests::test_all() {
 	test_result_resolve_all();
 	test_result_await_all();
 	test_result_promise();
+	test_make_result();
 
 	test_co_await();
+	test_parallel_coroutine();
 
 	test_timer();
 
