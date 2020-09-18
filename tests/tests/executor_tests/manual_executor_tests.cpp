@@ -167,13 +167,13 @@ void concurrencpp::tests::test_manual_executor_post_foreign() {
 
 void concurrencpp::tests::test_manual_executor_post_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr  size_t task_count = 1'024;
 	auto executor = std::make_shared<manual_executor>();
 
 	assert_equal(executor->size(), size_t(0));
 	assert_true(executor->empty());
 
-	executor->post([executor, &observer, task_count] {
+	executor->post([executor, &observer] {
 		for (size_t i = 0; i < task_count; i++) {
 			executor->post(observer.get_testing_stub());
 			assert_equal(executor->size(), 1 + i);
@@ -231,13 +231,13 @@ void concurrencpp::tests::test_manual_executor_submit_foreign() {
 
 void concurrencpp::tests::test_manual_executor_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr  size_t task_count = 1'024;
 	auto executor = std::make_shared<concurrencpp::manual_executor>();
 
 	assert_equal(executor->size(), size_t(0));
 	assert_true(executor->empty());
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<result<size_t>> results;
 		results.resize(task_count);
 		for (size_t i = 0; i < task_count; i++) {
@@ -299,11 +299,11 @@ void concurrencpp::tests::test_manual_executor_bulk_post_foreign() {
 
 void concurrencpp::tests::test_manual_executor_bulk_post_inline() {
 	object_observer observer;
-	const size_t task_count = 1'000;
+	constexpr size_t task_count = 1'000;
 	auto executor = std::make_shared<manual_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, task_count, &observer]() mutable  {
+	executor->post([executor, &observer]() mutable  {
 		std::vector<testing_stub> stubs;
 		stubs.reserve(task_count);
 
@@ -364,11 +364,11 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_foreign() {
 
 void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr size_t task_count = 1'024;
 	auto executor = std::make_shared<manual_executor>();
 	executor_shutdowner shutdown(executor);
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<value_testing_stub> stubs;
 		stubs.reserve(task_count);
 

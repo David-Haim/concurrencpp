@@ -14,6 +14,8 @@
 
 #include <cassert>
 
+#include "../errors.h"
+
 namespace concurrencpp::details {
 	struct result_core_per_thread_data {
 		executor* executor = nullptr;
@@ -37,9 +39,24 @@ namespace concurrencpp::details {
 
 		static std::shared_ptr<wait_context> make();
 	};
-}
 
-namespace concurrencpp::details {
+	struct when_all_state_base {
+		std::atomic_size_t m_counter;
+
+		virtual ~when_all_state_base() noexcept = default;
+		virtual void on_result_ready() noexcept = 0;
+	};
+
+	struct when_any_state_base {
+		std::atomic_bool m_fulfilled = false;
+		std::recursive_mutex m_lock;
+
+		virtual ~when_any_state_base() noexcept = default;
+		virtual void on_result_ready(size_t) noexcept = 0;
+	};
+
+	using when_any_ctx = std::pair<std::shared_ptr<when_any_state_base>, size_t>;
+
 	template<class type>
 	class async_result {
 
@@ -96,7 +113,7 @@ namespace concurrencpp::details {
 
 	public:
 		void build() noexcept {
-			m_result.template emplace<1>();
+			m_result.emplace<1>();
 		}
 
 		void get() {
@@ -146,7 +163,9 @@ namespace concurrencpp::details {
 			std::monostate,
 			std::experimental::coroutine_handle<>,
 			await_context,
-			std::shared_ptr<wait_context>>;
+			std::shared_ptr<wait_context>,
+			std::weak_ptr<when_all_state_base>,
+			when_any_ctx>;
 
 		enum class pc_state {
 			idle,
@@ -167,7 +186,7 @@ namespace concurrencpp::details {
 		}
 
 		void clear_consumer() noexcept {
-			m_consumer.template emplace<0>();
+			m_consumer.emplace<0>();
 		}
 
 		static void schedule_coroutine(executor& executor, std::experimental::coroutine_handle<> handle);
@@ -182,6 +201,12 @@ namespace concurrencpp::details {
 			std::shared_ptr<concurrencpp::executor> executor,
 			std::experimental::coroutine_handle<> caller_handle,
 			bool force_rescheduling);
+
+		void when_all(std::weak_ptr<when_all_state_base> when_all_state) noexcept;
+
+		when_any_status when_any(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept;
+
+		void try_rewind_consumer() noexcept;
 
 		static bool initial_reschedule(std::experimental::coroutine_handle<> handle);
 	};
@@ -275,7 +300,7 @@ namespace concurrencpp::details {
 			assert_consumer_idle();
 
 			auto wait_ctx = wait_context::make();
-			m_consumer.template emplace<3>(wait_ctx);
+			m_consumer.emplace<3>(wait_ctx);
 
 			auto expected_idle_state = pc_state::idle;
 			const auto idle_0 = this->m_pc_state.compare_exchange_strong(
@@ -314,7 +339,7 @@ namespace concurrencpp::details {
 				return get_result_status();
 			}
 
-			m_consumer.template emplace<0>();
+			m_consumer.emplace<0>();
 			return result_status::idle;
 		}
 
@@ -335,7 +360,12 @@ namespace concurrencpp::details {
 		}
 
 		void publish_result() noexcept {
-			const auto state_before = this->m_pc_state.exchange(pc_state::producer, std::memory_order_acq_rel);
+			const auto state_before = this->m_pc_state.exchange(
+				pc_state::producer,
+				std::memory_order_acq_rel);
+
+			assert(state_before != pc_state::producer);
+
 			if (state_before == pc_state::idle) {
 				return;
 			}
@@ -362,6 +392,23 @@ namespace concurrencpp::details {
 			case 3: {
 				const auto wait_ctx = std::move(std::get<3>(this->m_consumer));
 				wait_ctx->notify();
+				return;
+			}
+
+			case 4: {
+				auto when_all_state_weak = std::move(std::get<4>(this->m_consumer));
+				auto when_all_state = when_all_state_weak.lock();
+				if (static_cast<bool>(when_all_state)) {
+					when_all_state->on_result_ready();
+				}
+				return;
+			}
+
+			case 5: {
+				auto when_any_ctx = std::move(std::get<5>(this->m_consumer));
+				auto& when_any_state = when_any_ctx.first;
+				assert(static_cast<bool>(when_any_state));
+				when_any_state->on_result_ready(when_any_ctx.second);
 				return;
 			}
 

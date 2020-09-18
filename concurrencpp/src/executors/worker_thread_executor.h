@@ -21,7 +21,6 @@ namespace concurrencpp {
 		bool m_abort;
 		std::atomic_bool m_atomic_abort;
 
-		void join();
 		void destroy_tasks() noexcept;
 
 		bool drain_queue_impl();

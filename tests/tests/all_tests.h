@@ -14,6 +14,8 @@ namespace concurrencpp::tests {
 	void test_result_await_all();
 	void test_result_await();
 	void test_make_result();
+	void test_when_all();
+	void test_when_any();
 
 	void test_co_await();
 	void test_parallel_coroutine();

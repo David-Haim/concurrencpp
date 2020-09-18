@@ -9,6 +9,7 @@
 #include "../src/runtime/runtime.h"
 #include "../src/results/result.h"
 #include "../src/results/make_result.h"
+#include "../src/results/when_result.h"
 #include "../src/executors/executor_all.h"
 
 #endif

@@ -27,6 +27,11 @@ void thread_worker::start(
 	});
 }
 
+thread_executor::thread_executor() :
+	executor(details::consts::k_thread_executor_name),
+	m_abort(false),
+	m_atomic_abort(false) {}
+
 thread_executor::~thread_executor() noexcept {
 	assert(m_workers.empty());
 	assert(m_last_retired.empty());
@@ -38,20 +43,20 @@ void thread_executor::enqueue_impl(std::experimental::coroutine_handle<> task) {
 }
 
 void thread_executor::enqueue(std::experimental::coroutine_handle<> task) {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
 		details::throw_executor_shutdown_exception(name);
 	}
 
-	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	enqueue_impl(task);
 }
 
 void thread_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
 		details::throw_executor_shutdown_exception(name);
 	}
 
-	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	for (auto task : tasks) {
 		enqueue_impl(task);
 	}
@@ -66,9 +71,13 @@ bool thread_executor::shutdown_requested() const noexcept {
 }
 
 void thread_executor::shutdown() noexcept {
-	m_atomic_abort.store(true, std::memory_order_relaxed);
+	const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+	if (abort) {
+		return; //shutdown had been called before.
+	}
 
 	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	m_abort = true;
 	m_condition.wait(lock, [this] { return m_workers.empty(); });
 	m_last_retired.clear();
 }

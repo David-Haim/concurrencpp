@@ -64,6 +64,10 @@ namespace concurrencpp::tests {
 		static void get() {}
 
 		static void throw_ex() { throw std::underflow_error(""); }
+
+		static std::vector<std::nullptr_t> get_many(size_t count) {
+			return std::vector<std::nullptr_t>{ count };
+		}
 	};
 
 	template<>
@@ -229,19 +233,20 @@ namespace concurrencpp::tests {
 		}
 
 		void enqueue(std::experimental::coroutine_handle<> task) override {
-			m_execution_thread = std::thread(std::move(task));
+			assert(!m_execution_thread.joinable());
+			m_execution_thread = std::thread(task);
 		}
 
 		void enqueue(std::span<std::experimental::coroutine_handle<>> span) override {
-			for (auto task : span) {
-				enqueue(task);
-			}
+			(void)span;
+			std::abort(); //not neeeded.
 		}
 
 		template<class type>
 		void set_rp_value(result_promise<type> rp) {
+			assert(!m_setting_thread.joinable());
 			m_setting_thread = std::thread([rp = std::move(rp)]() mutable {
-				std::this_thread::sleep_for(std::chrono::seconds(2));
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 				rp.set_from_function(result_factory<type>::get);
 			});
 		}
@@ -250,8 +255,10 @@ namespace concurrencpp::tests {
 		size_t set_rp_err(result_promise<type> rp) {
 			random randomizer;
 			const auto id = static_cast<size_t>(randomizer());
+
+			assert(!m_setting_thread.joinable());
 			m_setting_thread = std::thread([id, rp = std::move(rp)]() mutable {
-				std::this_thread::sleep_for(std::chrono::seconds(2));
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 				rp.set_exception(std::make_exception_ptr(costume_exception(id)));
 			});
 			return id;

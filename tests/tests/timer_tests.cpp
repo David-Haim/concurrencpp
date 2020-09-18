@@ -285,12 +285,12 @@ void concurrencpp::tests::test_many_timers() {
 	std::list<timer_tester> testers;
 
 	const size_t due_time_min = 100;
-	const size_t due_time_max = 5'000;
+	const size_t due_time_max = 2'000;
 	const size_t frequency_min = 100;
-	const size_t frequency_max = 5'000;
+	const size_t frequency_max = 3'000;
 	const size_t timer_count = 1'024 * 4;
 
-	auto round_down = [](auto num) {
+	auto round_down = [](size_t num) {
 		return num - num % 50;
 	};
 
@@ -298,13 +298,12 @@ void concurrencpp::tests::test_many_timers() {
 		const auto due_time = round_down(randomizer(due_time_min, due_time_max));
 		const auto frequency = round_down(randomizer(frequency_min, frequency_max));
 
-		testers.emplace_front(
-			static_cast<size_t>(due_time),
-			static_cast<size_t>(frequency),
-			timer_queue).start_timer_test();
+		testers
+			.emplace_front(due_time, frequency, timer_queue)
+			.start_timer_test();
 	}
 
-	std::this_thread::sleep_for(std::chrono::minutes(10));
+	std::this_thread::sleep_for(std::chrono::minutes(5));
 
 	for (auto& tester : testers) {
 		tester.test();

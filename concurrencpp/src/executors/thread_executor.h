@@ -44,6 +44,7 @@ namespace concurrencpp {
 		std::list<details::thread_worker> m_workers;
 		std::condition_variable m_condition;
 		std::list<details::thread_worker> m_last_retired;
+		bool m_abort;
 		std::atomic_bool m_atomic_abort;
 
 		void enqueue_impl(std::experimental::coroutine_handle<> task);
@@ -51,10 +52,7 @@ namespace concurrencpp {
 		void retire_worker(std::list<details::thread_worker>::iterator it);
 
 	public:
-		thread_executor() :
-			executor(details::consts::k_thread_executor_name),
-			m_atomic_abort(false) {}
-
+		thread_executor();
 		~thread_executor() noexcept;
 
 		void enqueue(std::experimental::coroutine_handle<> task) override;

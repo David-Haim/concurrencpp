@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18.0)
+cmake_minimum_required(VERSION 3.17.0)
 project(tests)
 
 set(CMAKE_CXX_COMPILER clang++)
@@ -19,7 +19,7 @@ add_executable(
 	helpers/object_observer.cpp
 
 	tester/tester.cpp
-	
+
 	tests/all_tests.cpp
 	tests/timer_tests.cpp
 	tests/runtime_tests.cpp
@@ -34,12 +34,14 @@ add_executable(
 	tests/result_tests/result_await_tests.cpp
 	tests/result_tests/result_resolve_tests.cpp
 	tests/result_tests/result_promise_tests.cpp
-	tests/result_tests/make_result_tests.cpp	
-	
+	tests/result_tests/make_result_tests.cpp
+	tests/result_tests/when_all_tests.cpp
+	tests/result_tests/when_any_tests.cpp
+
 	tests/coroutine_tests/coroutine_adapters_tests.cpp
 	tests/coroutine_tests/parallel_coroutines_tests.cpp
 )
-find_library(LIBRT rt)                                                                                                                                                                                                                                                                                        
+find_library(LIBRT rt)
 	if(LIBRT)
 		target_link_libraries(tests ${LIBRT})
 	endif()

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.17.0)
 project(async_file_processing)
 
 set(CMAKE_CXX_COMPILER clang++)

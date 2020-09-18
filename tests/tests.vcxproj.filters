@@ -56,6 +56,12 @@
     <ClCompile Include="tests\coroutine_tests\parallel_coroutines_tests.cpp">
       <Filter>tests\coroutine_tests</Filter>
     </ClCompile>
+    <ClCompile Include="tests\result_tests\when_all_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\result_tests\when_any_tests.cpp">
+      <Filter>tests\result_tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="tester">

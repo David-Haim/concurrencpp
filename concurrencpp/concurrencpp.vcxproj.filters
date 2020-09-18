@@ -105,6 +105,9 @@
     <ClInclude Include="src\results\make_result.h">
       <Filter>src\results</Filter>
     </ClInclude>
+    <ClInclude Include="src\results\when_result.h">
+      <Filter>src\results</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\timers\timer.cpp">

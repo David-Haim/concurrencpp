@@ -40,6 +40,13 @@ namespace concurrencpp::details {
 	using await_context = std::pair<std::shared_ptr<executor>, std::experimental::coroutine_handle<>>;
 
 	struct executor_bulk_tag {};
+
+	class when_result_helper;
+
+	enum class when_any_status {
+		set,
+		result_ready
+	};
 }
 
 #endif

@@ -21,16 +21,6 @@ worker_thread_executor::~worker_thread_executor() noexcept {
 	assert(!m_thread.joinable());
 }
 
-void worker_thread_executor::join() {
-	{
-		std::unique_lock<decltype(m_lock)> lock(m_lock);
-		m_abort = true;
-	}
-
-	m_condition.notify_one();
-	m_thread.join();
-}
-
 void worker_thread_executor::destroy_tasks() noexcept {
 	std::unique_lock<std::mutex> lock(m_lock);
 	for (auto task : m_private_queue) {
@@ -62,9 +52,6 @@ bool worker_thread_executor::drain_queue_impl() {
 }
 
 bool worker_thread_executor::drain_queue() {
-	assert(m_private_queue.empty());
-	m_private_queue = {};
-
 	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	m_condition.wait(lock, [this] {
 		return !m_public_queue.empty() || m_abort;
@@ -74,7 +61,8 @@ bool worker_thread_executor::drain_queue() {
 		return false;
 	}
 
-	m_private_queue = std::move(m_public_queue);
+	assert(m_private_queue.empty());
+	std::swap(m_private_queue, m_public_queue); //reuse underlying allocations.
 	lock.unlock();
 
 	return drain_queue_impl();
@@ -91,45 +79,41 @@ void worker_thread_executor::work_loop() noexcept {
 }
 
 void worker_thread_executor::enqueue_local(std::experimental::coroutine_handle<> task) {
-	if (!m_private_atomic_abort.load(std::memory_order_relaxed)) {
-		m_private_queue.emplace_back(task);
-		return;
+	if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
+		details::throw_executor_shutdown_exception(name);
 	}
 
-	details::throw_executor_shutdown_exception(name);
+	m_private_queue.emplace_back(task);
 }
 
 void worker_thread_executor::enqueue_local(std::span<std::experimental::coroutine_handle<>> tasks) {
-	if (!m_private_atomic_abort.load(std::memory_order_relaxed)) {
-		m_private_queue.insert(m_private_queue.end(), tasks.begin(), tasks.end());
-		return;
+	if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
+		details::throw_executor_shutdown_exception(name);
 	}
 
-	details::throw_executor_shutdown_exception(name);
+	m_private_queue.insert(m_private_queue.end(), tasks.begin(), tasks.end());
 }
 
 void worker_thread_executor::enqueue_foreign(std::experimental::coroutine_handle<> task) {
-	{
-		std::unique_lock<decltype(m_lock)> lock(m_lock);
-		if (m_abort) {
-			details::throw_executor_shutdown_exception(name);
-		}
-
-		m_public_queue.emplace_back(task);
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
+		details::throw_executor_shutdown_exception(name);
 	}
+
+	m_public_queue.emplace_back(task);
+	lock.unlock();
 
 	m_condition.notify_one();
 }
 
 void worker_thread_executor::enqueue_foreign(std::span<std::experimental::coroutine_handle<>> tasks) {
-	{
-		std::unique_lock<decltype(m_lock)> lock(m_lock);
-		if (m_abort) {
-			details::throw_executor_shutdown_exception(name);
-		}
-
-		m_public_queue.insert(m_public_queue.end(), tasks.begin(), tasks.end());
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
+		details::throw_executor_shutdown_exception(name);
 	}
+
+	m_public_queue.insert(m_public_queue.end(), tasks.begin(), tasks.end());
+	lock.unlock();
 
 	m_condition.notify_one();
 }
@@ -161,13 +145,19 @@ bool concurrencpp::worker_thread_executor::shutdown_requested() const noexcept {
 void worker_thread_executor::shutdown() noexcept {
 	const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
 	if (abort) {
-		//shutdown had been called before.
-		return;
+		return; //shutdown had been called before.
 	}
 
 	assert(m_private_atomic_abort.load(std::memory_order_relaxed) == false);
 	m_private_atomic_abort.store(true, std::memory_order_relaxed);
 
-	join();
+	{
+		std::unique_lock<decltype(m_lock)> lock(m_lock);
+		m_abort = true;
+	}
+
+	m_condition.notify_one();
+	m_thread.join();
+
 	destroy_tasks();
 }

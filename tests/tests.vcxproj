@@ -175,6 +175,8 @@
     <ClCompile Include="tests\result_tests\result_promise_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_resolve_tests.cpp" />
     <ClCompile Include="tests\result_tests\result_tests.cpp" />
+    <ClCompile Include="tests\result_tests\when_all_tests.cpp" />
+    <ClCompile Include="tests\result_tests\when_any_tests.cpp" />
     <ClCompile Include="tests\runtime_tests.cpp" />
     <ClCompile Include="tests\timer_tests.cpp" />
   </ItemGroup>
