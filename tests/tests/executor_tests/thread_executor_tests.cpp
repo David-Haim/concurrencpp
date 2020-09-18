@@ -79,7 +79,7 @@ void concurrencpp::tests::test_thread_executor_shutdown_join() {
 	const size_t task_count = 16;
 
 	for (size_t i = 0; i < task_count; i++) {
-		executor->post(observer.get_testing_stub(std::chrono::milliseconds(250)));
+		executor->post(observer.get_testing_stub(std::chrono::milliseconds(100)));
 	}
 
 	executor->shutdown();
@@ -90,15 +90,7 @@ void concurrencpp::tests::test_thread_executor_shutdown_join() {
 }
 
 void concurrencpp::tests::test_thread_executor_shutdown_more_than_once() {
-	const size_t task_count = 64;
 	auto executor = std::make_shared<thread_executor>();
-
-	for (size_t i = 0; i < task_count; i++) {
-		executor->post([] {
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		});
-	}
-
 	for (size_t i = 0; i < 4; i++) {
 		executor->shutdown();
 	}
@@ -136,11 +128,11 @@ void concurrencpp::tests::test_thread_executor_post_foreign() {
 
 void concurrencpp::tests::test_thread_executor_post_inline() {
 	object_observer observer;
-	const size_t task_count = 128;
+	constexpr  size_t task_count = 128;
 	auto executor = std::make_shared<thread_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, &observer, task_count] {
+	executor->post([executor, &observer] {
 		for (size_t i = 0; i < task_count; i++) {
 			executor->post(observer.get_testing_stub());
 		}
@@ -182,11 +174,11 @@ void concurrencpp::tests::test_thread_executor_submit_foreign() {
 
 void concurrencpp::tests::test_thread_executor_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 128;
+	constexpr  size_t task_count = 128;
 	auto executor = std::make_shared<thread_executor>();
 	executor_shutdowner shutdown(executor);
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<result<size_t>> results;
 		results.resize(task_count);
 		for (size_t i = 0; i < task_count; i++) {
@@ -235,11 +227,11 @@ void concurrencpp::tests::test_thread_executor_bulk_post_foreign() {
 
 void concurrencpp::tests::test_thread_executor_bulk_post_inline() {
 	object_observer observer;
-	const size_t task_count = 128;
+	constexpr  size_t task_count = 128;
 	auto executor = std::make_shared<thread_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, &observer, task_count]() mutable  {
+	executor->post([executor, &observer]() mutable  {
 		std::vector<testing_stub> stubs;
 		stubs.reserve(task_count);
 
@@ -288,11 +280,11 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_foreign() {
 
 void concurrencpp::tests::test_thread_executor_bulk_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 128;
+	constexpr  size_t task_count = 128;
 	auto executor = std::make_shared<thread_executor>();
 	executor_shutdowner shutdown(executor);
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<value_testing_stub> stubs;
 		stubs.reserve(task_count);
 

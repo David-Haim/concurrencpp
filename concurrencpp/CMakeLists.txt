@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18.0)
+cmake_minimum_required(VERSION 3.17.0)
 project(concurrencpp)
 
 set(CMAKE_CXX_COMPILER clang++)
@@ -25,7 +25,7 @@ add_library(
 	src/timers/timer.cpp
 	)
 
-find_library(LIBRT rt)                                                                                                                                                                                                                                                                                        
+find_library(LIBRT rt)
 	if(LIBRT)
 		target_link_libraries(concurrencpp ${LIBRT})
 	endif()

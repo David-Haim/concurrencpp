@@ -58,6 +58,15 @@ namespace concurrencpp::details::consts {
 
 	inline const char* k_executor_exception_error_msg =
 		"concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
+
+	inline const char* k_when_all_empty_result_error_msg =
+		"concurrencpp::when_all - one of the result objects is empty.";
+
+	inline const char* k_when_any_empty_result_error_msg =
+		"concurrencpp::when_any - one of the result objects is empty.";
+
+	inline const char* k_when_any_empty_range_error_msg =
+		"concurrencpp::when_any - given range contains no elements.";
 }
 
 #endif

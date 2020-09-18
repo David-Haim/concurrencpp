@@ -5,6 +5,7 @@ using concurrencpp::manual_executor;
 
 void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept {
 	assert(lock.owns_lock());
+	(void)lock;
 
 	for (auto task : m_tasks) {
 		task.destroy();
@@ -14,27 +15,24 @@ void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept
 }
 
 void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
 		details::throw_executor_shutdown_exception(name);
 	}
 
-	{
-		std::unique_lock<decltype(m_lock)> lock(m_lock);
-		m_tasks.emplace_back(task);
-	}
-
+	m_tasks.emplace_back(task);
+	lock.unlock();
 	m_condition.notify_all();
 }
 
 void manual_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
 		details::throw_executor_shutdown_exception(name);
 	}
 
-	{
-		std::unique_lock<decltype(m_lock)> lock(m_lock);
-		m_tasks.insert(m_tasks.end(), tasks.begin(), tasks.end());
-	}
+	m_tasks.insert(m_tasks.end(), tasks.begin(), tasks.end());
+	lock.unlock();
 
 	m_condition.notify_all();
 }
@@ -53,11 +51,11 @@ bool manual_executor::empty() const noexcept {
 }
 
 bool manual_executor::loop_once() {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
+	std::unique_lock<decltype(m_lock)> lock(m_lock);
+	if (m_abort) {
 		details::throw_executor_shutdown_exception(name);
 	}
 
-	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	if (m_tasks.empty()) {
 		return false;
 	}
@@ -71,10 +69,6 @@ bool manual_executor::loop_once() {
 }
 
 bool manual_executor::loop_once(std::chrono::milliseconds max_waiting_time) {
-	if (m_atomic_abort.load(std::memory_order_relaxed)) {
-		details::throw_executor_shutdown_exception(name);
-	}
-
 	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	m_condition.wait_for(lock, max_waiting_time, [this] {
 		return !m_tasks.empty() || m_abort;
@@ -152,8 +146,7 @@ bool manual_executor::wait_for_task(std::chrono::milliseconds max_waiting_time) 
 void manual_executor::shutdown() noexcept {
 	const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
 	if (abort) {
-		//shutdown had been called before.
-		return;
+		return; //shutdown had been called before.
 	}
 
 	{

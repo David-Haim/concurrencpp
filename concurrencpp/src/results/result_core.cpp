@@ -44,7 +44,7 @@ void result_core_base::wait() {
 	auto wait_ctx = wait_context::make();
 
 	assert_consumer_idle();
-	m_consumer.template emplace<3>(wait_ctx);
+	m_consumer.emplace<3>(wait_ctx);
 
 	auto expected_state = pc_state::idle;
 	const auto idle = m_pc_state.compare_exchange_strong(
@@ -63,8 +63,13 @@ void result_core_base::wait() {
 }
 
 bool result_core_base::await(std::experimental::coroutine_handle<> caller_handle) noexcept {
+	const auto state = m_pc_state.load(std::memory_order_acquire);
+	if (state == pc_state::producer) {
+		return false; //don't suspend
+	}
+
 	assert_consumer_idle();
-	m_consumer.template emplace<1>(caller_handle);
+	m_consumer.emplace<1>(caller_handle);
 
 	auto expected_state = pc_state::idle;
 	const auto idle = m_pc_state.compare_exchange_strong(
@@ -85,9 +90,33 @@ bool result_core_base::await_via(
 	std::experimental::coroutine_handle<> caller_handle,
 	bool force_rescheduling) {
 	assert(static_cast<bool>(executor));
+	auto handle_done_state = [this] (await_context& await_ctx, bool force_rescheduling) -> bool {
+		assert_done();
+
+		if (!force_rescheduling) {
+			clear_consumer();
+			return false; //resume caller.
+		}
+
+		try {
+			schedule_coroutine(await_ctx);
+		}
+		catch (...) {
+			clear_consumer();
+			throw;
+		}
+
+		return true;
+	};
+
+	const auto state = m_pc_state.load(std::memory_order_acquire);
+	if (state == pc_state::producer) {
+		await_context await_ctx(std::move(executor), caller_handle);
+		return handle_done_state(await_ctx, force_rescheduling);
+	}
 
 	assert_consumer_idle();
-	m_consumer.template emplace<2>(std::move(executor), caller_handle);
+	m_consumer.emplace<2>(std::move(executor), caller_handle);
 
 	auto expected_state = pc_state::idle;
 	const auto idle = m_pc_state.compare_exchange_strong(
@@ -100,22 +129,83 @@ bool result_core_base::await_via(
 	}
 
 	//the result is available
+	auto await_ctx = std::move(std::get<2>(m_consumer));
+	return handle_done_state(await_ctx, force_rescheduling);
+}
+
+void result_core_base::when_all(std::weak_ptr<when_all_state_base> when_all_state) noexcept {
+	const auto state = m_pc_state.load(std::memory_order_acquire);
+	if (state == pc_state::producer) {
+		assert(!when_all_state.expired());
+		return when_all_state.lock()->on_result_ready();
+	}
+
+	assert_consumer_idle();
+	m_consumer.emplace<4>(std::move(when_all_state));
+
+	auto expected_state = pc_state::idle;
+	const auto idle = m_pc_state.compare_exchange_strong(
+		expected_state,
+		pc_state::consumer,
+		std::memory_order_acq_rel);
+
+	if (idle) {
+		return;
+	}
+
 	assert_done();
+	auto state_ptr = std::get<4>(m_consumer).lock();
 
-	if (!force_rescheduling) {
-		clear_consumer();
-		return false; //resume caller.
+	if (static_cast<bool>(state_ptr)) {
+		state_ptr->on_result_ready();
+	}
+}
+
+concurrencpp::details::when_any_status result_core_base::when_any(
+	std::shared_ptr<when_any_state_base> when_any_state,
+	size_t index) noexcept {
+	const auto state = m_pc_state.load(std::memory_order_acquire);
+	if (state == pc_state::producer) {
+		return when_any_status::result_ready;
 	}
 
-	try {
-		schedule_coroutine(std::get<2>(m_consumer));
-	}
-	catch (...) {
-		clear_consumer();
-		throw;
+	assert_consumer_idle();
+	m_consumer.emplace<5>(std::move(when_any_state), index);
+
+	auto expected_state = pc_state::idle;
+	const auto idle = m_pc_state.compare_exchange_strong(
+		expected_state,
+		pc_state::consumer,
+		std::memory_order_acq_rel);
+
+	if (idle) {
+		return when_any_status::set;
 	}
 
-	return true;
+	//no need to continue the iteration of when_any, we've found a ready task.
+	//tell all predecessors to rewind their state.
+	assert_done();
+	return when_any_status::result_ready;
+}
+
+void result_core_base::try_rewind_consumer() noexcept {
+	const auto pc_state = this->m_pc_state.load(std::memory_order_acquire);
+	if (pc_state != pc_state::consumer) {
+		return;
+	}
+
+	auto expected_consumer_state = pc_state::consumer;
+	const auto consumer = this->m_pc_state.compare_exchange_strong(
+		expected_consumer_state,
+		pc_state::idle,
+		std::memory_order_acq_rel);
+
+	if (!consumer) {
+		assert_done();
+		return;
+	}
+
+	m_consumer.emplace<0>();
 }
 
 void result_core_base::schedule_coroutine(

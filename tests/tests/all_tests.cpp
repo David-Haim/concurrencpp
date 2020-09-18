@@ -16,6 +16,9 @@ void concurrencpp::tests::test_all() {
 	test_co_await();
 	test_parallel_coroutine();
 
+	test_when_all();
+	test_when_any();
+
 	test_timer();
 
 	test_runtime();

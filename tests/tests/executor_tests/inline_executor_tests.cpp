@@ -92,11 +92,11 @@ void concurrencpp::tests::test_inline_executor_post_foreign() {
 
 void concurrencpp::tests::test_inline_executor_post_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr size_t task_count = 1'024;
 	auto executor = std::make_shared<inline_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, &observer, task_count] {
+	executor->post([executor, &observer] {
 		for (size_t i = 0; i < task_count; i++) {
 			executor->post(observer.get_testing_stub());
 		}
@@ -144,11 +144,11 @@ void concurrencpp::tests::test_inline_executor_submit_foreign() {
 
 void concurrencpp::tests::test_inline_executor_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr size_t task_count = 1'024;
 	auto executor = std::make_shared<inline_executor>();
 	executor_shutdowner shutdown(executor);
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<result<size_t>> results;
 		results.resize(task_count);
 		for (size_t i = 0; i < task_count; i++) {
@@ -203,11 +203,11 @@ void concurrencpp::tests::test_inline_executor_bulk_post_foreign(){
 
 void concurrencpp::tests::test_inline_executor_bulk_post_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr size_t task_count = 1'024;
 	auto executor = std::make_shared<inline_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, task_count, &observer] () mutable  {
+	executor->post([executor, &observer] () mutable  {
 		std::vector<testing_stub> stubs;
 		stubs.reserve(task_count);
 
@@ -262,11 +262,11 @@ void concurrencpp::tests::test_inline_executor_bulk_submit_foreign(){
 
 void concurrencpp::tests::test_inline_executor_bulk_submit_inline() {
 	object_observer observer;
-	const size_t task_count = 1'024;
+	constexpr size_t task_count = 1'024;
 	auto executor = std::make_shared<inline_executor>();
 	executor_shutdowner shutdown(executor);
 
-	auto results_res = executor->submit([executor, &observer, task_count] {
+	auto results_res = executor->submit([executor, &observer] {
 		std::vector<value_testing_stub> stubs;
 		stubs.reserve(task_count);
 

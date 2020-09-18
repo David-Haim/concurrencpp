@@ -179,6 +179,7 @@
     <ClInclude Include="src\results\result_fwd_declerations.h" />
     <ClInclude Include="src\results\result.h" />
     <ClInclude Include="src\results\result_awaitable.h" />
+    <ClInclude Include="src\results\when_result.h" />
     <ClInclude Include="src\runtime\constants.h" />
     <ClInclude Include="src\runtime\runtime.h" />
     <ClInclude Include="src\threads\thread.h" />

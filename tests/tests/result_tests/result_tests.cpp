@@ -140,7 +140,7 @@ void concurrencpp::tests::test_result_get_impl() {
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
@@ -162,7 +162,7 @@ void concurrencpp::tests::test_result_get_impl() {
 		result_promise<type> rp;
 		auto result = rp.get_result();
 		const auto id = randomizer();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
@@ -205,7 +205,7 @@ void concurrencpp::tests::test_result_wait_impl() {
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
@@ -228,7 +228,7 @@ void concurrencpp::tests::test_result_wait_impl() {
 		result_promise<type> rp;
 		auto result = rp.get_result();
 		const auto id = randomizer();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
 			std::this_thread::sleep_until(unblocking_time);
@@ -354,19 +354,19 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 		auto result = rp.get_result();
 
 		const auto before = high_resolution_clock::now();
-		const auto status = result.wait_for(seconds(2));
+		const auto status = result.wait_for(milliseconds(500));
 		const auto after = high_resolution_clock::now();
-		const auto time = duration_cast<seconds>(after - before);
+		const auto time = duration_cast<milliseconds>(after - before);
 
 		assert_equal(status, result_status::idle);
-		assert_bigger_equal(time.count(), 2);
+		assert_bigger_equal(time, milliseconds(500));
 	}
 
 	//if result is set before timeout, unblock, and return status::value
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
@@ -388,7 +388,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 		result_promise<type> rp;
 		auto result = rp.get_result();
 		const auto id = randomizer();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
@@ -400,7 +400,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
 		test_ready_result_costume_exception(std::move(result), id);
 		assert_bigger_equal(now, unblocking_time);
-		assert_smaller(now, unblocking_time + seconds(2));
+		assert_smaller(now, unblocking_time + seconds(1));
 
 		thread.join();
 	}
@@ -409,7 +409,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);
@@ -444,7 +444,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 		});
 	}
 
-	//if time_point <= now, the function is equivilent to result::status
+	//if time_point <= now, the function is equivalent to result::status
 	{
 		result_promise<type> rp_idle, rp_val, rp_err;
 		result<type> idle_result = rp_idle.get_result(),
@@ -455,7 +455,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 		rp_err.set_from_function(result_factory<type>::throw_ex);
 
 		const auto now = high_resolution_clock::now();
-		std::this_thread::sleep_for(seconds(2));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 		assert_equal(idle_result.wait_until(now), concurrencpp::result_status::idle);
 		assert_equal(value_result.wait_until(now), concurrencpp::result_status::value);
@@ -501,7 +501,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 		result_promise<type> rp;
 		auto result = rp.get_result();
 
-		const auto later = high_resolution_clock::now() + seconds(2);
+		const auto later = high_resolution_clock::now() + seconds(1);
 		const auto status = result.wait_until(later);
 		const auto now = high_resolution_clock::now();
 
@@ -513,7 +513,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 		const auto later = high_resolution_clock::now() + seconds(10);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
@@ -537,7 +537,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 		auto result = rp.get_result();
 		const auto id = randomizer();
 
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 		const auto later = high_resolution_clock::now() + seconds(10);
 
 		std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable{
@@ -558,7 +558,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 	{
 		result_promise<type> rp;
 		auto result = rp.get_result();
-		const auto unblocking_time = high_resolution_clock::now() + seconds(2);
+		const auto unblocking_time = high_resolution_clock::now() + seconds(1);
 
 		std::thread thread([rp = std::move(rp), unblocking_time]() mutable{
 			std::this_thread::sleep_until(unblocking_time);

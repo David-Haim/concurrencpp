@@ -22,6 +22,8 @@ namespace concurrencpp {
 		static_assert(valid_result_type_v,
 			"concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
 
+		friend class details::when_result_helper;
+
 	private:
 		std::shared_ptr<details::result_core<type>> m_state;
 

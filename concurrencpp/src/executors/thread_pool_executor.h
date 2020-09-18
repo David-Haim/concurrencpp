@@ -15,7 +15,6 @@
 namespace concurrencpp::details {
 	class idle_worker_set;
 	class thread_pool_worker;
-	class thread_pool;
 }
 
 namespace concurrencpp::details {
@@ -132,7 +131,6 @@ namespace concurrencpp {
 
 	public:
 		thread_pool_executor(std::string_view name, size_t size, std::chrono::seconds max_idle_time);
-
 		~thread_pool_executor() noexcept;
 
 		void enqueue(std::experimental::coroutine_handle<> task) override;

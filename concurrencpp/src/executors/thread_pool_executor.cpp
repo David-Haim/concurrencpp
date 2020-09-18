@@ -233,9 +233,6 @@ bool thread_pool_worker::drain_queue_impl() {
 }
 
 bool thread_pool_worker::drain_queue() {
-	assert(m_private_queue.empty());
-	m_private_queue = {};
-
 	std::unique_lock<std::mutex> lock(m_lock);
 	if (m_public_queue.empty() && m_abort == false) {
 		if (!wait_for_task(lock)) {
@@ -250,7 +247,8 @@ bool thread_pool_worker::drain_queue() {
 		return false;
 	}
 
-	m_private_queue = std::move(m_public_queue);
+	assert(m_private_queue.empty());
+	std::swap(m_private_queue, m_public_queue); //reuse underlying allocations.
 	lock.unlock();
 
 	return drain_queue_impl();
@@ -458,8 +456,7 @@ bool thread_pool_executor::shutdown_requested() const noexcept {
 void concurrencpp::thread_pool_executor::shutdown() noexcept {
 	const auto abort = m_abort.exchange(true, std::memory_order_relaxed);
 	if (abort) {
-		//shutdown had been called before.
-		return;
+		return; //shutdown had been called before.
 	}
 
 	for (auto& worker : m_workers) {

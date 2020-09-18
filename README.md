@@ -1,6 +1,8 @@
 
 # concurrencpp, the C++ concurrency library
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 concurrencpp allows applications to write asynchronous code easily and safely by using executors and coroutines.
 By using concurrencpp applications can break down big procedures that need to be processed asynchronously into smaller tasks that run concurrently and work in a co-operative manner to achieve the wanted result. 
 concurrencpp also allows applications to write parallel algorithms more easily by using parallel coroutines.
@@ -18,12 +20,12 @@ concurrencpp is task-centric. A task is an asynchronous operation. Tasks provide
 from one to another, where the result of one task is used as if it were a parameter or an intermediate  value of another ongoing task.
 In concurrencpp, the concept of tasks is represented by coroutines. This allows tasks to be suspended, waiting for other tasks to finish, and chained using `co_await`, and thus solving the consumer-producer problem elegantly by giving the concurrent code a synchronous look. 
 
-concurrencpp is build around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user-defined executors.
+concurrencpp is built around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user-defined executors.
 Executors are used to schedule new tasks to run, and they might return a `result` object that can be used to marshal the asynchronous result to another task that acts as its consumer.
 Results can be awaited and resolved in a non-blocking manner, and even switch the underlying executor in the process.
  When the runtime is destroyed, it iterates over every stored executor and calls its `shutdown` method. Every executor then exits gracefully. Unscheduled tasks are destroyed, and attempts to create new tasks will throw an exception. 
 
-**"Hello world" program using concurrencpp**
+#### *"Hello world" program using concurrencpp:*
 
 ```cpp
 #include "concurrencpp.h"
@@ -42,7 +44,7 @@ int main() {
 
 In this basic example, we created a runtime object, then we acquired the thread executor from the runtime. We used `submit` to pass a lambda as our given callable. This lambda returns `void`, hence, the executor returns a `result<void>` object that marshals the asynchronous result back to the caller.  `main` calls  `get` which blocks the main thread until the result becomes ready. If no exception was thrown, `get` returns `void`. If an exception was thrown, `get` re-throws it. Asynchronously, `thread_executor` launches a new thread of execution and runs the given lambda. It implicitly `co_return void` and the task is finished. `main` is then unblocked.
 	  
-**Concurrent even-number counting** 
+#### *Concurrent even-number counting:*
 
 ```cpp
 #include "concurrencpp.h"
@@ -104,7 +106,40 @@ int main() {
 }
 ```
 
-In this example, we again start the program by creating a runtime object. We create a vector filled with random numbers, then we acquire the `thread_pool_executor` from the runtime and call `count_even`.   `count_even` is a coroutine (task) that spawns more coroutines and `co_await`s for them to finish inside.  `max_concurrency_level` returns the maximum amount of workers that the executor supports, In the threadpool executor case, the number of workers is calculated from the number of cores. We then partitian the array to match the number of workers and send every chunk to be processed in its own task. Asynchronously, the workers count how many even numbers each chunk contains, and `co_return` the result. `count_even` iterates every result, pulling the asynchronous count by using `co_await`. The final result is then printed and `count_even` finishes.  `main` which was blocked by calling `get` is unblocked and the program terminates gracefully.
+In this example, we again start the program by creating a runtime object. We create a vector filled with random numbers, then we acquire the `thread_pool_executor` from the runtime and call `count_even`.   `count_even` is a coroutine (task) that spawns more coroutines and `co_await`s for them to finish inside.  `max_concurrency_level` returns the maximum amount of workers that the executor supports, In the threadpool executor case, the number of workers is calculated from the number of cores. We then partition the array to match the number of workers and send every chunk to be processed in its own task. Asynchronously, the workers count how many even numbers each chunk contains, and `co_return` the result. `count_even` iterates every result, pulling the asynchronous count by using `co_await`. The final result is then printed and `count_even` finishes.  `main` which was blocked by calling `get` is unblocked and the program terminates gracefully.    
+
+----
+
+ ### Table of contents
+
+* [Executors](#executors)
+	* [`executor` API](#executor-api)
+	* [Executor types](#executor-types)
+	* [Using executors](#using-executors)	
+* [Result objects](#result-objects)
+    * [`result` API](#result-api)
+* [Parallel coroutines](#parallel-coroutines)
+    * [Parallel Fibonacci example](#parallel-fibonacci-example)
+* [Result-promises](#result-promises) 
+	* [`result_promise` API](#result_promise-api)
+	* [Result-promise example](#example-marshaling-asynchronous-result-using-result_promise)
+* [Summery: creating and scheduling coroutines](#summery-creating-and-scheduling-coroutines)
+* [Result auxiliary functions](#result-auxiliary-functions)
+* [Timers and Timer queues](#timers-and-timer-queues)
+	* [`timer_queue` API](#timer_queue-api) 
+	* [`timer` API](#timer-api)
+	* [Regular timer example](#regular-timer-example)
+	* [Oneshot timers](#oneshot-timers)
+	* [Oneshot timer example](#oneshot-timer-example)
+	* [Delay objects](#delay-objects)
+	* [Delay object example](#delay-object-example)
+* [The runtime object](#the-runtime-object) 
+	* [`runtime` API](#runtime-api)
+	* [Creating user-defined executors](#creating-user-defined-executors)
+	* [Using a user-defined executor example](#example-using-a-user-defined-executor)
+* [Supported platforms](#supported-platforms)
+
+----
 
 ### Executors
 
@@ -113,7 +148,7 @@ Executors simplify the work of managing resources such as threads, thread pools 
 Executors provide a unified way of scheduling and executing coroutines, since they all extend `concurrencpp::executor`.
 The main power of concurrencpp executors comes from their ability to schedule user provided callables by turning them into coroutines first, scheduling them to run asynchronously, and finally marshal the asynchronous result (or exception) back to the caller.
 
-`concurrencpp::executor` API
+#### `executor` API
 
 ```cpp
 class executor {
@@ -164,18 +199,19 @@ class executor {
 	virtual void shutdown() noexcept = 0;
 
 	/*
-		Turns a callable into a suspended coroutine and schedules it to run in this executor using enqueue.
-		Throws errors::executor_shutdown exception if shutdown has been called before.
+		Turns a callable and its argument into a suspended coroutine and schedules it to run in this executor using enqueue.
+		Arguments are passed into the coroutine by decaying them first.
+ 		Throws errors::executor_shutdown exception if shutdown has been called before.
 	*/
-	template<class callable_type>
-	void post(callable_type&& callable);
-
+	template<class callable_type, class ... argument_types>
+	void post(callable_type&& callable, argument_types&& ... arguments);
+	
 	/*
 		Like post, but returns a result object that marshals the asynchronous result.
 		Throws errors::executor_shutdown exception if shutdown has been called before.
 	*/
-	template<class callable_type>
-	result<type> submit(callable_type&& callable);
+	template<class callable_type, class ... argument_types>
+	auto submit(callable_type&& callable, argument_types&& ... arguments);
 
 	/*
 		Turns an array of callables into an array of suspended coroutines and schedules them to run in this executor using enqueue.
@@ -194,15 +230,15 @@ class executor {
 };
 ```
 
-***Executor types:***
+#### Executor types
 
-As mentioned above, concurrencpp provides commonly used executors. These excutor types are:
+As mentioned above, concurrencpp provides commonly used executors. These executor types are:
 
 * **thread pool executor** - a general purpose executor that maintains a pool of threads. 
 The thread pool executor is suitable for relatively short cpu-bound tasks that don't block. Applications are encouraged to use this executor as the default executor for non-blocking functions. 
 The concurrencpp thread pool provides dynamic thread injection and dynamic work balancing for its enqueued tasks.
 
-* **blocking executor** - a thredpool executor with a larger pool of threads. Suitable for launching short blocking tasks like file io and db queries.
+* **blocking executor** - a threadpool executor with a larger pool of threads. Suitable for launching short blocking tasks like file io and db queries.
 
 * **thread executor** - an executor that launches each enqueued task to run on a new thread of execution. Threads are not reused. 
 This executor is good for long running tasks, like objects that run a work loop, or long blocking operations.
@@ -213,7 +249,7 @@ This executor is good for long running tasks, like objects that run a work loop,
 
 * **inline executor** - mainly used to override the behavior of other executors. Enqueuing a task is equivalent to invoking it inline.
 
-***Using executors:***
+#### Using executors
 
 The bare mechanism of an executor is encapsulated in its `enqueue` method. This method enqueues a suspended coroutine for execution and has two flavors:  one flavor that receives a single `coroutine_handle<>` as an argument, and another that receives a `span<coroutine_handle<>>`. The second flavor is used to enqueue a batch of suspended coroutines. This allows better scheduling heuristics and decreased contention.
 
@@ -230,16 +266,16 @@ Asynchronous values and exceptions can be consumed using the concurrencpp result
 A result object is a conduit for the asynchronous coroutine result, like `std::future`. 
 When a coroutine finishes execution, it either returns a valid value or throws an exception. 
 In either case, this asynchronous result is marshaled to the consumer of the result object.
-The result state therefore, very from `idle` (the asynchronous result or exception aren't ready yet) to `value` (the coroutine terminated by returning a valid value) to `exception` (the coroutine terminated by throwing an exception).  
+The result state therefore, vary from `idle` (the asynchronous result or exception aren't ready yet) to `value` (the coroutine terminated by returning a valid value) to `exception` (the coroutine terminated by throwing an exception).  
 Result objects can be polled for their state, waited, resolved or awaited. 
 Awaiting a result object by using `co_await` (and by doing so, turning the current function into a coroutine as well) is the preferred way of consuming result objects.  
 
-Result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be "empty" and attempts to call any method other than `operator bool` and `operator = ` will throw.
+Result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be empty and attempts to call any method other than `operator bool` and `operator = ` will throw.
 After the asynchronous result has been pulled out of the result object (by calling `get`, `await` or `await_via`), the result object becomes empty. Emptiness can be tested with `operator bool`.
 
 concurrencpp also provide the `null_result` type. This type can be used as a return type from a parallel coroutine. In this case, any returned value or thrown exception will be dropped. It's logically equivalent of returning `void`.
 
-`concurrencpp::result` API
+#### `result` API
 	
 ```cpp
 class result{
@@ -249,7 +285,7 @@ class result{
 	result() noexcept = default;
 
 	/*
-		Destroyes the result. associated tasks are not cancelled.
+		Destroyes the result. Associated tasks are not cancelled.
 	*/	
 	~result() noexcept = default;
 
@@ -289,7 +325,7 @@ class result{
 	result_status wait_for(std::chrono::duration<duration_unit, ratio> duration);
 
 	/*
-		Blocks until this result is ready or timeout_time is reached. Returns the status of this resut after unblocking.
+		Blocks until this result is ready or timeout_time is reached. Returns the status of this result after unblocking.
 		Throws concurrencpp::errors::empty_result if *this is empty.					
 	*/
 	template< class clock, class duration >
@@ -368,7 +404,7 @@ concurrencpp will start the function suspended and immediately re-schedule it to
 `concurrencpp::executor_tag` is a dummy placeholder to tell the concurrencpp runtime that this function is not a regular function, it needs to start running inside the given executor.
 Applications can then consume the result of the parallel coroutine by using the returned result object. 
 
-***Parallel Fibonacci example:*** 
+#### *Parallel Fibonacci example:* 
 ```cpp
 #include "concurrencpp.h"
 #include <iostream>
@@ -407,17 +443,17 @@ int main() {
 ```
 
 In this example, we calculate the 30-th member of the Fibonacci sequence in a parallel manner.
-We start launching each Fibonacci step in it's own parallel coroutine. the first argument is a dummy `executor_tag` and the second argument is the threadpool executor.
-Every recursive step invokes a new parallel coroutine that runs in parallel. the result is returned to the parent task and is acquired by using `co_await`.   
+We start launching each Fibonacci step in its own parallel coroutine. The first argument is a dummy `executor_tag` and the second argument is the threadpool executor.
+Every recursive step invokes a new parallel coroutine that runs in parallel. The result is returned to the parent task and is acquired by using `co_await`.   
 When we deem the input to be small enough to be calculated synchronously (when `curr <= 10`), we stop executing each recursive step in its own task and just solve the algorithm synchronously. 
 
 ### Result-promises
 
-Even non-coroutines can complete a result object by using a `result_promise`. `result_promise` resembles a `std::promise` object - applications can manually set the result or exception and make `result` objects become ready. 
-Just like regular result objects, result -promises are a move only type that becomes empty after move. Similarly, after setting a result or an exception, the result promise becomes empty as well.
-If a result promise gets out of scope and a result/exception hasn't been set in it, the result-promise destructor sets a `concurrencpp::errors::broken_task` exception using the `set_exception` method. Suspended and blocked tasks waiting for the associated result are resumed/unblocked. 
+Sometimes we want to use the capabilities of result objects with non-coroutines, for example when using a third-party library. In this case, we can complete a result object by using a `result_promise`. `result_promise` resembles a `std::promise` object - applications can manually set the result or exception and make `result` objects become ready (using the `co_return` keyword). 
+Just like result objects, result-promises are a move only type that becomes empty after move. Similarly, after setting a result or an exception, the result promise becomes empty as well.
+If a result-promise gets out of scope and no result/exception has been set in it, the result-promise destructor sets a `concurrencpp::errors::broken_task` exception using the `set_exception` method. Suspended and blocked tasks waiting for the associated result are resumed/unblocked. 
 
-`result_promise` API
+#### `result_promise` API
 
 ```cpp
 template <class type>
@@ -485,7 +521,7 @@ class result_promise {
 };
 ```
 
-***Example: Marshling asynchronous result using*** `result_promise`:
+#### *Example: Marshaling asynchronous result using* `result_promise`:
 ```cpp
 #include "concurrencpp.h"
 
@@ -508,7 +544,7 @@ int main() {
 ```
 In this example, We use `std::thread` as a third-party executor. This represents a scenario when a non-concurrencpp executor is used as part of the application life-cycle. We extract the result object before we pass the promise and block the main thread until the result becomes ready. In `my_3_party_executor`, we set a result as if we `co_return`ed it. 
 
-###  Summery: creating and scheduling coroutines:
+###  Summery: creating and scheduling coroutines
 
 There are few ways to create and schedule coroutines in concurrencpp
 
@@ -518,15 +554,96 @@ In this case the application provides a callable and depending on the selected m
 -  By using a parallel coroutine.
 
 -  By returning a result object.
-When a function returns any of `concurrencpp::result` / `concurrencpp::null_result` and has at least on of `co_await`/`co_return`, then this function is a coroutine that starts executing immediately in the caller thread without suspension. 
+When a function returns any of `concurrencpp::result` / `concurrencpp::null_result` and has at least one of `co_await`/`co_return`, then this function is a coroutine that starts executing immediately in the caller thread without suspension. 
 
-- By using a `result_promise`
+- By using a `result_promise`.
+
+### Result auxiliary functions
+concurrencpp provides helper functions that manipulate results objects.
+```cpp
+/*
+	Creates a ready result object by building <<type>> from arguments&&... in-place.
+*/
+template<class type, class ... argument_types>
+result<type> make_ready_result(argument_types&& ... arguments);
+
+/*
+	An overload for void type. 
+*/
+result<void> make_ready_result();
+
+/*
+	Creates a ready result object from an exception pointer.
+	The result object will re-throw exception_ptr when calling get, await or await_via
+*/
+template<class type>
+result<type> make_exceptional_result(std::exception_ptr exception_ptr);
+
+/*
+	Overload. Similar to make_exceptional_result(std::exception_ptr)
+	but gets an exception object directly.
+*/
+template<class type, class exception_type>
+result<type> make_exceptional_result(exception_type exception);
+ 
+/*
+	Creates a result object that becomes ready when all the input results become ready. 
+	Passed result objects are emptied and returned as a tuple when every result is ready.
+	Throws std::invalid_argument if any of the passed result objects is empty.
+*/
+template<class ... result_types>
+result<std::tuple<typename std::decay<result_types>::type...>> when_all(result_types&& ... results);
+
+/*
+	Overload. Similar to when_all(result_types&& ...) but receives a pair of iterators referencing a range. 
+	Each result object is emptied and returned in a ready state as a vector.
+	If begin == end, the function returns immediately with an empty vector.
+	Throws std::invalid_argument if any of the passed result objects is empty.
+*/
+template<class iterator_type>
+result<std::vector<typename std::iterator_traits<iterator_type>::value_type>> 
+when_all(iterator_type begin, iterator_type end) {
+
+/*
+	Overload. Returns a ready result object that doesn't monitor any asynchronous result.
+*/
+result<std::tuple<>> when_all();
+
+/*
+	Helper struct returned from when_any.
+	index is the position of the ready result in results sequence.
+	results is either an std::tuple or an std::vector of the results that were passed to when_any.
+*/
+template <class sequence_type>
+struct when_any_result {
+	std::size_t index;
+	sequence_type results;
+};
+
+/*
+	Creates a result object that becomes ready when at least one of the input results become ready.
+	Passed result objects are emptied and returned as a tuple when at least one result object is ready.
+	Throws std::invalid_argument if any of the passed result objects is empty.
+*/
+template<class ... result_types>
+result<when_any_result<std::tuple<result_types...>>> when_any(result_types&& ... results);
+
+/*
+	Overload. Similar to when_any(result_types&& ...) but receives a pair of iterators referencing a range.
+	Each result object is emptied and returned as a vector when at least one result object is ready.
+	Throws std::invalid_argument if begin == end.
+	Throws std::invalid_argument if any of the passed result objects is empty.
+*/
+template<class iterator_type>
+result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
+when_any(iterator_type begin, iterator_type end);
+```
 
 ### Timers and Timer queues
 
 concurrencpp also provides timers and timer queues. 
-Timers are objects that schedule actions to run on an executor within a well defined interval of time.
-A timer queue is a concurrencpp worker that manages a collection of timers and processes them in just one thread of execution.
+Timers are objects that schedule actions to run on an executor within a well-defined interval of time. There are three types of timers - *regular timers*, *onshot-timers* and *delay objects*.
+A timer queue is a concurrencpp worker that manages a collection of timers and processes them in just one thread of execution. In order to create timers, one must use the timer queue in conjunction with an executor.
 
 Timers have four properties that describe them:
 
@@ -535,8 +652,7 @@ Timers have four properties that describe them:
 1. Due time - from the time of creation, the interval in milliseconds in which the timer will be scheduled to run for the first time 
 1. Frequency - from the time the timer callable was scheduled for the first time, the interval in milliseconds the callable will be schedule to run periodically, until the timer is destructed or cancelled.
 
-`timer` and `timer_queue` API:
-
+#### `timer_queue` API: 
 ```cpp   
 class timer_queue {
 	/*
@@ -589,7 +705,11 @@ class timer_queue {
 	*/
 	result<void> make_delay_object(size_t due_time, std::shared_ptr<concurrencpp::executor> executor);
 };
+```
 
+#### `timer` API: 
+
+```cpp   
 class timer {
 	/*
 		Creates an empty timer that does not run.
@@ -603,26 +723,26 @@ class timer {
 
 	/*
 		Moves the content of rhs to *this.
-		rhs is empty afte this call.
+		rhs is empty after this call.
 	*/
 	timer(timer&& rhs) noexcept = default;
 
 	/*
 		Moves the content of rhs to *this.
-		rhs is empty afte this call.
+		rhs is empty after this call.
 		Returns *this.
 	*/
 	timer& operator = (timer&& rhs) noexcept;
 
 	/*
-		Cancels this timer. after this call, the associated timer_queue will not schedule *this to run again.
+		Cancels this timer. After this call, the associated timer_queue will not schedule *this to run again.
 		After this call, *this is empty.
-		Has no affect if *this is empty or the associated timer_queue has expired. 
+		Has no effect if *this is empty or the associated timer_queue has expired. 
 	*/
 	void cancel();
 
 	/*
-		Returns the due time in millesconds the timer was defined with.
+		Returns the due time in milliseconds the timer was defined with.
 		Throws concurrencpp::errors::empty_timer is *this is empty.
 	*/
 	size_t get_due_time() const;
@@ -640,7 +760,7 @@ class timer {
 	std::weak_ptr<timer_queue> get_timer_queue() const;
 
 	/*
-		Returns the frequency in millesconds the timer was defined with.	
+		Returns the frequency in milliseconds the timer was defined with.	
 		Throws concurrencpp::errors::empty_timer is *this is empty.
 	*/
 	size_t get_frequency() const;
@@ -658,9 +778,7 @@ class timer {
 };
 ```
 
-In the following example we will see how to create a regular timer  by using the timer queue. The timer fires its callable after 1.5 seconds, then fires its callable every 2 seconds. The given callable runs in the threadpool executor.
-
-***Regular timer example:***
+#### *Regular timer example:*
 ```cpp
 #include "concurrencpp.h"
 
@@ -682,13 +800,13 @@ int main() {
 	return 0;
 }
 ```
-There are two more flavors of timers in concurrencpp: **oneshot timers** and **delay objects**. 
+In this example we create a regular timer  by using the timer queue. The timer schedules its callable after 1.5 seconds, then fires its callable every 2 seconds. The given callable runs in the threadpool executor.
 
-*  A oneshot timer is a one-time timer with only a due time - after it schedules its callable to run once it never reschedules it to run again.  
+#### Oneshot timers
 
-* A delay object is a result object that becomes ready when its due time is reached. Applications can `co_await` this result object to delay the current task in a non-blocking way. The current task is resumed in the executor that was passed to `make_delay_object`. 
+A oneshot timer is a one-time timer with only a due time - after it schedules its callable to run once it never reschedules it to run again.  
 
-***Oneshot timer example:***
+#### *Oneshot timer example:*
 ```cpp
 #include "concurrencpp.h"
 
@@ -707,8 +825,13 @@ int main() {
 	return 0;
 }
 ```
+In this example, we create a timer that runs only once - after 3 seconds from its creation, the timer will schedule to run its callable on a new thread of execution (using `concurrencpp::thread_executor instance`).
 
-***Delay object example:***
+#### Delay objects
+
+A delay object is a result object that becomes ready when its due time is reached. Applications can `co_await` this result object to delay the current task in a non-blocking way. The current task is resumed in the executor that was passed to `make_delay_object`. 
+
+#### *Delay object example:*
 ```cpp
 #include "concurrencpp.h"
 
@@ -740,10 +863,10 @@ int main() {
 
 The concurrencpp runtime object is the glue that sticks all the components above to a complete and cohesive mechanism of managing asynchronous actions. 
 The concurrencpp runtime object is the agent used to acquire, store and create new executors. The runtime must be created as a value type as soon as the main function starts to run. 
-When the concurrencpp runtime gets out of scope, it iterates over its stored executors and shuts them down one by one by calling `executor::shutdown`. Executors then exit their inner work loop and any subsequent attempt to schedule a new task will throw a `concurrencpp::executor_shutdown` exception. The runtime also contains the global timer queue used to create timers and delay objects. Upon destruction, stored executors will wait for ongoing tasks to finish. If an ongoing task tries to use an executor to spawn new tasks or schedule its continuation - an exception will be thrown. In this case, ongoing tasks need to quit as soon as possible, allowing their underlying executors to quit. With this RAII style of code, no tasks can be processed before the creation of the runtime object, and while/after the runtime gets out of scope. 
-This frees concurrent applications from needing to communicate termination message explicitly. Tasks are free use executors as long as the runtime object is alive.   
+When the concurrencpp runtime gets out of scope, it iterates over its stored executors and shuts them down one by one by calling `executor::shutdown`. Executors then exit their inner work loop and any subsequent attempt to schedule a new task will throw a `concurrencpp::executor_shutdown` exception. The runtime also contains the global timer queue used to create timers and delay objects. Upon destruction, stored executors will wait for ongoing tasks to finish. If an ongoing task tries to use an executor to spawn new tasks or schedule its own task continuation - an exception will be thrown. In this case, ongoing tasks need to quit as soon as possible, allowing their underlying executors to quit. With this RAII style of code, no tasks can be processed before the creation of the runtime object, and while/after the runtime gets out of scope. 
+This frees concurrent applications from needing to communicate termination messages explicitly. Tasks are free use executors as long as the runtime object is alive.   
 
-`concurrencpp::runtime` API
+#### `runtime` API
 
 ```cpp
 class runtime {
@@ -812,7 +935,7 @@ class runtime {
 };
 ```
 
-***Creating user-defined executors***
+#### Creating user-defined executors
 
 As mentioned before, Applications can create their own custom executor type by implementing the `executor` interface. There are a few points to consider when implementing user defined executors:
 The most important thing is to remember that executors are used from multiple threads, so implemented methods must be thread-safe. 
@@ -820,9 +943,9 @@ Another important thing is to handle shutdown correctly: `shutdown`, `shutdown_r
 * `shutdown` should tell underlying threads to quit and then join them. `shutdown` must also destroy each  unexecuted `coroutine_handle` by calling `coroutine_handle::destroy`. 
  `shutdown` might be called multiple times, and the method must handle this scenario by ignoring any subsequent call to `shutdown` after the first invocation.
 * `enqueue` must throw a `concurrencpp::errors::executor_shutdown` exception if `shutdown` had been called before. 
-Enqueued coroutine-handles are expected to be non-finally-suspending coroutines, meaning that when a coroutine ends, it cleans after itself. Executors **must not** call `coroutine_handle::destroy` on coroutines that finished execution gracefully. Explicit destruction of coroutines happens only to unexecuted suspended-coroutines, when shutting down the executor.   
+ Coroutine handles that are passed to `enqueue` are expected to be non-finally-suspending coroutines, meaning that when a coroutine ends, it cleans after itself. Executors **must not** call `coroutine_handle::destroy` on coroutines that finished execution gracefully. Explicit destruction of coroutines happens only to unexecuted suspended-coroutines, when shutting down the executor.   
 
-***Example: using a user-defined executor.***
+#### *Example: using a user-defined executor:*
 
 ```cpp
 #include "concurrencpp.h"
@@ -947,10 +1070,9 @@ int main() {
 }
 ```
 
-In this example, we created an executor which logs actions like enqeueuing a task or executing it. We implement the `executor` interface, and we request the runtime to create, store and monitor an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors. Do note that in the case of extending `concurrencpp::executor` we need to take care of shutting down the executor ourselves and keep track of its state for future calls to `shutdown`,`shutdown_requested` and `enqueue`.
+In this example, we created an executor which logs actions like enqueuing a task or executing it. We implement the `executor` interface, and we request the runtime to create, store and monitor an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors. 
 
-### concurrencpp supported platforms
-
+### Supported platforms
 * Linux (requires clang-9 and above).
 * machOS (requires clang-9 and above).
-* Windows (requires visual studio 2019 and above).
+* Windows (requires Windows 10, visual studio 2019 and above).
