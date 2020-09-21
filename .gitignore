@@ -43,3 +43,4 @@
 #Specific directories
 /build
 /msvc_intermediate
+out/
