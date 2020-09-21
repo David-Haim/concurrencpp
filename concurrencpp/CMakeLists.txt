@@ -18,11 +18,15 @@ add_library(
 
 target_include_directories(concurrencpp PUBLIC include)
 
-find_library(LIBRT rt)
-if(LIBRT)
-	target_link_libraries(concurrencpp ${LIBRT})
+if (MSVC)
+	target_compile_options(concurrencpp PUBLIC /await /permissive-)
+else()
+	target_compile_options(concurrencpp PUBLIC -stdlib=libc++ -fcoroutines-ts)
+	target_link_options(concurrencpp PUBLIC -stdlib=libc++)
+	target_link_libraries(concurrencpp PUBLIC pthread)
 endif()
 
-if (NOT MSVC)
-	target_link_libraries(concurrencpp PUBLIC pthread)
+find_library(LIBRT rt)
+if(LIBRT)
+	target_link_libraries(concurrencpp PUBLIC ${LIBRT})
 endif()
