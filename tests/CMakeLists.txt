@@ -1,16 +1,5 @@
-cmake_minimum_required(VERSION 3.17.0)
+cmake_minimum_required(VERSION 3.16)
 project(tests)
-
-set(CMAKE_CXX_COMPILER clang++)
-set(CMAKE_CXX_STANDARD 20)
-
-set(CLANG_COROUTINES_COMPILE_FLAGS "-Wall -Wextra -stdlib=libc++ -fcoroutines-ts")
-
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CLANG_COROUTINES_COMPILE_FLAGS}")
-set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
-
-include_directories(../concurrencpp/include)
 
 add_executable(
 	tests
@@ -41,8 +30,5 @@ add_executable(
 	tests/coroutine_tests/coroutine_adapters_tests.cpp
 	tests/coroutine_tests/parallel_coroutines_tests.cpp
 )
-find_library(LIBRT rt)
-	if(LIBRT)
-		target_link_libraries(tests ${LIBRT})
-	endif()
-target_link_libraries(tests concurrencpp pthread)
+
+target_link_libraries(tests concurrencpp)
