@@ -1,7 +1,8 @@
 #include "concurrencpp.h"
-#include "executor_test_helpers.h"
 
 #include "../all_tests.h"
+
+#include "../test_utils/executor_shutdowner.h"
 
 #include "../../tester/tester.h"
 #include "../../helpers/assertions.h"
@@ -55,13 +56,13 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_method_access() {
 
 	assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
 		executor->enqueue(std::experimental::coroutine_handle{});
-	});
+		});
 
 	assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
 		std::experimental::coroutine_handle<> array[4];
 		std::span<std::experimental::coroutine_handle<>> span = array;
 		executor->enqueue(span);
-	});
+		});
 }
 
 void concurrencpp::tests::test_worker_thread_executor_shutdown_thread_join() {
@@ -102,7 +103,7 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_raii() {
 	for (auto& result : results) {
 		assert_throws<concurrencpp::errors::broken_task>([&result] {
 			result.get();
-		});
+			});
 	}
 }
 
@@ -271,7 +272,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_post_inline() {
 	auto executor = std::make_shared<worker_thread_executor>();
 	executor_shutdowner shutdown(executor);
 
-	executor->post([executor, &observer]() mutable  {
+	executor->post([executor, &observer]() mutable {
 		std::vector<testing_stub> stubs;
 		stubs.reserve(task_count);
 

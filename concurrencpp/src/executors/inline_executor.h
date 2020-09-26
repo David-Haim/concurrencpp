@@ -5,7 +5,7 @@
 #include "constants.h"
 
 namespace concurrencpp {
-	class inline_executor final : public executor {
+	class inline_executor final : public executor{
 
 	private:
 		std::atomic_bool m_abort;

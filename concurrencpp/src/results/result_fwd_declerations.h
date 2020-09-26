@@ -31,12 +31,6 @@ namespace concurrencpp::details {
 	template<class type>
 	class result_core;
 
-	template<class type>
-	class coroutine_state;
-
-	template<class type>
-	using coro_handle = std::experimental::coroutine_handle<coroutine_state<type>>;
-
 	using await_context = std::pair<std::shared_ptr<executor>, std::experimental::coroutine_handle<>>;
 
 	struct executor_bulk_tag {};

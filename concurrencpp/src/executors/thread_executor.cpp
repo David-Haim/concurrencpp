@@ -28,7 +28,7 @@ void thread_worker::start(
 }
 
 thread_executor::thread_executor() :
-	executor(details::consts::k_thread_executor_name),
+	derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name),
 	m_abort(false),
 	m_atomic_abort(false) {}
 

@@ -10,7 +10,7 @@ namespace concurrencpp::details {
 using concurrencpp::worker_thread_executor;
 
 worker_thread_executor::worker_thread_executor() :
-	executor(details::consts::k_worker_thread_executor_name),
+	derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
 	m_private_atomic_abort(false),
 	m_abort(false),
 	m_atomic_abort(false) {

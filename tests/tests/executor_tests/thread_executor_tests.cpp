@@ -1,7 +1,8 @@
 #include "concurrencpp.h"
-#include "executor_test_helpers.h"
 
 #include "../all_tests.h"
+
+#include "../test_utils/executor_shutdowner.h"
 
 #include "../../tester/tester.h"
 #include "../../helpers/assertions.h"

@@ -1,13 +1,13 @@
 #ifndef CONCURRENCPP_MANUAL_EXECUTOR_H
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
-#include "executor.h"
+#include "derivable_executor.h"
 #include "constants.h"
 
 #include <deque>
 
 namespace concurrencpp {
-	class alignas(64) manual_executor final : public executor {
+	class alignas(64) manual_executor final : public derivable_executor<manual_executor> {
 
 	private:
 		mutable std::mutex m_lock;
@@ -19,10 +19,7 @@ namespace concurrencpp {
 		void destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept;
 
 	public:
-		manual_executor() :
-			executor(details::consts::k_manual_executor_name),
-			m_abort(false),
-			m_atomic_abort(false) {};
+		manual_executor();
 
 		void enqueue(std::experimental::coroutine_handle<> task) override;
 		void enqueue(std::span<std::experimental::coroutine_handle<>> tasks) override;

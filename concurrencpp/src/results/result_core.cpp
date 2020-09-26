@@ -4,9 +4,6 @@
 using concurrencpp::details::wait_context;
 using concurrencpp::details::await_context;
 using concurrencpp::details::result_core_base;
-using concurrencpp::details::result_core_per_thread_data;
-
-thread_local result_core_per_thread_data result_core_per_thread_data::s_tl_per_thread_data;
 
 void wait_context::wait() noexcept {
 	std::unique_lock<std::mutex> lock(m_lock);
@@ -31,17 +28,13 @@ void wait_context::notify() noexcept {
 	m_condition.notify_all();
 }
 
-std::shared_ptr<wait_context> wait_context::make() {
-	return std::make_shared<wait_context>();
-}
-
 void result_core_base::wait() {
 	const auto state = m_pc_state.load(std::memory_order_acquire);
 	if (state == pc_state::producer) {
 		return;
 	}
 
-	auto wait_ctx = wait_context::make();
+	auto wait_ctx = std::make_shared<wait_context>();
 
 	assert_consumer_idle();
 	m_consumer.emplace<3>(wait_ctx);
@@ -54,7 +47,6 @@ void result_core_base::wait() {
 
 	if (!idle) {
 		assert_done();
-		clear_consumer();
 		return;
 	}
 
@@ -79,7 +71,6 @@ bool result_core_base::await(std::experimental::coroutine_handle<> caller_handle
 
 	if (!idle) {
 		assert_done();
-		clear_consumer();
 	}
 
 	return idle; //if idle = true, suspend
@@ -94,18 +85,10 @@ bool result_core_base::await_via(
 		assert_done();
 
 		if (!force_rescheduling) {
-			clear_consumer();
 			return false; //resume caller.
 		}
 
-		try {
-			schedule_coroutine(await_ctx);
-		}
-		catch (...) {
-			clear_consumer();
-			throw;
-		}
-
+		await_ctx.first->enqueue(await_ctx.second);
 		return true;
 	};
 
@@ -137,7 +120,8 @@ void result_core_base::when_all(std::weak_ptr<when_all_state_base> when_all_stat
 	const auto state = m_pc_state.load(std::memory_order_acquire);
 	if (state == pc_state::producer) {
 		assert(!when_all_state.expired());
-		return when_all_state.lock()->on_result_ready();
+		auto state = when_all_state.lock();
+		return state->on_result_ready();
 	}
 
 	assert_consumer_idle();
@@ -222,20 +206,4 @@ void result_core_base::schedule_coroutine(await_context& await_ctx) {
 
 	assert(executor != nullptr);
 	schedule_coroutine(*executor, coro_handle);
-}
-
-bool result_core_base::initial_reschedule(std::experimental::coroutine_handle<> handle) {
-	auto executor_ptr = std::exchange(result_core_per_thread_data::s_tl_per_thread_data.executor, nullptr);
-	if (executor_ptr != nullptr) {
-		executor_ptr->enqueue(handle);
-		return true;
-	}
-
-	auto accumulator_ptr = std::exchange(result_core_per_thread_data::s_tl_per_thread_data.accumulator, nullptr);
-	if (accumulator_ptr != nullptr) {
-		accumulator_ptr->push_back(handle);
-		return true;
-	}
-
-	return false; //no executor, resume inline (don't suspend)
 }

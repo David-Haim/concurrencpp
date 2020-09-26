@@ -369,7 +369,7 @@ void thread_pool_worker::join() noexcept {
 }
 
 thread_pool_executor::thread_pool_executor(std::string_view name, size_t size, std::chrono::seconds max_idle_time) :
-	executor(name),
+	derivable_executor<concurrencpp::thread_pool_executor>(name),
 	m_round_robin_cursor(0),
 	m_idle_workers(size),
 	m_abort(false) {

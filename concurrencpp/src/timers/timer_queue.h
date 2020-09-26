@@ -1,7 +1,10 @@
 #ifndef CONCURRENCPP_TIMER_QUEUE_H
 #define CONCURRENCPP_TIMER_QUEUE_H
 
+#include "constants.h"
 #include "timer.h"
+
+#include "../errors.h"
 
 #include "../utils/bind.h"
 #include "../threads/thread.h"
@@ -34,6 +37,7 @@ namespace concurrencpp {
 		friend class concurrencpp::timer;
 
 	private:
+		std::atomic_bool m_atomic_abort;
 		std::mutex m_lock;
 		request_queue m_request_queue;
 		details::thread m_worker;
@@ -66,6 +70,10 @@ namespace concurrencpp {
 				std::forward<callable_type>(callable));
 
 			std::unique_lock<std::mutex> lock(m_lock);
+			if (m_abort) {
+				throw errors::timer_queue_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
+			}
+
 			ensure_worker_thread(lock);
 			add_timer(lock, timer_core);
 			return timer_core;
@@ -77,6 +85,9 @@ namespace concurrencpp {
 		timer_queue() noexcept;
 		~timer_queue() noexcept;
 
+		void shutdown() noexcept;
+		bool shutdown_requested() const noexcept;
+
 		template<class callable_type>
 		timer make_timer(
 			size_t due_time,
@@ -84,8 +95,8 @@ namespace concurrencpp {
 			std::shared_ptr<concurrencpp::executor> executor,
 			callable_type&& callable) {
 
-			if(!static_cast<bool>(executor)) {
-				throw std::invalid_argument("concurrencpp::timer_queue::make_timer - executor is null.");
+			if (!static_cast<bool>(executor)) {
+				throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
 			}
 
 			return make_timer_impl(
@@ -105,7 +116,7 @@ namespace concurrencpp {
 			argumet_types&& ... arguments) {
 
 			if (!static_cast<bool>(executor)) {
-				throw std::invalid_argument("concurrencpp::timer_queue::make_timer - executor is null.");
+				throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
 			}
 
 			return make_timer_impl(
@@ -125,7 +136,7 @@ namespace concurrencpp {
 			callable_type&& callable) {
 
 			if (!static_cast<bool>(executor)) {
-				throw std::invalid_argument("concurrencpp::timer_queue::make_one_shot_timer - executor is null.");
+				throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
 			}
 
 			return make_timer_impl(
@@ -144,7 +155,7 @@ namespace concurrencpp {
 			argumet_types&& ... arguments) {
 
 			if (!static_cast<bool>(executor)) {
-				throw std::invalid_argument("concurrencpp::timer_queue::make_one_shot_timer - executor is null.");
+				throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
 			}
 
 			return make_timer_impl(
