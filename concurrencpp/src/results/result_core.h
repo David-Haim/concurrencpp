@@ -5,7 +5,6 @@
 #include "result_fwd_declerations.h"
 
 #include <mutex>
-#include <vector>
 #include <atomic>
 #include <utility>
 #include <variant>
@@ -17,13 +16,6 @@
 #include "../errors.h"
 
 namespace concurrencpp::details {
-	struct result_core_per_thread_data {
-		executor* executor = nullptr;
-		std::vector<std::experimental::coroutine_handle<>>* accumulator = nullptr;
-
-		static thread_local result_core_per_thread_data s_tl_per_thread_data;
-	};
-
 	class wait_context {
 
 	private:
@@ -36,8 +28,6 @@ namespace concurrencpp::details {
 		bool wait_for(size_t milliseconds) noexcept;
 
 		void notify() noexcept;
-
-		static std::shared_ptr<wait_context> make();
 	};
 
 	struct when_all_state_base {
@@ -185,13 +175,6 @@ namespace concurrencpp::details {
 			assert(m_pc_state.load(std::memory_order_relaxed) == pc_state::producer);
 		}
 
-		void clear_consumer() noexcept {
-			m_consumer.emplace<0>();
-		}
-
-		static void schedule_coroutine(executor& executor, std::experimental::coroutine_handle<> handle);
-		static void schedule_coroutine(await_context& await_ctx);
-
 	public:
 		void wait();
 
@@ -208,7 +191,8 @@ namespace concurrencpp::details {
 
 		void try_rewind_consumer() noexcept;
 
-		static bool initial_reschedule(std::experimental::coroutine_handle<> handle);
+		static void schedule_coroutine(executor& executor, std::experimental::coroutine_handle<> handle);
+		static void schedule_coroutine(await_context& await_ctx);
 	};
 
 	template<class type>
@@ -299,7 +283,7 @@ namespace concurrencpp::details {
 
 			assert_consumer_idle();
 
-			auto wait_ctx = wait_context::make();
+			auto wait_ctx = std::make_shared<wait_context>();
 			m_consumer.emplace<3>(wait_ctx);
 
 			auto expected_idle_state = pc_state::idle;

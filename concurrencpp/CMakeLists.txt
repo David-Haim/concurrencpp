@@ -3,10 +3,12 @@ project(concurrencpp)
 
 add_library(
 	concurrencpp
-	src/executors/executor.cpp
+	
 	src/runtime/runtime.cpp
 	src/threads/thread.cpp
+	src/results/promises.cpp
 	src/results/result_core.cpp
+	src/executors/executor.cpp
 	src/executors/executor.cpp
 	src/executors/manual_executor.cpp
 	src/executors/thread_executor.cpp

@@ -85,7 +85,7 @@ runtime::runtime(const runtime_options& options) {
 }
 
 concurrencpp::runtime::~runtime() noexcept {
-	m_timer_queue.reset();
+	m_timer_queue->shutdown();
 	m_registered_executors.shutdown_all();
 }
 

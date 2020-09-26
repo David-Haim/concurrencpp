@@ -95,6 +95,11 @@ namespace concurrencpp {
 			std::shared_ptr<concurrencpp::executor> executor,
 			bool force_rescheduling = true) {
 			throw_if_empty(details::consts::k_result_await_via_error_msg);
+
+			if (!static_cast<bool>(executor)) {
+				throw std::invalid_argument(details::consts::k_result_await_via_executor_null_error_msg);
+			}
+
 			return via_awaitable<type>{ std::move(m_state), std::move(executor), force_rescheduling };
 		}
 
@@ -107,6 +112,11 @@ namespace concurrencpp {
 			std::shared_ptr<concurrencpp::executor> executor,
 			bool force_rescheduling = true) {
 			throw_if_empty(details::consts::k_result_resolve_via_error_msg);
+
+			if (!static_cast<bool>(executor)) {
+				throw std::invalid_argument(details::consts::k_result_resolve_via_executor_null_error_msg);
+			}
+
 			return resolve_via_awaitable<type>{ std::move(m_state), std::move(executor), force_rescheduling };
 		}
 	};

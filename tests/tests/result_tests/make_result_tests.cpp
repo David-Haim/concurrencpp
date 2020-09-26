@@ -1,7 +1,7 @@
 #include "concurrencpp.h"
 #include "../all_tests.h"
 
-#include "result_test_helpers.h"
+#include "../test_utils/test_ready_result.h"
 
 #include "../../tester/tester.h"
 #include "../../helpers/assertions.h"
@@ -39,6 +39,10 @@ void concurrencpp::tests::test_make_ready_result() {
 }
 
 void concurrencpp::tests::test_make_exceptional_result() {
+	assert_throws_with_error_message<std::invalid_argument>([] {
+		make_exceptional_result<std::string>({});
+	}, concurrencpp::details::consts::k_make_exceptional_result_exception_null_error_msg);
+
 	auto assert_ok = [](result<int>& result) {
 		assert_equal(result.status(), result_status::exception);
 		try

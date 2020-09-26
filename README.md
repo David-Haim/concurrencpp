@@ -1,4 +1,3 @@
-
 # concurrencpp, the C++ concurrency library
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -247,6 +246,8 @@ This executor is good for long running tasks, like objects that run a work loop,
 
 * **manual executor** - an executor that does not execute coroutines by itself. Application code can execute previously enqueued tasks by manually invoking its execution methods.
 
+* **derivable executor** - a base class for user defined executors. Although inheriting  directly from `concurrencpp::executor` is possible, `derivable_executor` uses the `CRTP` pattern that provides some optimization opportunities for the compiler.
+ 
 * **inline executor** - mainly used to override the behavior of other executors. Enqueuing a task is equivalent to invoking it inline.
 
 #### Using executors
@@ -358,6 +359,7 @@ class result{
 		In either way, after resuming, if the result is a valid value, it is returned. 
 		Otherwise, operator co_await rethrows the asynchronous exception.
 		Throws concurrencpp::errors::empty_result if *this is empty.		
+		Throws std::invalid_argument if executor is null.
 		If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.	
 	*/
 	auto await_via(
@@ -380,6 +382,7 @@ class result{
 			if force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
 		In either way, after resuming, *this is returned in a non-empty form and guaranteed that its status is not result_status::idle.
 		Throws concurrencpp::errors::empty_result if *this is empty.		
+		Throws std::invalid_argument if executor is null.
 		If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.					
 	*/
 	auto resolve_via(
@@ -574,7 +577,8 @@ result<void> make_ready_result();
 
 /*
 	Creates a ready result object from an exception pointer.
-	The result object will re-throw exception_ptr when calling get, await or await_via
+	The result object will re-throw exception_ptr when calling get, await or await_via.
+	Throws std::invalid_argument if exception_ptr is null.
 */
 template<class type>
 result<type> make_exceptional_result(std::exception_ptr exception_ptr);
@@ -642,8 +646,7 @@ when_any(iterator_type begin, iterator_type end);
 ### Timers and Timer queues
 
 concurrencpp also provides timers and timer queues. 
-Timers are objects that schedule actions to run on an executor within a well-defined interval of time. There are three types of timers - *regular timers*, *onshot-timers* and *delay objects*.
-A timer queue is a concurrencpp worker that manages a collection of timers and processes them in just one thread of execution. In order to create timers, one must use the timer queue in conjunction with an executor.
+Timers are objects that define actions which run on an executor within a well-defined interval of time. There are three types of timers - *regular timers*, *onshot-timers* and *delay objects*.
 
 Timers have four properties that describe them:
 
@@ -652,6 +655,12 @@ Timers have four properties that describe them:
 1. Due time - from the time of creation, the interval in milliseconds in which the timer will be scheduled to run for the first time 
 1. Frequency - from the time the timer callable was scheduled for the first time, the interval in milliseconds the callable will be schedule to run periodically, until the timer is destructed or cancelled.
 
+A timer queue is a concurrencpp worker that manages a collection of timers and processes them in just one thread of execution.
+When a timer deadline (whether its due-time or frequency) has reached, the timer queue "fires" the timer by scheduling its callable to run on the timer given executor. 
+Just like executors, timer queues also adhere to the RAII concpet. When the runtime object gets out of scope, It shuts down the timer queue, cancelling all pending timers.
+After a timer queue has been shut down, any subsequent call to `make_timer`, `make_onshot_timer` and `make_delay_object` will throw an `errors::timer_queue_shutdown` exceptions.
+Applications must not try to shut down timer queues by themselves.
+
 #### `timer_queue` API: 
 ```cpp   
 class timer_queue {
@@ -659,9 +668,25 @@ class timer_queue {
 		Destroyes *this and cancels all associated timers.
 	*/
 	~timer_queue() noexcept;
+	
+	/*
+		Shuts down this timer_queue.
+		After this call, invocation of any method besides shutdown
+		and shutdown_requested will throw an errors::timer_queue_shutdown.
+		If shutdown had been called before, this method has no effect.
+	*/
+	void shutdown() noexcept;
 
 	/*
-		Creates a new running timer where *this is the associated timer_queue
+		Returns true if shutdown had been called before, false otherwise.
+	*/
+	bool shutdown_requested() const noexcept;
+
+
+	/*
+		Creates a new running timer where *this is the associated timer_queue.
+		Throws std::invalid_argument if executor is null.
+		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
 	template<class callable_type>
 	timer make_timer(
@@ -671,7 +696,9 @@ class timer_queue {
 		callable_type&& callable);
 
 	/*
-		Creates a new running timer where *this is associated timer_queue
+		Creates a new running timer where *this is associated timer_queue.
+		Throws std::invalid_argument if executor is null.
+		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
 	template<class callable_type, class ... argumet_types>
 	timer make_timer(
@@ -682,7 +709,9 @@ class timer_queue {
 		argumet_types&& ... arguments);
 
 	/*
-		Creates a new one shot timer where *this is associated timer_queue
+		Creates a new one shot timer where *this is associated timer_queue.
+		Throws std::invalid_argument if executor is null.
+		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
 	template<class callable_type>
 	timer make_one_shot_timer(
@@ -691,7 +720,9 @@ class timer_queue {
 		callable_type&& callable);
 
 	/*
-		Creates a new one shot timer where *this is associated timer_queue
+		Creates a new one shot timer where *this is associated timer_queue.
+		Throws std::invalid_argument if executor is null.
+		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
 	template<class callable_type, class ... argumet_types>
 	timer make_one_shot_timer(
@@ -701,7 +732,9 @@ class timer_queue {
 		argumet_types&& ... arguments);
 
 	/*
-		Creates a new delay object where *this is associated timer_queue
+		Creates a new delay object where *this is associated timer_queue.
+		Throws std::invalid_argument if executor is null.
+		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
 	result<void> make_delay_object(size_t due_time, std::shared_ptr<concurrencpp::executor> executor);
 };
@@ -937,7 +970,7 @@ class runtime {
 
 #### Creating user-defined executors
 
-As mentioned before, Applications can create their own custom executor type by implementing the `executor` interface. There are a few points to consider when implementing user defined executors:
+As mentioned before, Applications can create their own custom executor type by inheriting the `derivable_executor` class. There are a few points to consider when implementing user defined executors:
 The most important thing is to remember that executors are used from multiple threads, so implemented methods must be thread-safe. 
 Another important thing is to handle shutdown correctly: `shutdown`, `shutdown_requested` and `enqueue` should all monitor the executor state and behave accordingly when invoked:
 * `shutdown` should tell underlying threads to quit and then join them. `shutdown` must also destroy each  unexecuted `coroutine_handle` by calling `coroutine_handle::destroy`. 
@@ -956,7 +989,7 @@ Another important thing is to handle shutdown correctly: `shutdown`, `shutdown_r
 #include <mutex>
 #include <condition_variable>
 
-class logging_executor : public concurrencpp::executor {
+class logging_executor : public concurrencpp::derivable_executor<logging_executor> {
 
 private:
 	mutable std::mutex _lock;
@@ -990,7 +1023,7 @@ private:
 
 public:
 	logging_executor(std::string_view prefix) :
-		executor("logging_executor"),
+		derivable_executor<logging_executor>("logging_executor"),
 		_shutdown_requested(false),
 		_prefix(prefix) {
 		_thread = std::thread([this] {

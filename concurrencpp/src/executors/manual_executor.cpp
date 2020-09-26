@@ -14,6 +14,11 @@ void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept
 	m_tasks.clear();
 }
 
+manual_executor::manual_executor():
+	derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name),
+	m_abort(false),
+	m_atomic_abort(false) {}
+
 void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
 	std::unique_lock<decltype(m_lock)> lock(m_lock);
 	if (m_abort) {

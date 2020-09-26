@@ -1,10 +1,10 @@
 #include "concurrencpp.h"
-#include "all_tests.h"
+#include "../all_tests.h"
 
-#include "../tester/tester.h"
-#include "../helpers/assertions.h"
-#include "../helpers/object_observer.h"
-#include "../helpers/random.h"
+#include "../../tester/tester.h"
+#include "../../helpers/assertions.h"
+#include "../../helpers/object_observer.h"
+#include "../../helpers/random.h"
 
 #include <chrono>
 
@@ -33,8 +33,8 @@ namespace concurrencpp::tests {
 	void test_timer_set_frequency_after_due_time();
 	void test_timer_set_frequency();
 
-	void test_timer_once();
-	void test_timer_delay();
+	void test_timer_oneshot_timer();
+	void test_timer_delay_object();
 
 	void test_timer_assignment_operator_empty_to_empty();
 	void test_timer_assignment_operator_non_empty_to_non_empty();
@@ -574,7 +574,7 @@ void concurrencpp::tests::test_timer_set_frequency() {
 	test_timer_set_frequency_after_due_time();
 }
 
-void concurrencpp::tests::test_timer_once() {
+void concurrencpp::tests::test_timer_oneshot_timer() {
 	auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
 	timer_tester tester(350, 0, timer_queue);
 	tester.start_once_timer_test();
@@ -584,7 +584,7 @@ void concurrencpp::tests::test_timer_once() {
 	tester.test_oneshot_timer();
 }
 
-void concurrencpp::tests::test_timer_delay() {
+void concurrencpp::tests::test_timer_delay_object() {
 	auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
 	auto wt_executor = std::make_shared<concurrencpp::worker_thread_executor>();
 	const size_t expected_interval = 150;
@@ -714,8 +714,8 @@ void concurrencpp::tests::test_timer() {
 	tester.add_step("cancel", test_timer_cancel);
 	tester.add_step("operator bool", test_timer_operator_bool);
 	tester.add_step("set_frequency", test_timer_set_frequency);
-	tester.add_step("once", test_timer_once);
-	tester.add_step("delay", test_timer_delay);
+	tester.add_step("oneshot_timer", test_timer_oneshot_timer);
+	tester.add_step("delay_object", test_timer_delay_object);
 	tester.add_step("operator =", test_timer_assignment_operator);
 
 	tester.launch_test();

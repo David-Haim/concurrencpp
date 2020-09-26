@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_EXECUTORS_ALL_H
 #define CONCURRENCPP_EXECUTORS_ALL_H
 
+#include "derivable_executor.h"
 #include "inline_executor.h"
 #include "thread_pool_executor.h"
 #include "thread_executor.h"

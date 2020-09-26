@@ -1,14 +1,14 @@
 #ifndef CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 #define CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 
-#include "executor.h"
+#include "derivable_executor.h"
 
 #include "../threads/thread.h"
 
 #include <deque>
 
 namespace concurrencpp {
-	class alignas(64) worker_thread_executor final : public executor {
+	class alignas(64) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
 
 	private:
 		std::deque<std::experimental::coroutine_handle<>> m_private_queue;

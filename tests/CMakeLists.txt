@@ -10,8 +10,10 @@ add_executable(
 	tester/tester.cpp
 
 	tests/all_tests.cpp
-	tests/timer_tests.cpp
 	tests/runtime_tests.cpp
+
+	tests/timer_tests/timer_tests.cpp
+	tests/timer_tests/timer_queue_tests.cpp
 
 	tests/executor_tests/inline_executor_tests.cpp
 	tests/executor_tests/manual_executor_tests.cpp
@@ -27,8 +29,8 @@ add_executable(
 	tests/result_tests/when_all_tests.cpp
 	tests/result_tests/when_any_tests.cpp
 
-	tests/coroutine_tests/coroutine_adapters_tests.cpp
-	tests/coroutine_tests/parallel_coroutines_tests.cpp
+	tests/coroutine_tests/coroutine_promises_test.cpp
+	tests/coroutine_tests/coroutines_tests.cpp
 )
 
 target_link_libraries(tests concurrencpp)

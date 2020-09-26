@@ -17,9 +17,10 @@ namespace concurrencpp::tests {
 	void test_when_all();
 	void test_when_any();
 
-	void test_co_await();
-	void test_parallel_coroutine();
+	void test_coroutine_promises();
+	void test_coroutines();
 
+	void test_timer_queue();
 	void test_timer();
 
 	void test_runtime();

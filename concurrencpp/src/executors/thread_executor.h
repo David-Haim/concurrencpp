@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_THREAD_EXECUTOR_H
 #define CONCURRENCPP_THREAD_EXECUTOR_H
 
-#include "executor.h"
+#include "derivable_executor.h"
 #include "constants.h"
 
 #include "../threads/thread.h"
@@ -35,7 +35,7 @@ namespace concurrencpp::details {
 }
 
 namespace concurrencpp {
-	class alignas(64) thread_executor final : public executor {
+	class alignas(64) thread_executor final : public derivable_executor<thread_executor> {
 
 		friend class ::concurrencpp::details::thread_worker;
 

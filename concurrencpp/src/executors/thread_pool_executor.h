@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 #define CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 
-#include "executor.h"
+#include "derivable_executor.h"
 
 #include <mutex>
 #include <atomic>
@@ -107,7 +107,7 @@ namespace concurrencpp::details {
 }
 
 namespace concurrencpp {
-	class alignas (64) thread_pool_executor final : public executor{
+	class alignas (64) thread_pool_executor final : public derivable_executor<thread_pool_executor> {
 
 		friend class details::thread_pool_worker;
 

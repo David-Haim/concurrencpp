@@ -1,9 +1,8 @@
 #include "concurrencpp.h"
 #include "../all_tests.h"
 
-#include "result_test_helpers.h"
-
-#include "../executor_tests/executor_test_helpers.h"
+#include "../test_utils/test_ready_result.h"
+#include "../test_utils/executor_shutdowner.h"
 
 #include "../../tester/tester.h"
 #include "../../helpers/assertions.h"
@@ -20,13 +19,13 @@ namespace concurrencpp::tests {
 	template<class type>
 	void test_when_any_vector_empty_range();
 
-	void test_when_any_vector(std::shared_ptr<thread_executor> ex);
+	void test_when_any_vector();
 
 	void test_when_any_tuple_empty_result();
 
 	result<void> test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex);
 
-	void test_when_any_tuple(std::shared_ptr<thread_executor> ex);
+	void test_when_any_tuple();
 }
 
 template <class type>
@@ -125,18 +124,22 @@ void concurrencpp::tests::test_when_any_vector_empty_range() {
 	}, concurrencpp::details::consts::k_when_any_empty_range_error_msg);
 }
 
-void concurrencpp::tests::test_when_any_vector(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_any_vector() {
 	test_when_any_vector_empty_result<int>();
 	test_when_any_vector_empty_result<std::string>();
 	test_when_any_vector_empty_result<void>();
 	test_when_any_vector_empty_result<int&>();
 	test_when_any_vector_empty_result<std::string&>();
 
-	test_when_any_vector_impl<int>(ex).get();
-	test_when_any_vector_impl<std::string>(ex).get();
-	test_when_any_vector_impl<void>(ex).get();
-	test_when_any_vector_impl<int&>(ex).get();
-	test_when_any_vector_impl<std::string&>(ex).get();
+	{
+		auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
+		executor_shutdowner es(thread_executor);
+		test_when_any_vector_impl<int>(thread_executor).get();
+		test_when_any_vector_impl<std::string>(thread_executor).get();
+		test_when_any_vector_impl<void>(thread_executor).get();
+		test_when_any_vector_impl<int&>(thread_executor).get();
+		test_when_any_vector_impl<std::string&>(thread_executor).get();
+	}
 
 	test_when_any_vector_empty_range<int>();
 	test_when_any_vector_empty_range<std::string>();
@@ -180,78 +183,78 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
 
 concurrencpp::result<void>
 concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex) {
-	std::atomic_size_t counter = 0;
+	auto counter = std::make_shared<std::atomic_size_t>(0);
 	random randomizer;
 
 	auto tts = randomizer(10,100);
-	auto int_res_val = ex->submit([&counter, tts] {
+	auto int_res_val = ex->submit([counter, tts] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		return result_factory<int>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto int_res_ex = ex->submit([&counter, tts] {
+	auto int_res_ex = ex->submit([counter, tts] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		throw costume_exception(0);
 		return result_factory<int>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto s_res_val = ex->submit([&counter, tts]() -> std::string {
+	auto s_res_val = ex->submit([counter, tts]() -> std::string {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		return result_factory<std::string>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto s_res_ex = ex->submit([&counter, tts]() -> std::string {
+	auto s_res_ex = ex->submit([counter, tts]() -> std::string {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		throw costume_exception(1);
 		return result_factory<std::string>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto void_res_val = ex->submit([&counter, tts] {
+	auto void_res_val = ex->submit([counter, tts] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 	});
 
 	tts = randomizer(10, 100);
-	auto void_res_ex = ex->submit([&counter, tts] {
+	auto void_res_ex = ex->submit([counter, tts] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		throw costume_exception(2);
 	});
 
 	tts = randomizer(10, 100);
-	auto int_ref_res_val = ex->submit([&counter, tts]() ->int& {
+	auto int_ref_res_val = ex->submit([counter, tts]() ->int& {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		return result_factory<int&>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto int_ref_res_ex = ex->submit([&counter, tts]() ->int& {
+	auto int_ref_res_ex = ex->submit([counter, tts]() ->int& {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		throw costume_exception(3);
 		return result_factory<int&>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto s_ref_res_val = ex->submit([&counter, tts]() -> std::string& {
+	auto s_ref_res_val = ex->submit([counter, tts]() -> std::string& {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		return result_factory<std::string&>::get();
 	});
 
 	tts = randomizer(10, 100);
-	auto s_ref_res_ex = ex->submit([&counter, tts]() -> std::string& {
+	auto s_ref_res_ex = ex->submit([counter, tts]() -> std::string& {
 		std::this_thread::sleep_for(std::chrono::milliseconds(tts));
-		counter.fetch_add(1, std::memory_order_relaxed);
+		counter->fetch_add(1, std::memory_order_relaxed);
 		throw costume_exception(4);
 		return result_factory<std::string&>::get();
 	});
@@ -268,7 +271,7 @@ concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<thread_executor> e
 		std::move(s_ref_res_val),
 		std::move(s_ref_res_ex));
 
-	assert_bigger_equal(counter.load(std::memory_order_relaxed), size_t(1));
+	assert_bigger_equal(counter->load(std::memory_order_relaxed), size_t(1));
 
 	switch (any_done.index) {
 		case 0:
@@ -328,24 +331,22 @@ concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<thread_executor> e
 	}
 }
 
-void concurrencpp::tests::test_when_any_tuple(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_any_tuple() {
 	test_when_any_tuple_empty_result();
-	test_when_any_tuple_impl(ex);
+
+	{
+		auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
+		executor_shutdowner es(thread_executor);
+		test_when_any_tuple_impl(thread_executor).get();
+	}
 }
 
 void concurrencpp::tests::test_when_any() {
-	auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
-	executor_shutdowner es(thread_executor);
 
 	tester tester("when_any test");
 
-	tester.add_step("when_any(begin, end)", [thread_executor] {
-		test_when_any_vector(thread_executor);
-	});
-
-	tester.add_step("when_any(result_types&& ... results)", [thread_executor] {
-		test_when_any_tuple(thread_executor);
-	});
+	tester.add_step("when_any(begin, end)", test_when_any_vector);
+	tester.add_step("when_any(result_types&& ... results)", test_when_any_tuple);
 
 	tester.launch_test();
 }

@@ -133,20 +133,13 @@ namespace concurrencpp::details {
     };
 }
 
-timer_queue::timer_queue() noexcept : m_abort(false) {}
+timer_queue::timer_queue() noexcept :
+	m_atomic_abort(false),
+	m_abort(false) {}
 
 timer_queue::~timer_queue() noexcept {
-    {
-        std::unique_lock<decltype(m_lock)> lock(m_lock);
-        if (!m_worker.joinable()) {
-            return;
-        }
-
-        m_abort = true;
-    }
-
-    m_condition.notify_all();
-    m_worker.join();
+    shutdown();
+    assert(!m_worker.joinable());
 }
 
 void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept {
@@ -198,6 +191,30 @@ void timer_queue::work_loop() noexcept {
     }
 }
 
+bool timer_queue::shutdown_requested() const noexcept {
+    return m_atomic_abort.load(std::memory_order_relaxed);
+}
+
+void timer_queue::shutdown() noexcept {
+    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+	if (state_before) {
+        return; //timer_queue has been shut down already.
+	}
+
+    std::unique_lock<decltype(m_lock)> lock(m_lock);
+    m_abort = true;
+
+	if (!m_worker.joinable()) {
+        return; //nothing to shut down
+    }
+
+    m_request_queue.clear();
+    lock.unlock();
+
+	m_condition.notify_all();
+    m_worker.join();
+}
+
 void timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
     (void)lock;
     assert(lock.owns_lock());
@@ -212,7 +229,7 @@ void timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
 
 concurrencpp::result<void> timer_queue::make_delay_object(size_t due_time, std::shared_ptr<executor> executor) {
     if (!static_cast<bool>(executor)) {
-        throw std::invalid_argument("concurrencpp::timer_queue::make_delay_object - executor is null.");
+        throw std::invalid_argument(details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
     }
 
     concurrencpp::result_promise<void> promise;
