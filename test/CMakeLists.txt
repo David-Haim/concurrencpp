@@ -7,6 +7,11 @@ project(concurrencppTests LANGUAGES CXX)
 # Enable warnings from includes
 set(concurrencpp_INCLUDE_WITHOUT_SYSTEM ON CACHE INTERNAL "")
 
+# Enable thread sanitizer tests on Clang
+if(CXX_COMPILER_ID MATCHES "Clang")
+  set(CONCURRENCPP_ENABLE_THREAD_SANITIZER ON CACHE INTERNAL "")
+endif()
+
 include(FetchContent)
 FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
@@ -37,3 +42,7 @@ function(add_test)
 endfunction()
 
 # TODO: add tests
+
+if(CONCURRENCPP_ENABLE_THREAD_SANITIZER)
+  # TODO: add thread sanitizer tests
+endif()
