@@ -4,6 +4,9 @@ project(concurrencpp
         VERSION 0.0.6
         LANGUAGES CXX)
 
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(coroutineOptions)
+
 # ---- Warning guard ----
 
 # Protect dependents from this project's warnings if the guard isn't disabled
@@ -68,18 +71,7 @@ target_include_directories(concurrencpp
 
 target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
-if(MSVC)
-  target_compile_options(concurrencpp PUBLIC /await)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  find_package(Threads REQUIRED)
-
-  target_link_libraries(concurrencpp PRIVATE Threads::Threads)
-	target_compile_options(concurrencpp PUBLIC -fcoroutines-ts)
-else()
-  # -fcoroutines-ts works only in Clang and GCC doesn't yet have a flag
-  # TODO: Add GCC flag(s) once it supports coroutines
-  message(FATAL_ERROR "Compiler not supported: ${CMAKE_CXX_COMPILER_ID}")
-endif()
+target_coroutine_options(concurrencpp)
 
 find_library(LIBRT NAMES rt DOC "Path to the Real Time shared library")
 target_link_libraries(concurrencpp PUBLIC "$<$<BOOL:${LIBRT}>:${LIBRT}>")
