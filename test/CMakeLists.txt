@@ -16,6 +16,8 @@ include(FetchContent)
 FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
 
+include(coroutineOptions)
+
 # ---- Test ----
 
 enable_testing()
@@ -36,6 +38,8 @@ function(add_test)
   target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
 
   target_compile_features(${target} PRIVATE cxx_std_20)
+
+  target_coroutine_options(${target})
 
   # Call the original add_test
   _add_test(NAME "${TEST_NAMESPACE}.${TEST_NAME}" COMMAND ${target})
