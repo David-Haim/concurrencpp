@@ -1,36 +1,39 @@
-cmake_minimum_required(VERSION 3.16)
-project(tests)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
-add_executable(
-	tests
-	main.cpp
-	helpers/assertions.cpp
-	helpers/object_observer.cpp
+project(concurrencppTests LANGUAGES CXX)
 
-	tester/tester.cpp
+# ---- Add root project ----
 
-	tests/all_tests.cpp
-	tests/runtime_tests.cpp
+# Enable warnings from includes
+set(concurrencpp_INCLUDE_WITHOUT_SYSTEM ON CACHE INTERNAL "")
 
-	tests/timer_tests/timer_tests.cpp
-	tests/timer_tests/timer_queue_tests.cpp
+include(FetchContent)
+FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+FetchContent_MakeAvailable(concurrencpp)
 
-	tests/executor_tests/inline_executor_tests.cpp
-	tests/executor_tests/manual_executor_tests.cpp
-	tests/executor_tests/thread_executor_tests.cpp
-	tests/executor_tests/thread_pool_executor_tests.cpp
-	tests/executor_tests/worker_thread_executor_tests.cpp
+# ---- Test ----
 
-	tests/result_tests/result_tests.cpp
-	tests/result_tests/result_await_tests.cpp
-	tests/result_tests/result_resolve_tests.cpp
-	tests/result_tests/result_promise_tests.cpp
-	tests/result_tests/make_result_tests.cpp
-	tests/result_tests/when_all_tests.cpp
-	tests/result_tests/when_any_tests.cpp
+enable_testing()
 
-	tests/coroutine_tests/coroutine_promises_test.cpp
-	tests/coroutine_tests/coroutines_tests.cpp
-)
+# add_test(NAMESPACE <namespace> NAME <name>)
+#
+# Add test with the name <namespace>.<name> with the source file at
+# source/<namespace>/<name>.cpp with project specific options that outputs the
+# exectuable <namespace>_<name>.
+#
+function(add_test)
+  cmake_parse_arguments(TEST "" "NAMESPACE;NAME" "" ${ARGN})
 
-target_link_libraries(tests concurrencpp)
+  set(target "${TEST_NAMESPACE}_${TEST_NAME}")
+
+  add_executable(${target} "source/${TEST_NAMESPACE}/${TEST_NAME}.cpp")
+
+  target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
+
+  target_compile_features(${target} PRIVATE cxx_std_20)
+
+  # Call the original add_test
+  _add_test(NAME "${TEST_NAMESPACE}.${TEST_NAME}" COMMAND ${target})
+endfunction()
+
+# TODO: add tests
