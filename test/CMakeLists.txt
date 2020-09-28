@@ -46,6 +46,8 @@ function(add_test)
 
   target_coroutine_options(${target})
 
+  target_include_directories(${target} PRIVATE "${PROJECT_SOURCE_DIR}/include")
+
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
 
