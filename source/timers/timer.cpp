@@ -51,14 +51,14 @@ void timer::throw_if_empty(const char* error_message) const {
 	throw concurrencpp::errors::empty_timer(error_message);
 }
 
-size_t timer::get_due_time() const {
+std::chrono::milliseconds timer::get_due_time() const {
 	throw_if_empty(details::consts::k_timer_empty_get_due_time_err_msg);
-	return m_state->get_due_time();
+	return std::chrono::milliseconds(m_state->get_due_time());
 }
 
-size_t timer::get_frequency() const {
+std::chrono::milliseconds timer::get_frequency() const {
 	throw_if_empty(details::consts::k_timer_empty_get_frequency_err_msg);
-	return m_state->get_frequency();
+	return std::chrono::milliseconds(m_state->get_frequency());
 }
 
 std::shared_ptr<concurrencpp::executor> timer::get_executor() const {
@@ -86,9 +86,9 @@ void timer::cancel() {
 	timer_queue->remove_timer(std::move(state));
 }
 
-void timer::set_frequency(size_t new_frequency) {
+void timer::set_frequency(std::chrono::milliseconds new_frequency) {
 	throw_if_empty(details::consts::k_timer_empty_set_frequency_err_msg);
-	return m_state->set_new_frequency(new_frequency);
+	return m_state->set_new_frequency(new_frequency.count());
 }
 
 timer& timer::operator = (timer&& rhs) noexcept {

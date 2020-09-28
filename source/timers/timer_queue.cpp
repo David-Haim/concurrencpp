@@ -227,7 +227,7 @@ void timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
     });
 }
 
-concurrencpp::result<void> timer_queue::make_delay_object(size_t due_time, std::shared_ptr<executor> executor) {
+concurrencpp::result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<executor> executor) {
     if (!static_cast<bool>(executor)) {
         throw std::invalid_argument(details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
     }
@@ -236,7 +236,7 @@ concurrencpp::result<void> timer_queue::make_delay_object(size_t due_time, std::
     auto task = promise.get_result();
 
     make_timer_impl(
-        due_time,
+        due_time.count(),
         0,
         std::move(executor),
         true,

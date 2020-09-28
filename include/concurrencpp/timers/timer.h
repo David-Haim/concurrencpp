@@ -124,12 +124,12 @@ namespace concurrencpp {
 
 		void cancel();
 
-		size_t get_due_time() const;
+		std::chrono::milliseconds get_due_time() const;
 		std::shared_ptr<executor> get_executor() const;
 		std::weak_ptr<timer_queue> get_timer_queue() const;
 
-		size_t get_frequency() const;
-		void set_frequency(size_t new_frequency);
+		std::chrono::milliseconds get_frequency() const;
+		void set_frequency(std::chrono::milliseconds new_frequency);
 
 		operator bool() const noexcept {
 			return static_cast<bool>(m_state);
