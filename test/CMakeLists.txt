@@ -56,6 +56,8 @@ endfunction()
 
 # TODO: add tests
 
-if(CONCURRENCPP_ENABLE_THREAD_SANITIZER)
-  # TODO: add thread sanitizer tests
+if(NOT CONCURRENCPP_ENABLE_THREAD_SANITIZER)
+  return()
 endif()
+
+# TODO: add thread sanitizer tests
