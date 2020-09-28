@@ -1,3 +1,4 @@
+
 # concurrencpp, the C++ concurrency library
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -682,19 +683,6 @@ class timer_queue {
 	*/
 	bool shutdown_requested() const noexcept;
 
-
-	/*
-		Creates a new running timer where *this is the associated timer_queue.
-		Throws std::invalid_argument if executor is null.
-		Throws errors::timer_queue_shutdown if shutdown had been called before.
-	*/
-	template<class callable_type>
-	timer make_timer(
-		size_t due_time,
-		size_t frequency,
-		std::shared_ptr<concurrencpp::executor> executor,
-		callable_type&& callable);
-
 	/*
 		Creates a new running timer where *this is associated timer_queue.
 		Throws std::invalid_argument if executor is null.
@@ -702,8 +690,8 @@ class timer_queue {
 	*/
 	template<class callable_type, class ... argumet_types>
 	timer make_timer(
-		size_t due_time,
-		size_t frequency,
+		std::chrono::milliseconds due_time,
+		std::chrono::milliseconds frequency,
 		std::shared_ptr<concurrencpp::executor> executor,
 		callable_type&& callable,
 		argumet_types&& ... arguments);
@@ -713,20 +701,9 @@ class timer_queue {
 		Throws std::invalid_argument if executor is null.
 		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
-	template<class callable_type>
-	timer make_one_shot_timer(
-		size_t due_time,
-		std::shared_ptr<concurrencpp::executor> executor,
-		callable_type&& callable);
-
-	/*
-		Creates a new one shot timer where *this is associated timer_queue.
-		Throws std::invalid_argument if executor is null.
-		Throws errors::timer_queue_shutdown if shutdown had been called before.
-	*/
 	template<class callable_type, class ... argumet_types>
 	timer make_one_shot_timer(
-		size_t due_time,
+		std::chrono::milliseconds due_time,
 		std::shared_ptr<concurrencpp::executor> executor,
 		callable_type&& callable,
 		argumet_types&& ... arguments);
@@ -736,7 +713,7 @@ class timer_queue {
 		Throws std::invalid_argument if executor is null.
 		Throws errors::timer_queue_shutdown if shutdown had been called before.
 	*/
-	result<void> make_delay_object(size_t due_time, std::shared_ptr<concurrencpp::executor> executor);
+	result<void> make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor);
 };
 ```
 
@@ -778,7 +755,7 @@ class timer {
 		Returns the due time in milliseconds the timer was defined with.
 		Throws concurrencpp::errors::empty_timer is *this is empty.
 	*/
-	size_t get_due_time() const;
+	std::chrono::milliseconds get_due_time() const;
 
 	/*
 		Returns the executor the timer was defined with.	
@@ -796,13 +773,13 @@ class timer {
 		Returns the frequency in milliseconds the timer was defined with.	
 		Throws concurrencpp::errors::empty_timer is *this is empty.
 	*/
-	size_t get_frequency() const;
+	std::chrono::milliseconds get_frequency() const;
 
 	/*
 		Sets new frequency for this timer. Callables that have been scheduled to run at this point are not affected.	
 		Throws concurrencpp::errors::empty_timer is *this is empty.
 	*/
-	void set_frequency(size_t new_frequency);
+	void set_frequency(std::chrono::milliseconds new_frequency);
 
 	/*
 		Returns true is *this is not an empty timer, false otherwise.	
@@ -817,19 +794,21 @@ class timer {
 
 #include <iostream>
 
+using namespace std::chrono_literals;
+
 int main() {
 	concurrencpp::runtime runtime;
 	std::atomic_size_t counter = 1;
 	concurrencpp::timer timer = runtime.timer_queue()->make_timer(
-		1'500,
-		2'000,
+		1'500ms,
+		2'000ms,
 		runtime.thread_pool_executor(),
 		[&] {
 			const auto c = counter.fetch_add(1);
 			std::cout << "timer was invoked for the " << c << "th time" << std::endl;
 		});
 
-	std::this_thread::sleep_for(std::chrono::seconds(12));
+	std::this_thread::sleep_for(12s);
 	return 0;
 }
 ```
@@ -845,16 +824,18 @@ A oneshot timer is a one-time timer with only a due time - after it schedules it
 
 #include <iostream>
 
+using namespace std::chrono_literals;
+
 int main() {
 	concurrencpp::runtime runtime;
 	concurrencpp::timer timer = runtime.timer_queue()->make_one_shot_timer(
-		3'000,
+		3'000ms,
 		runtime.thread_executor(),
 		[&] {
 			std::cout << "hello and goodbye" << std::endl;
 		});
 
-	std::this_thread::sleep_for(std::chrono::seconds(4));
+	std::this_thread::sleep_for(4s);
 	return 0;
 }
 ```
@@ -870,6 +851,8 @@ A delay object is a result object that becomes ready when its due time is reache
 
 #include <iostream>
 
+using namespace std::chrono_literals;
+
 concurrencpp::null_result delayed_task(
 	std::shared_ptr<concurrencpp::timer_queue> tq,
 	std::shared_ptr<concurrencpp::thread_pool_executor> ex) {
@@ -879,7 +862,7 @@ concurrencpp::null_result delayed_task(
 		std::cout << "task was invoked " << counter << " times." << std::endl;
 		counter++;
 
-		co_await tq->make_delay_object(1'500, ex);
+		co_await tq->make_delay_object(1'500ms, ex);
 	}
 }
 
@@ -887,7 +870,7 @@ int main() {
 	concurrencpp::runtime runtime;
 	delayed_task(runtime.timer_queue(), runtime.thread_pool_executor());
 
-	std::this_thread::sleep_for(std::chrono::seconds(10));
+	std::this_thread::sleep_for(10s);
 	return 0;
 }
 ```
@@ -1107,5 +1090,5 @@ In this example, we created an executor which logs actions like enqueuing a task
 
 ### Supported platforms
 * Linux (requires clang-9 and above).
-* machOS (requires clang-9 and above).
+* macOS (requires clang-9 and above).
 * Windows (requires Windows 10, visual studio 2019 and above).

@@ -14,20 +14,22 @@ namespace concurrencpp::tests {
 	void test_when_all_vector_empty_result();
 
 	template<class type>
-	result<void> test_when_all_vector_impl(std::shared_ptr<thread_executor> ex);
-
-	template<class type>
 	void test_when_all_vector_empty_range();
 
-	void test_when_all_vector(std::shared_ptr<thread_executor> ex);
+	template<class type>
+	result<void> test_when_all_vector_valid(std::shared_ptr<thread_executor> ex);
+
+	template<class type>
+	void test_when_all_vector_impl();
+	void test_when_all_vector();
 
 	void test_when_all_tuple_empty_result();
 
-	result<void> test_when_all_tuple_impl(std::shared_ptr<thread_executor> ex);
-
 	void test_when_all_tuple_empty_range();
 
-	void test_when_all_tuple(std::shared_ptr<thread_executor> ex);
+	result<void> test_when_all_tuple_valid(std::shared_ptr<thread_executor> ex);
+
+	void test_when_all_tuple();
 }
 
 template <class type>
@@ -58,8 +60,16 @@ void concurrencpp::tests::test_when_all_vector_empty_result() {
 	assert_true(all_valid);
 }
 
+template <class type>
+void concurrencpp::tests::test_when_all_vector_empty_range() {
+	std::vector<result<type>> empty_range;
+	auto all = concurrencpp::when_all(empty_range.begin(), empty_range.end());
+	assert_equal(all.status(), result_status::value);
+	assert_equal(all.get(), std::vector<result<type>>{});
+}
+
 template<class type>
-concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_impl(std::shared_ptr<thread_executor> ex) {
+concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_valid(std::shared_ptr<thread_executor> ex) {
 	const size_t task_count = 1'024;
 	auto values = result_factory<type>::get_many(task_count);
 	std::atomic_size_t counter = 0;
@@ -122,31 +132,23 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_impl(std::s
 }
 
 template <class type>
-void concurrencpp::tests::test_when_all_vector_empty_range() {
-	std::vector<result<type>> empty_range;
-	auto all = concurrencpp::when_all(empty_range.begin(), empty_range.end());
-	assert_equal(all.status(), result_status::value);
-	assert_equal(all.get(), std::vector<result<type>>{});
+void concurrencpp::tests::test_when_all_vector_impl() {
+	test_when_all_vector_empty_result<type>();
+	test_when_all_vector_empty_range<type>();
+
+	{
+		auto ex = std::make_shared<concurrencpp::thread_executor>();
+		executor_shutdowner shutdown(ex);
+		test_when_all_vector_valid<type>(ex).get();
+	}
 }
 
-void concurrencpp::tests::test_when_all_vector(std::shared_ptr<thread_executor> ex) {
-	test_when_all_vector_empty_result<int>();
-	test_when_all_vector_empty_result<std::string>();
-	test_when_all_vector_empty_result<void>();
-	test_when_all_vector_empty_result<int&>();
-	test_when_all_vector_empty_result<std::string&>();
-
-	test_when_all_vector_impl<int>(ex).get();
-	test_when_all_vector_impl<std::string>(ex).get();
-	test_when_all_vector_impl<void>(ex).get();
-	test_when_all_vector_impl<int&>(ex).get();
-	test_when_all_vector_impl<std::string&>(ex).get();
-
-	test_when_all_vector_empty_range<int>();
-	test_when_all_vector_empty_range<std::string>();
-	test_when_all_vector_empty_range<void>();
-	test_when_all_vector_empty_range<int&>();
-	test_when_all_vector_empty_range<std::string&>();
+void concurrencpp::tests::test_when_all_vector() {
+	test_when_all_vector_impl<int>();
+	test_when_all_vector_impl<std::string>();
+	test_when_all_vector_impl<void>();
+	test_when_all_vector_impl<int&>();
+	test_when_all_vector_impl<std::string&>();
 }
 
 void concurrencpp::tests::test_when_all_tuple_empty_result() {
@@ -181,7 +183,13 @@ void concurrencpp::tests::test_when_all_tuple_empty_result() {
 	assert_true(static_cast<bool>(int_res));
 }
 
-concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_impl(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_all_tuple_empty_range() {
+	auto all = when_all();
+	assert_equal(all.status(), result_status::value);
+	assert_equal(all.get(), std::tuple<>{});
+}
+
+concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::shared_ptr<thread_executor> ex) {
 	std::atomic_size_t counter = 0;
 
 	auto int_res_val = ex->submit([&]() ->int {
@@ -277,31 +285,22 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_impl(std::sh
 	test_ready_result_costume_exception(std::move(std::get<9>(done_results_tuple)), 4);
 }
 
-void concurrencpp::tests::test_when_all_tuple_empty_range() {
-	auto all = when_all();
-	assert_equal(all.status(), result_status::value);
-	assert_equal(all.get(), std::tuple<>{});
-}
-
-void concurrencpp::tests::test_when_all_tuple(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_all_tuple() {
 	test_when_all_tuple_empty_result();
-	test_when_all_tuple_impl(ex);
 	test_when_all_tuple_empty_range();
+
+	{
+		auto ex = std::make_shared<concurrencpp::thread_executor>();
+		executor_shutdowner shutdown(ex);
+		test_when_all_tuple_valid(ex);
+	}
 }
 
 void concurrencpp::tests::test_when_all() {
-	auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
-	executor_shutdowner shutdown(thread_executor);
+	tester test("when_all test");
 
-	tester tester("when_all test");
+	test.add_step("when_all(begin, end)", test_when_all_vector);
+	test.add_step("when_all(result_types&& ... results)", test_when_all_tuple);
 
-	tester.add_step("when_all(begin, end)", [thread_executor] {
-		test_when_all_vector(thread_executor);
-	});
-
-	tester.add_step("when_all(result_types&& ... results)", [thread_executor] {
-		test_when_all_tuple(thread_executor);
-	});
-
-	tester.launch_test();
+	test.launch_test();
 }

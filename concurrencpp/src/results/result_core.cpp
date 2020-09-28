@@ -116,12 +116,10 @@ bool result_core_base::await_via(
 	return handle_done_state(await_ctx, force_rescheduling);
 }
 
-void result_core_base::when_all(std::weak_ptr<when_all_state_base> when_all_state) noexcept {
+void result_core_base::when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept {
 	const auto state = m_pc_state.load(std::memory_order_acquire);
 	if (state == pc_state::producer) {
-		assert(!when_all_state.expired());
-		auto state = when_all_state.lock();
-		return state->on_result_ready();
+		return when_all_state->on_result_ready();
 	}
 
 	assert_consumer_idle();
@@ -138,11 +136,8 @@ void result_core_base::when_all(std::weak_ptr<when_all_state_base> when_all_stat
 	}
 
 	assert_done();
-	auto state_ptr = std::get<4>(m_consumer).lock();
-
-	if (static_cast<bool>(state_ptr)) {
-		state_ptr->on_result_ready();
-	}
+	auto& state_ptr = std::get<4>(m_consumer);
+	state_ptr->on_result_ready();
 }
 
 concurrencpp::details::when_any_status result_core_base::when_any(

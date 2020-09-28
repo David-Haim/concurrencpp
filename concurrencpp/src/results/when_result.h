@@ -65,17 +65,18 @@ namespace concurrencpp::details {
 
 	private:
 		tuple_type m_tuple;
-		result_core<tuple_type> m_core_ptr;
+		std::shared_ptr<result_core<tuple_type>> m_core_ptr;
 
 		template<class type>
 		void set_state(result<type>& result) noexcept {
 			auto core_ptr = when_result_helper::get_core(result);
-			core_ptr->when_all(this->weak_from_this());
+			core_ptr->when_all(this->shared_from_this());
 		}
 
 	public:
 		when_all_tuple_state(result_types&& ... results) noexcept :
-			m_tuple(std::forward<result_types>(results)...) {
+			m_tuple(std::forward<result_types>(results)...),
+			m_core_ptr(std::make_shared<result_core<tuple_type>>()) {
 			m_counter = sizeof ... (result_types);
 		}
 
@@ -88,14 +89,12 @@ namespace concurrencpp::details {
 				return;
 			}
 
-			m_core_ptr.set_result(std::move(m_tuple));
-			m_core_ptr.publish_result();
+			m_core_ptr->set_result(std::move(m_tuple));
+			m_core_ptr->publish_result();
 		}
 
 		result<tuple_type> get_result() noexcept {
-			return {
-				std::shared_ptr<result_core<tuple_type>>(this->shared_from_this(), &m_core_ptr)
-			};
+			return { m_core_ptr };
 		}
 	};
 
@@ -106,23 +105,24 @@ namespace concurrencpp::details {
 
 	private:
 		std::vector<type> m_vector;
-		result_core<std::vector<type>> m_core_ptr;
+		std::shared_ptr<result_core<std::vector<type>>> m_core_ptr;
 
 		template<class given_type>
 		void set_state(result<given_type>& result) noexcept {
 			auto core_ptr = when_result_helper::get_core(result);;
-			core_ptr->when_all(this->weak_from_this());
+			core_ptr->when_all(this->shared_from_this());
 		}
 
 	public:
 		template<class iterator_type>
 		when_all_vector_state(iterator_type begin, iterator_type end) :
-			m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)) {
+			m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)),
+			m_core_ptr(std::make_shared<result_core<std::vector<type>>>()) {
 			m_counter = m_vector.size();
 		}
 
 		void set_state() noexcept {
-			for(auto& result : m_vector) {
+			for (auto& result : m_vector) {
 				set_state(result);
 			}
 		}
@@ -132,14 +132,12 @@ namespace concurrencpp::details {
 				return;
 			}
 
-			m_core_ptr.set_result(std::move(m_vector));
-			m_core_ptr.publish_result();
+			m_core_ptr->set_result(std::move(m_vector));
+			m_core_ptr->publish_result();
 		}
 
 		result<std::vector<type>> get_result() noexcept {
-			return {
-				std::shared_ptr<result_core<std::vector<type>>>(this->shared_from_this(), &m_core_ptr)
-			};
+			return { m_core_ptr };
 		}
 	};
 }
@@ -381,7 +379,7 @@ namespace concurrencpp {
 
 	template<class iterator_type>
 	result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
-	when_any(iterator_type begin, iterator_type end) {
+		when_any(iterator_type begin, iterator_type end) {
 		details::when_result_helper::throw_if_empty_range(
 			details::consts::k_when_any_empty_result_error_msg,
 			begin,

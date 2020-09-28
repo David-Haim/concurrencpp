@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+using namespace std::chrono_literals;
+
 class process_stat_printer {
 
 private:
@@ -37,8 +39,8 @@ int main(int, const char**) {
 	auto timer_queue = runtime.timer_queue();
 	auto thread_pool_executor = runtime.thread_pool_executor();
 	auto timer = timer_queue->make_timer(
-		2500,
-		2500,
+		2500ms,
+		2500ms,
 		thread_pool_executor,
 		process_stat_printer());
 
