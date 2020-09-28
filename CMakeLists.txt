@@ -4,8 +4,7 @@ project(concurrencpp
         VERSION 0.0.6
         LANGUAGES CXX)
 
-list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(coroutineOptions)
+include(cmake/coroutineOptions.cmake)
 
 # ---- Options ----
 

@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
 
-include(coroutineOptions)
+include(../cmake/coroutineOptions.cmake)
 
 add_executable(sandbox main.cpp)
 

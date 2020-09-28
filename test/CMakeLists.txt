@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(concurrencppTests LANGUAGES CXX)
 
+include(../cmake/coroutineOptions.cmake)
+
 # ---- Add root project ----
 
 # Enable warnings from includes
@@ -15,8 +17,6 @@ endif()
 include(FetchContent)
 FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
-
-include(coroutineOptions)
 
 # ---- Test ----
 
