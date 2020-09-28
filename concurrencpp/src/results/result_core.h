@@ -154,7 +154,7 @@ namespace concurrencpp::details {
 			std::experimental::coroutine_handle<>,
 			await_context,
 			std::shared_ptr<wait_context>,
-			std::weak_ptr<when_all_state_base>,
+			std::shared_ptr<when_all_state_base>,
 			when_any_ctx>;
 
 		enum class pc_state {
@@ -185,7 +185,7 @@ namespace concurrencpp::details {
 			std::experimental::coroutine_handle<> caller_handle,
 			bool force_rescheduling);
 
-		void when_all(std::weak_ptr<when_all_state_base> when_all_state) noexcept;
+		void when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept;
 
 		when_any_status when_any(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept;
 
@@ -369,27 +369,24 @@ namespace concurrencpp::details {
 			}
 
 			case 2: {
-				auto await_ctx = std::move(std::get<2>(this->m_consumer));
-				return this->schedule_continuation(await_ctx);
+				return this->schedule_continuation(std::get<2>(this->m_consumer));
 			}
 
 			case 3: {
-				const auto wait_ctx = std::move(std::get<3>(this->m_consumer));
+				auto& wait_ctx = std::get<3>(this->m_consumer);
 				wait_ctx->notify();
 				return;
 			}
 
 			case 4: {
-				auto when_all_state_weak = std::move(std::get<4>(this->m_consumer));
-				auto when_all_state = when_all_state_weak.lock();
-				if (static_cast<bool>(when_all_state)) {
-					when_all_state->on_result_ready();
-				}
+				auto& when_all_state = std::get<4>(this->m_consumer);
+				assert(static_cast<bool>(when_all_state));
+				when_all_state->on_result_ready();
 				return;
 			}
 
 			case 5: {
-				auto when_any_ctx = std::move(std::get<5>(this->m_consumer));
+				auto& when_any_ctx = std::get<5>(this->m_consumer);
 				auto& when_any_state = when_any_ctx.first;
 				assert(static_cast<bool>(when_any_state));
 				when_any_state->on_result_ready(when_any_ctx.second);

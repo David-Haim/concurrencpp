@@ -88,29 +88,10 @@ namespace concurrencpp {
 		void shutdown() noexcept;
 		bool shutdown_requested() const noexcept;
 
-		template<class callable_type>
-		timer make_timer(
-			size_t due_time,
-			size_t frequency,
-			std::shared_ptr<concurrencpp::executor> executor,
-			callable_type&& callable) {
-
-			if (!static_cast<bool>(executor)) {
-				throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
-			}
-
-			return make_timer_impl(
-				due_time,
-				frequency,
-				std::move(executor),
-				false,
-				std::forward<callable_type>(callable));
-		}
-
 		template<class callable_type, class ... argumet_types>
 		timer make_timer(
-			size_t due_time,
-			size_t frequency,
+			std::chrono::milliseconds due_time,
+			std::chrono::milliseconds frequency,
 			std::shared_ptr<concurrencpp::executor> executor,
 			callable_type&& callable,
 			argumet_types&& ... arguments) {
@@ -120,8 +101,8 @@ namespace concurrencpp {
 			}
 
 			return make_timer_impl(
-				due_time,
-				frequency,
+				due_time.count(),
+				frequency.count(),
 				std::move(executor),
 				false,
 				details::bind(
@@ -129,27 +110,9 @@ namespace concurrencpp {
 					std::forward<argumet_types>(arguments)...));
 		}
 
-		template<class callable_type>
-		timer make_one_shot_timer(
-			size_t due_time,
-			std::shared_ptr<concurrencpp::executor> executor,
-			callable_type&& callable) {
-
-			if (!static_cast<bool>(executor)) {
-				throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
-			}
-
-			return make_timer_impl(
-				due_time,
-				0,
-				std::move(executor),
-				true,
-				std::forward<callable_type>(callable));
-		}
-
 		template<class callable_type, class ... argumet_types>
 		timer make_one_shot_timer(
-			size_t due_time,
+			std::chrono::milliseconds due_time,
 			std::shared_ptr<concurrencpp::executor> executor,
 			callable_type&& callable,
 			argumet_types&& ... arguments) {
@@ -159,7 +122,7 @@ namespace concurrencpp {
 			}
 
 			return make_timer_impl(
-				due_time,
+				due_time.count(),
 				0,
 				std::move(executor),
 				true,
@@ -168,7 +131,7 @@ namespace concurrencpp {
 					std::forward<argumet_types>(arguments)...));
 		}
 
-		result<void> make_delay_object(size_t due_time, std::shared_ptr<concurrencpp::executor> executor);
+		result<void> make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor);
 	};
 }
 
