@@ -44,3 +44,7 @@
 /build
 /msvc_intermediate
 out/
+
+# CLion
+.idea/
+**/cmake-build-*/
