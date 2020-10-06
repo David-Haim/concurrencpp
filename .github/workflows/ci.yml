@@ -35,10 +35,11 @@ jobs:
           - os: windows-latest
             cc: cl
             cxx: cl
+            experimental: false
 
     runs-on: ${{ matrix.config.os }}
 
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: ${{ matrix.config.experimental }}
 
     env:
       CC: ${{ matrix.config.cc }}
