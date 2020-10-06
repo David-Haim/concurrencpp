@@ -27,6 +27,8 @@ endif()
 
 enable_testing()
 
+add_custom_target(full)
+
 # TODO: remove this once tests were properly fixed
 set(test_sources
         source/helpers/assertions.cpp
@@ -50,14 +52,7 @@ set(test_sources
         source/tests/result_tests/when_any_tests.cpp
         source/tests/runtime_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
-        source/tests/timer_tests/timer_tests.cpp
-        source/thread_sanitizer/executors.cpp
-        source/thread_sanitizer/fibbonacci.cpp
-        source/thread_sanitizer/matrix_multiplication.cpp
-        source/thread_sanitizer/quick_sort.cpp
-        source/thread_sanitizer/result.cpp
-        source/thread_sanitizer/when_all.cpp
-        source/thread_sanitizer/when_any.cpp)
+        source/tests/timer_tests/timer_tests.cpp)
 
 set(test_headers
         include/helpers/assertions.h
@@ -74,14 +69,25 @@ set(test_headers
         include/tests/test_utils/test_executors.h
         include/tests/test_utils/test_ready_result.h)
 
-add_executable(dummy_to_remove ${test_sources} ${test_headers})
-target_link_libraries(dummy_to_remove PRIVATE concurrencpp::concurrencpp)
-target_compile_features(dummy_to_remove PRIVATE cxx_std_20)
-target_coroutine_options(dummy_to_remove)
-target_include_directories(dummy_to_remove
-        PRIVATE
-        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
-add_test(NAME dummy_to_remove COMMAND dummy_to_remove)
+function(temp_test NAMESPACE NAME)
+  set(target ${NAMESPACE}_${NAME})
+  add_executable(${target} ${ARGN})
+  target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
+  target_compile_features(${target} PRIVATE cxx_std_20)
+  target_coroutine_options(${target})
+  target_include_directories(${target}
+          PRIVATE
+          "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
+  add_dependencies(full ${target})
+  add_test(NAME ${NAMESPACE}.${NAME} COMMAND ${target})
+endfunction()
+
+temp_test(dummy main ${test_headers} ${test_sources})
+
+set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result when_all when_any)
+foreach(source IN LISTS tsan_sources)
+  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp)
+endforeach()
 
 return()
 
@@ -113,6 +119,7 @@ function(add_test)
 
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
+  add_dependencies(full ${target})
 
   if(TEST_PROPERTIES)
     set_tests_properties(${test_name} PROPERTIES ${TEST_PROPERTIES})
