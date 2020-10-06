@@ -1,0 +1,117 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      -master
+
+  pull_request:
+    branches:
+      -master
+
+env:
+  CMAKE_VERSION: 3.18.3
+  NINJA_VERSION: 1.10.1
+  CMAKE_CONFIG_TYPE: Debug
+  CTEST_OUTPUT_ON_FAILURE: 1
+  NINJA_STATUS: '[%f/%t %o/sec] '
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - os: ubuntu-latest
+            cc: clang-10
+            cxx: clang++-10
+
+          - os: macos-latest
+            cc: clang
+            cxx: clang++
+
+          - os: windows-latest
+            cc: cl
+            cxx: cl
+
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: friendlyanon/fetch-core-count@v1
+        id: cores
+
+      - run: cmake -E make_directory .tools
+
+      - name: Install CMake and Ninja
+        id: tools
+        working-directory: .tools
+        run: cmake -D RUNNER_OS=${{ runner.os }} -P ../cmake/ciToolsUpdate.cmake
+
+      - name: Install Clang 10
+        if: startsWith(matrix.config.os, 'ubuntu')
+        working-directory: ${{ env.HOME }}
+        run: |
+          wget --quiet https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 10 > /dev/null
+
+      - name: Install libc++
+        id: libcxx
+        if: startsWith(matrix.config.os, 'ubuntu')
+        working-directory: .tools
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
+          JOB_COUNT: ${{ steps.cores.outputs.plus_one }}
+        run: ../install_libcxx.sh
+
+      - name: Combine CI variables
+        id: args
+        shell: cmake -P {0}
+        run: >
+          message([==[::set-output name=args::${{ runner.os }}
+          ${{ matrix.config.os }} ${{ steps.libcxx.outputs.include || 'none' }}
+          ${{ steps.libcxx.outputs.lib || 'none' }}
+          ${{ steps.tools.outputs.cmake }}
+          ${{ steps.tools.outputs.ninja }}
+          ${{ steps.cores.outputs.plus_one }}]==])
+
+      - name: Build tests (from source)
+        run: cmake -P cmake/ciBuild.cmake -- test build/test
+          ${{ steps.args.outputs.args }}
+
+      - name: Run tests (from source)
+        working-directory: build/test
+        shell: cmake -P {0}
+        run: >
+          include(../../cmake/exec.cmake)
+
+          exec(${{ steps.tools.outputs.ctest }}
+          -j ${{ steps.cores.outputs.plus_one }})
+
+      - name: Build library with TSAN
+        run: cmake -P cmake/ciBuild.cmake -- . build/install
+          ${{ steps.args.outputs.args }}
+          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=YES
+
+      - name: Install library
+        shell: cmake -P {0}
+        run: >
+          include(cmake/exec.cmake)
+
+          exec(${{ steps.tools.outputs.cmake }} --install build/install)
+
+      - name: Build tests (installed)
+        run: cmake -P cmake/ciBuild.cmake -- test build/test-installed
+          ${{ steps.args.outputs.args }} -D TEST_INSTALLED_VERSION:BOOL=YES
+
+      - name: Run tests (installed)
+        working-directory: build/test-installed
+        shell: cmake -P {0}
+        run: >
+          include(../../cmake/exec.cmake)
+
+          exec(${{ steps.tools.outputs.ctest }}
+          -j ${{ steps.cores.outputs.plus_one }})
