@@ -25,16 +25,20 @@ jobs:
           - os: ubuntu-latest
             cc: clang-10
             cxx: clang++-10
+            experimental: true
 
           - os: macos-latest
             cc: clang
             cxx: clang++
+            experimental: true
 
           - os: windows-latest
             cc: cl
             cxx: cl
 
     runs-on: ${{ matrix.config.os }}
+
+    continue-on-error: ${{ matrix.experimental }}
 
     env:
       CC: ${{ matrix.config.cc }}
