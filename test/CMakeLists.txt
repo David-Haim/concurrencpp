@@ -14,6 +14,7 @@ if(CXX_COMPILER_ID MATCHES "Clang")
   set(CONCURRENCPP_ENABLE_THREAD_SANITIZER ON CACHE INTERNAL "")
 endif()
 
+option(TEST_INSTALLED_VERSION "Use installed library" OFF)
 if(TEST_INSTALLED_VERSION)
   find_package(concurrencpp REQUIRED CONFIG)
 else()
