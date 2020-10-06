@@ -1,6 +1,6 @@
 function(target_coroutine_options TARGET)
   if(MSVC)
-    target_compile_options(${TARGET} PUBLIC /await)
+    target_compile_options(${TARGET} PUBLIC /await /permissive-)
     return()
   endif()
 
