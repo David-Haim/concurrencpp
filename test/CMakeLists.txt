@@ -27,8 +27,6 @@ endif()
 
 enable_testing()
 
-add_custom_target(full)
-
 # TODO: remove this once tests were properly fixed
 set(test_sources
         source/helpers/assertions.cpp
@@ -78,11 +76,14 @@ function(temp_test NAMESPACE NAME)
   target_include_directories(${target}
           PRIVATE
           "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
-  add_dependencies(full ${target})
   add_test(NAME ${NAMESPACE}.${NAME} COMMAND ${target})
 endfunction()
 
 temp_test(dummy main ${test_headers} ${test_sources})
+
+if(NOT CONCURRENCPP_ENABLE_THREAD_SANITIZER)
+  return()
+endif()
 
 set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result when_all when_any)
 foreach(source IN LISTS tsan_sources)
@@ -119,7 +120,6 @@ function(add_test)
 
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
-  add_dependencies(full ${target})
 
   if(TEST_PROPERTIES)
     set_tests_properties(${test_name} PROPERTIES ${TEST_PROPERTIES})
