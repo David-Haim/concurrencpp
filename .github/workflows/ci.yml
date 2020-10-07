@@ -9,6 +9,8 @@ on:
     branches:
       - master
 
+  workflow_dispatch: ~
+
 env:
   CMAKE_VERSION: 3.18.3
   NINJA_VERSION: 1.10.1
@@ -84,6 +86,10 @@ jobs:
           ${{ steps.tools.outputs.cmake }}
           ${{ steps.tools.outputs.ninja }}
           ${{ steps.cores.outputs.plus_one }}]==])
+
+      - name: Build examples
+        run: cmake -P cmake/ciBuild.cmake -- example build/example
+          ${{ steps.args.outputs.args }}
 
       - name: Build tests (from source)
         run: cmake -P cmake/ciBuild.cmake -- test build/test
