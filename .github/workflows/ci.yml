@@ -74,7 +74,7 @@ jobs:
         working-directory: .tools
         env:
           JOB_COUNT: ${{ steps.cores.outputs.plus_one }}
-        run: ../install_libcxx.sh
+        run: ../script/install_libcxx.sh
 
       - name: Combine CI variables
         id: args
