@@ -9,11 +9,6 @@ include(../cmake/coroutineOptions.cmake)
 # Enable warnings from includes
 set(concurrencpp_INCLUDE_WITHOUT_SYSTEM ON CACHE INTERNAL "")
 
-# Enable thread sanitizer tests on Clang
-if(CXX_COMPILER_ID MATCHES "Clang")
-  set(CONCURRENCPP_ENABLE_THREAD_SANITIZER ON CACHE INTERNAL "")
-endif()
-
 option(TEST_INSTALLED_VERSION "Use installed library" OFF)
 if(TEST_INSTALLED_VERSION)
   find_package(concurrencpp REQUIRED CONFIG)

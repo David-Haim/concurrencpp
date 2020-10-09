@@ -23,24 +23,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - os: ubuntu-latest
+        conf:
+          - name: Ubuntu (Clang 10 - TSAN)
+            os: ubuntu-latest
             cc: clang-10
             cxx: clang++-10
+            tsan: YES
 
-          - os: macos-latest
+          - name: Ubuntu (Clang 10 - no TSAN)
+            os: ubuntu-latest
+            cc: clang-10
+            cxx: clang++-10
+            tsan: NO
+
+          - name: macOS (AppleClang 10)
+            os: macos-latest
             cc: clang
             cxx: clang++
+            tsan: NO
 
-          - os: windows-latest
+          - name: Windows (Visual Studio Enterprise 2019)
+            os: windows-latest
             cc: cl
             cxx: cl
+            tsan: NO
 
-    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.conf.name }}
+
+    runs-on: ${{ matrix.conf.os }}
 
     env:
-      CC: ${{ matrix.config.cc }}
-      CXX: ${{ matrix.config.cxx }}
+      CC: ${{ matrix.conf.cc }}
+      CXX: ${{ matrix.conf.cxx }}
 
     steps:
       - uses: actions/checkout@v1
@@ -57,7 +71,7 @@ jobs:
           -P ../../cmake/ciToolsUpdate.cmake
 
       - name: Install Clang 10
-        if: startsWith(matrix.config.os, 'ubuntu')
+        if: startsWith(matrix.conf.os, 'ubuntu')
         working-directory: ${{ env.HOME }}
         run: |
           wget --quiet https://apt.llvm.org/llvm.sh
@@ -66,7 +80,7 @@ jobs:
 
       - name: Install libc++
         id: libcxx
-        if: startsWith(matrix.config.os, 'ubuntu')
+        if: startsWith(matrix.conf.os, 'ubuntu')
         working-directory: build/tools
         env:
           JOB_COUNT: ${{ steps.cores.outputs.plus_one }}
@@ -77,19 +91,33 @@ jobs:
         shell: cmake -P {0}
         run: >
           message([==[::set-output name=args::${{ runner.os }}
-          ${{ matrix.config.os }} ${{ steps.libcxx.outputs.include || 'none' }}
-          ${{ steps.libcxx.outputs.lib || 'none' }}
-          ${{ steps.tools.outputs.cmake }}
-          ${{ steps.tools.outputs.ninja }}
+          ${{ matrix.conf.os }} "${{ steps.libcxx.outputs.include || 'none' }}"
+          "${{ steps.libcxx.outputs.lib || 'none' }}"
+          "${{ steps.tools.outputs.cmake }}"
+          "${{ steps.tools.outputs.ninja }}"
           ${{ steps.cores.outputs.plus_one }}]==])
 
       - name: Build examples
         run: cmake -P cmake/ciBuild.cmake -- example build/example
           ${{ steps.args.outputs.args }}
 
-      - name: Build tests (from source)
+      - name: Build library
+        run: cmake -P cmake/ciBuild.cmake -- . build/install
+          ${{ steps.args.outputs.args }}
+          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
+
+      - name: Install library
+        shell: cmake -P {0}
+        run: >
+          include(cmake/exec.cmake)
+
+          exec("${{ steps.tools.outputs.cmake }}" --install build/install)
+
+      - name: Build tests
         run: cmake -P cmake/ciBuild.cmake -- test build/test
           ${{ steps.args.outputs.args }}
+          -D TEST_INSTALLED_VERSION:BOOL=YES
+          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
 
       - name: Run tests (from source)
         working-directory: build/test
@@ -97,30 +125,5 @@ jobs:
         run: >
           include(../../cmake/exec.cmake)
 
-          exec(${{ steps.tools.outputs.ctest }}
-          -j ${{ steps.cores.outputs.plus_one }})
-
-      - name: Build library with TSAN
-        run: cmake -P cmake/ciBuild.cmake -- . build/install
-          ${{ steps.args.outputs.args }}
-          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=YES
-
-      - name: Install library
-        shell: cmake -P {0}
-        run: >
-          include(cmake/exec.cmake)
-
-          exec(${{ steps.tools.outputs.cmake }} --install build/install)
-
-      - name: Build tests (installed)
-        run: cmake -P cmake/ciBuild.cmake -- test build/test-installed
-          ${{ steps.args.outputs.args }} -D TEST_INSTALLED_VERSION:BOOL=YES
-
-      - name: Run tests (installed)
-        working-directory: build/test-installed
-        shell: cmake -P {0}
-        run: >
-          include(../../cmake/exec.cmake)
-
-          exec(${{ steps.tools.outputs.ctest }}
+          exec("${{ steps.tools.outputs.ctest }}"
           -j ${{ steps.cores.outputs.plus_one }})
