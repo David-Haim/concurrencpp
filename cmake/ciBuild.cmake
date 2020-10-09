@@ -24,6 +24,6 @@ if(os MATCHES "^ubuntu")
 endif()
 
 exec(${cmake} -S ${source} -B ${build} -G Ninja -D CMAKE_MAKE_PROGRAM=${ninja}
--D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=.install ${flags} ${args})
+-D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=.install ${flags} ${args})
 
 exec(${cmake} --build ${build} -j ${cores})
