@@ -53,12 +53,13 @@ jobs:
       - uses: friendlyanon/fetch-core-count@v1
         id: cores
 
-      - run: cmake -E make_directory .tools
+      - run: cmake -E make_directory build/tools
 
       - name: Install CMake and Ninja
         id: tools
-        working-directory: .tools
-        run: cmake -D RUNNER_OS=${{ runner.os }} -P ../cmake/ciToolsUpdate.cmake
+        working-directory: build/tools
+        run: cmake -D RUNNER_OS=${{ runner.os }}
+          -P ../../cmake/ciToolsUpdate.cmake
 
       - name: Install Clang 10
         if: startsWith(matrix.config.os, 'ubuntu')
@@ -71,10 +72,10 @@ jobs:
       - name: Install libc++
         id: libcxx
         if: startsWith(matrix.config.os, 'ubuntu')
-        working-directory: .tools
+        working-directory: build/tools
         env:
           JOB_COUNT: ${{ steps.cores.outputs.plus_one }}
-        run: ../script/install_libcxx.sh
+        run: ../../script/install_libcxx.sh
 
       - name: Combine CI variables
         id: args

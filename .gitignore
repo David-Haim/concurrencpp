@@ -48,7 +48,3 @@ out/
 # CLion
 .idea/
 **/cmake-build-*/
-
-# CI related
-.tools/
-.install/
