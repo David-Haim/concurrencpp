@@ -119,7 +119,7 @@ jobs:
           -D TEST_INSTALLED_VERSION:BOOL=YES
           -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
 
-      - name: Run tests (from source)
+      - name: Run tests
         working-directory: build/test
         shell: cmake -P {0}
         run: >
