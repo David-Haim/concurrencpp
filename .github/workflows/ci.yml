@@ -129,5 +129,5 @@ jobs:
         run: >
           include(../../cmake/exec.cmake)
 
-          exec("${{ steps.tools.outputs.ctest }}" -C Release
+          exec("${{ steps.tools.outputs.ctest }}" -C Release -V
           -j ${{ steps.cores.outputs.plus_one }})
