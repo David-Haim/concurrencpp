@@ -21,6 +21,7 @@ jobs:
   tests:
     strategy:
       fail-fast: false
+
       matrix:
         conf:
           - name: Ubuntu (Clang 10 - TSAN)
@@ -35,11 +36,12 @@ jobs:
             cxx: clang++-10
             tsan: NO
 
-          - name: macOS (AppleClang 10)
+          - name: macOS (AppleClang 11)
             os: macos-latest
             cc: clang
             cxx: clang++
             tsan: NO
+            experimental: true
 
           - name: Windows (Visual Studio Enterprise 2019)
             os: windows-latest
@@ -50,6 +52,8 @@ jobs:
     name: ${{ matrix.conf.name }}
 
     runs-on: ${{ matrix.conf.os }}
+
+    continue-on-error: ${{ matrix.conf.experimental || false }}
 
     env:
       CC: ${{ matrix.conf.cc }}
