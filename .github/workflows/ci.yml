@@ -37,8 +37,8 @@ jobs:
 
           - name: macOS (AppleClang 10)
             os: macos-latest
-            cc: clang-10
-            cxx: clang++-10
+            cc: clang
+            cxx: clang++
             tsan: NO
 
           - name: Windows (Visual Studio Enterprise 2019)
