@@ -72,6 +72,7 @@ function(temp_test NAMESPACE NAME)
           PRIVATE
           "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
   add_test(NAME ${NAMESPACE}.${NAME} COMMAND ${target})
+  set_property(TEST ${NAMESPACE}.${NAME} PROPERTY RUN_SERIAL YES)
 endfunction()
 
 temp_test(dummy main ${test_headers} ${test_sources})
