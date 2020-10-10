@@ -1,6 +1,11 @@
+# Don't ignore empty list elements
+cmake_policy(SET CMP0007 NEW)
+
 set(args "")
 foreach(n RANGE ${CMAKE_ARGC})
-  list(APPEND args "${CMAKE_ARGV${n}}")
+  if(NOT "${CMAKE_ARGV${n}}" STREQUAL "")
+    list(APPEND args "${CMAKE_ARGV${n}}")
+  endif()
 endforeach()
 
 list(FIND args "--" index)
