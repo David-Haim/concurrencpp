@@ -14,7 +14,6 @@ on:
 env:
   CMAKE_VERSION: 3.18.3
   NINJA_VERSION: 1.10.1
-  CMAKE_CONFIG_TYPE: Release
   CTEST_OUTPUT_ON_FAILURE: 1
   NINJA_STATUS: '[%f/%t %o/sec] '
 
@@ -111,7 +110,8 @@ jobs:
         run: >
           include(cmake/exec.cmake)
 
-          exec("${{ steps.tools.outputs.cmake }}" --install build/install)
+          exec("${{ steps.tools.outputs.cmake }}" --install build/install
+          --config Release)
 
       - name: Build tests
         run: cmake -P cmake/ciBuild.cmake -- test build/test
@@ -125,5 +125,5 @@ jobs:
         run: >
           include(../../cmake/exec.cmake)
 
-          exec("${{ steps.tools.outputs.ctest }}"
+          exec("${{ steps.tools.outputs.ctest }}" -C Release
           -j ${{ steps.cores.outputs.plus_one }})
