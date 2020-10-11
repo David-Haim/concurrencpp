@@ -93,8 +93,8 @@ jobs:
         id: args
         shell: cmake -P {0}
         run: >
-          message([==[::set-output name=args::${{ runner.os }}
-          ${{ matrix.conf.os }} "${{ steps.libcxx.outputs.include || 'none' }}"
+          message([==[::set-output name=args::${{ matrix.conf.os }}
+          "${{ steps.libcxx.outputs.include || 'none' }}"
           "${{ steps.libcxx.outputs.lib || 'none' }}"
           "${{ steps.tools.outputs.cmake }}"
           "${{ steps.tools.outputs.ninja }}"

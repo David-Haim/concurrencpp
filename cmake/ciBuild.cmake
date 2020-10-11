@@ -17,7 +17,7 @@ else()
   list(SUBLIST temp ${index} -1 args)
 endif()
 
-list(POP_FRONT args source build RUNNER_OS os inc lib cmake ninja cores)
+list(POP_FRONT args source build os inc lib cmake ninja cores)
 
 include(cmake/exec.cmake)
 include(cmake/setCiVars.cmake)

@@ -1,4 +1,4 @@
-if (RUNNER_OS STREQUAL "Windows")
+if (os MATCHES "^windows")
   execute_process(
     COMMAND "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat" && set
     OUTPUT_FILE environment_script_output.txt
