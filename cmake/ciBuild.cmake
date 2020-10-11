@@ -22,7 +22,7 @@ list(POP_FRONT args source build os inc lib cmake ninja cores)
 include(cmake/exec.cmake)
 include(cmake/setCiVars.cmake)
 
-if(os MATCHES "^ubuntu")
+if(os MATCHES "^ubuntu|^linux")
   set(flags ${flags}
     -D "CMAKE_CXX_FLAGS=-nostdinc++ -cxx-isystem ${inc}/c++/v1/ -Wno-unused-command-line-argument"
     -D "CMAKE_EXE_LINKER_FLAGS=-L ${lib} -Wl,-rpath,${lib} -lc++abi")
