@@ -25,23 +25,21 @@ jobs:
           packages: [cmake, ninja]
 
 script:
-  # Configure and build examples
   - >-
+    echo "---- Configure and build examples ----" &&
     cmake -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
     inc-ignore lib-ignore cmake ninja $JOBS
-
-  # Configure and build library
-  - >-
+    &&
+    echo "---- Configure and build library ----" &&
     cmake -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME inc-ignore
     lib-ignore cmake ninja $JOBS
-
-  # Install library
-  - cmake --install build/install --config Release
-
-  # Configure and build tests
-  - >-
+    &&
+    echo "---- Install library ----" &&
+    cmake --install build/install --config Release
+    &&
+    echo "---- Configure and build tests ----" &&
     cmake -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME inc-ignore
     lib-ignore cmake ninja $JOBS -D TEST_INSTALLED_VERSION:BOOL=YES
-
-  # Run tests
-  - cd build/test && ctest -C Release -V -j $JOBS
+    &&
+    echo "---- Run tests ----" &&
+    cd build/test && ctest -C Release -V -j $JOBS
