@@ -1,0 +1,47 @@
+language: cpp
+
+os: linux
+dist: bionic
+
+git:
+  depth: false
+
+  quiet: true
+
+branches:
+  only: [master]
+
+env:
+  global: CTEST_OUTPUT_ON_FAILURE=1 NINJA_STATUS="[%f/%t %o/sec] "
+
+jobs:
+  include:
+    - os: osx
+      osx_image: xcode10.3
+      compiler: clang
+      before_install: [export JOBS=$(sysctl -n hw.logicalcpu)]
+      addons:
+        homebrew:
+          packages: [cmake, ninja]
+
+script:
+  # Configure and build examples
+  - >-
+    cmake -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
+    inc-ignore lib-ignore cmake ninja $JOBS
+
+  # Configure and build library
+  - >-
+    cmake -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME inc-ignore
+    lib-ignore cmake ninja $JOBS
+
+  # Install library
+  - cmake --install build/install --config Release
+
+  # Configure and build tests
+  - >-
+    cmake -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME inc-ignore
+    lib-ignore cmake ninja $JOBS -D TEST_INSTALLED_VERSION:BOOL=YES
+
+  # Run tests
+  - cd build/test && ctest -C Release -V -j $JOBS
