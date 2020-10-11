@@ -20,9 +20,7 @@ jobs:
       osx_image: xcode10.3
       compiler: clang
       before_install: [export JOBS=$(sysctl -n hw.logicalcpu)]
-      addons:
-        homebrew:
-          packages: [cmake, ninja]
+      install: [brew install cmake ninja]
 
 script:
   - >-
