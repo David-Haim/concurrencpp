@@ -11,7 +11,7 @@ function(exec)
 
   string(ASCII 27 Esc)
   list(JOIN args " " args)
-  message("${Esc}[36mExecuting: ${args}${Esc}[m")
+  message(STATUS "${Esc}[36mExecuting: ${args}${Esc}[m")
 
   execute_process(COMMAND ${ARGN} RESULT_VARIABLE result)
 
