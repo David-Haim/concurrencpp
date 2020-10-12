@@ -37,12 +37,12 @@
 
 # End of https://www.toptal.com/developers/gitignore/api/c++
 
-#Others
+# Others
 .vs
 
-#Specific directories
-/build
-/msvc_intermediate
+# Specific directories
+build/
+msvc_intermediate/
 out/
 
 # CLion
