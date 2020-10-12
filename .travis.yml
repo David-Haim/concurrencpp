@@ -12,7 +12,9 @@ branches:
   only: [master]
 
 env:
-  global: CTEST_OUTPUT_ON_FAILURE=1 NINJA_STATUS="[%f/%t %o/sec] "
+  global:
+    - CMAKE_VERSION=3.18.3 NINJA_VERSION=1.10.1
+    - CTEST_OUTPUT_ON_FAILURE=1 NINJA_STATUS="[%f/%t %o/sec] "
 
 jobs:
   include:
@@ -20,24 +22,28 @@ jobs:
       osx_image: xcode10.3
       compiler: clang
       before_install: [export JOBS=$(sysctl -n hw.logicalcpu)]
-      install: [brew install cmake ninja]
+      install:
+        - >-
+          mkdir -p build/tools && cd build/tools &&
+          cmake -D RUNNER_OS=macOS -P ../../cmake/ciToolsUpdate.cmake &&
+          . ./export.sh
 
 script:
   - >-
     echo "---- Configure and build examples ----" &&
     cmake -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
-    inc-ignore lib-ignore cmake ninja $JOBS
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
     &&
     echo "---- Configure and build library ----" &&
     cmake -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME inc-ignore
-    lib-ignore cmake ninja $JOBS
+    lib-ignore "$CMAKE" "$NINJA" $JOBS
     &&
     echo "---- Install library ----" &&
     cmake --install build/install --config Release
     &&
     echo "---- Configure and build tests ----" &&
     cmake -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME inc-ignore
-    lib-ignore cmake ninja $JOBS -D TEST_INSTALLED_VERSION:BOOL=YES
+    lib-ignore "$CMAKE" "$NINJA" $JOBS -D TEST_INSTALLED_VERSION:BOOL=YES
     &&
     echo "---- Run tests ----" &&
-    cd build/test && ctest -C Release -V -j $JOBS
+    cd build/test && "$CTEST" -C Release -V -j $JOBS

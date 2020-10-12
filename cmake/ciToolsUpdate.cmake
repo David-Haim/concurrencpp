@@ -25,15 +25,25 @@ file(DOWNLOAD "${ninja_url}" ./ninja.zip)
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ninja.zip OUTPUT_QUIET)
 message(STATUS "Installed Ninja")
 
+set(export_script "#!/bin/sh\n")
+
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/${cmake_dir}" cmake_dir)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/ninja" ninja_out)
+
+set(export_script "${export_script}export CTEST=\"${cmake_dir}/ctest\"\n")
 message("::set-output name=ctest::${cmake_dir}/ctest")
 message(STATUS "ctest path: ${cmake_dir}/ctest")
+
+set(export_script "${export_script}export CMAKE=\"${cmake_dir}/cmake\"\n")
 message("::set-output name=cmake::${cmake_dir}/cmake")
 message(STATUS "cmake path: ${cmake_dir}/cmake")
+
+set(export_script "${export_script}export NINJA=\"${ninja_out}\"\n")
 message("::set-output name=ninja::${ninja_out}")
 message(STATUS "ninja path: ${ninja_out}")
 
+file(WRITE export.sh "${export_script}")
+
 if (NOT RUNNER_OS STREQUAL "Windows")
-  execute_process(COMMAND chmod +x ninja "${cmake_dir}/cmake" "${cmake_dir}/ctest")
+  execute_process(COMMAND chmod +x ninja export.sh "${cmake_dir}/cmake" "${cmake_dir}/ctest")
 endif()
