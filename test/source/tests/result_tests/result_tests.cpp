@@ -1,12 +1,12 @@
-#include "concurrencpp.h"
-#include "../all_tests.h"
+#include "concurrencpp/concurrencpp.h"
+#include "tests/all_tests.h"
 
-#include "../test_utils/test_ready_result.h"
-#include "../test_utils/result_factory.h"
+#include "tests/test_utils/test_ready_result.h"
+#include "tests/test_utils/result_factory.h"
 
-#include "../../tester/tester.h"
-#include "../../helpers/assertions.h"
-#include "../../helpers/random.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
+#include "helpers/random.h"
 
 namespace concurrencpp::tests {
 template<class type>

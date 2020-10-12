@@ -1,10 +1,10 @@
-#include "concurrencpp.h"
-#include "../all_tests.h"
+#include "concurrencpp/concurrencpp.h"
+#include "tests/all_tests.h"
 
-#include "../../tester/tester.h"
-#include "../../helpers/assertions.h"
-#include "../../helpers/object_observer.h"
-#include "../../helpers/random.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
+#include "helpers/object_observer.h"
+#include "helpers/random.h"
 
 #include <chrono>
 

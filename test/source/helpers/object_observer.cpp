@@ -1,5 +1,5 @@
-#include "concurrencpp.h"
-#include "object_observer.h"
+#include "concurrencpp/concurrencpp.h"
+#include "helpers/object_observer.h"
 
 namespace concurrencpp::tests::details {
 class object_observer_state {

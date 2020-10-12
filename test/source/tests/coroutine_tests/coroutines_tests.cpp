@@ -1,16 +1,16 @@
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
-#include "../all_tests.h"
+#include "tests/all_tests.h"
 
-#include "../test_utils/test_ready_result.h"
+#include "tests/test_utils/test_ready_result.h"
 
-#include "../../tester/tester.h"
-#include "../../helpers/assertions.h"
-#include "../../helpers/object_observer.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
+#include "helpers/object_observer.h"
 
 #include <string>
 
-#include "../test_utils/executor_shutdowner.h"
+#include "tests/test_utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
 template<class type>

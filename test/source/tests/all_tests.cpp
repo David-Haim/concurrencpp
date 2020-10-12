@@ -1,4 +1,4 @@
-#include "all_tests.h"
+#include "tests/all_tests.h"
 
 void concurrencpp::tests::test_all() {
   test_inline_executor();

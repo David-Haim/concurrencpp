@@ -1,13 +1,13 @@
-#include "concurrencpp.h"
-#include "../all_tests.h"
+#include "concurrencpp/concurrencpp.h"
+#include "tests/all_tests.h"
 
-#include "../test_utils/executor_shutdowner.h"
+#include "tests/test_utils/executor_shutdowner.h"
 
-#include "../../tester/tester.h"
-#include "../../helpers/assertions.h"
-#include "../../helpers/object_observer.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
+#include "helpers/object_observer.h"
 
-#include "../../concurrencpp/src/executors/constants.h"
+#include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::tests {
 void test_inline_executor_name();

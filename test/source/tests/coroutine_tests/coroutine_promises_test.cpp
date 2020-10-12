@@ -1,12 +1,12 @@
-#include "concurrencpp.h"
-#include "../all_tests.h"
+#include "concurrencpp/concurrencpp.h"
+#include "tests/all_tests.h"
 
-#include "../test_utils/test_ready_result.h"
+#include "tests/test_utils/test_ready_result.h"
 
-#include "../../tester/tester.h"
-#include "../../helpers/assertions.h"
-#include "../../helpers/random.h"
-#include "../../helpers/object_observer.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
+#include "helpers/random.h"
+#include "helpers/object_observer.h"
 
 namespace concurrencpp::tests {
 void test_initialy_resumed_null_result_promise();

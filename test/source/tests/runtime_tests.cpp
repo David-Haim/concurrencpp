@@ -1,8 +1,8 @@
-#include "concurrencpp.h"
-#include "all_tests.h"
+#include "concurrencpp/concurrencpp.h"
+#include "tests/all_tests.h"
 
-#include "../tester/tester.h"
-#include "../helpers/assertions.h"
+#include "tester/tester.h"
+#include "helpers/assertions.h"
 
 namespace concurrencpp::tests {
 void test_runtime_destructor();
