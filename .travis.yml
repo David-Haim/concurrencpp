@@ -23,12 +23,13 @@ jobs:
       compiler: clang
       before_install: [export JOBS=$(sysctl -n hw.logicalcpu)]
       install:
-        - set -e
-        - mkdir -p build/tools && cd build/tools
-        - cmake -D RUNNER_OS=macOS -P ../../cmake/ciToolsUpdate.cmake
+        - mkdir -p build/tools
+        - cd build/tools
+        - >-
+          cmake -D RUNNER_OS=macOS -P ../../cmake/ciToolsUpdate.cmake
+          || travis_terminate 1
         - . ./export.sh
         - cd ../..
-        - set +e
 
 script:
   - set -e
