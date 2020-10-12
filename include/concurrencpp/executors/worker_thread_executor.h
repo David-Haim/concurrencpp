@@ -1,9 +1,9 @@
 #ifndef CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 #define CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 
-#include "derivable_executor.h"
+#include "concurrencpp/executors/derivable_executor.h"
 
-#include "../threads/thread.h"
+#include "concurrencpp/threads/thread.h"
 
 #include <deque>
 

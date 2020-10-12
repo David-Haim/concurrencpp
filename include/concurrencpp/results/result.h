@@ -1,14 +1,14 @@
 #ifndef CONCURRENCPP_RESULT_H
 #define CONCURRENCPP_RESULT_H
 
-#include "constants.h"
-#include "promises.h"
-#include "result_awaitable.h"
+#include "concurrencpp/results/constants.h"
+#include "concurrencpp/results/promises.h"
+#include "concurrencpp/results/result_awaitable.h"
 
-#include "../errors.h"
-#include "../forward_declerations.h"
+#include "concurrencpp/errors.h"
+#include "concurrencpp/forward_declerations.h"
 
-#include "../utils/bind.h"
+#include "concurrencpp/utils/bind.h"
 
 #include <type_traits>
 

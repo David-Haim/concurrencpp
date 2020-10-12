@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_INLINE_EXECUTOR_H
 #define CONCURRENCPP_INLINE_EXECUTOR_H
 
-#include "executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/executor.h"
+#include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp {
 class inline_executor final : public executor {

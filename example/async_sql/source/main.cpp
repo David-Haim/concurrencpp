@@ -36,7 +36,7 @@
 */
 
 #include "mock_async_sql.h"
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
 #include <iostream>
 

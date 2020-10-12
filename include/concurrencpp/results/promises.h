@@ -1,9 +1,9 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
-#include "result_core.h"
+#include "concurrencpp/results/result_core.h"
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
 #include <vector>
 

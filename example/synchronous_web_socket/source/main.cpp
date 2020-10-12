@@ -39,7 +39,7 @@
 
 */
 
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 #include "mock_web_socket.h"
 
 #include <iostream>

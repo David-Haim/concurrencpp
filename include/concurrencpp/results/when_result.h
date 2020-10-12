@@ -7,9 +7,9 @@
 #include <mutex>
 #include <vector>
 
-#include "make_result.h"
+#include "concurrencpp/results/make_result.h"
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
 class when_result_helper {

@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_RESULT_CORE_H
 #define CONCURRENCPP_RESULT_CORE_H
 
-#include "executor_exception.h"
-#include "result_fwd_declerations.h"
+#include "concurrencpp/results/executor_exception.h"
+#include "concurrencpp/results/result_fwd_declerations.h"
 
 #include <mutex>
 #include <atomic>
@@ -13,7 +13,7 @@
 
 #include <cassert>
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
 class wait_context {

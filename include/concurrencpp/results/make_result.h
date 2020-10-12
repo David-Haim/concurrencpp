@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_MAKE_RESULT_H
 #define CONCURRENCPP_MAKE_RESULT_H
 
-#include "result.h"
+#include "concurrencpp/results/result.h"
 
 namespace concurrencpp {
 template<class type, class... argument_types>

@@ -11,7 +11,7 @@
 */
 
 #include "mock_process_monitor.h"
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
 #include <iostream>
 

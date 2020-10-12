@@ -4,10 +4,10 @@
 #include "constants.h"
 #include "timer.h"
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
-#include "../utils/bind.h"
-#include "../threads/thread.h"
+#include "concurrencpp/utils/bind.h"
+#include "concurrencpp/threads/thread.h"
 
 #include <mutex>
 #include <condition_variable>

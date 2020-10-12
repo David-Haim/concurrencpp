@@ -1,10 +1,10 @@
-#include "timer.h"
-#include "timer_queue.h"
-#include "constants.h"
+#include "concurrencpp/timers/timer.h"
+#include "concurrencpp/timers/timer_queue.h"
+#include "concurrencpp/timers/constants.h"
 
-#include "../errors.h"
-#include "../results/result.h"
-#include "../executors/executor.h"
+#include "concurrencpp/errors.h"
+#include "concurrencpp/results/result.h"
+#include "concurrencpp/executors/executor.h"
 
 using concurrencpp::timer;
 using concurrencpp::details::timer_state;

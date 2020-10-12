@@ -24,7 +24,7 @@
 #include <vector>
 #include <fstream>
 
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
 concurrencpp::result<void> replace_chars_in_file(concurrencpp::runtime& runtime,
                                                  const std::string file_path,

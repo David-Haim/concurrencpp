@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_MANUAL_EXECUTOR_H
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
-#include "derivable_executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/constants.h"
 
 #include <deque>
 

@@ -1,8 +1,8 @@
-#include "executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/executor.h"
+#include "concurrencpp/executors/constants.h"
 
-#include "../errors.h"
-#include "../threads/thread.h"
+#include "concurrencpp/errors.h"
+#include "concurrencpp/threads/thread.h"
 
 void concurrencpp::details::throw_executor_shutdown_exception(
     std::string_view executor_name) {

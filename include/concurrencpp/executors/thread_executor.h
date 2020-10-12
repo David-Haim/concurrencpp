@@ -1,10 +1,10 @@
 #ifndef CONCURRENCPP_THREAD_EXECUTOR_H
 #define CONCURRENCPP_THREAD_EXECUTOR_H
 
-#include "derivable_executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/constants.h"
 
-#include "../threads/thread.h"
+#include "concurrencpp/threads/thread.h"
 
 #include <list>
 #include <span>

@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_RESULT_FWD_DECLERATIONS_H
 #define CONCURRENCPP_RESULT_FWD_DECLERATIONS_H
 
-#include "../forward_declerations.h"
+#include "concurrencpp/forward_declerations.h"
 
 #include <memory>
 #include <utility>

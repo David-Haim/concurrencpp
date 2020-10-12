@@ -1,10 +1,10 @@
 #ifndef CONCURRENCPP_RESULT_AWAITABLE_H
 #define CONCURRENCPP_RESULT_AWAITABLE_H
 
-#include "constants.h"
-#include "result_fwd_declerations.h"
+#include "concurrencpp/results/constants.h"
+#include "concurrencpp/results/result_fwd_declerations.h"
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
 namespace concurrencpp {
 template<class type>

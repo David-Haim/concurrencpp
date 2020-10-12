@@ -1,7 +1,7 @@
-#include "worker_thread_executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/worker_thread_executor.h"
+#include "concurrencpp/executors/constants.h"
 
-#include "../errors.h"
+#include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
 static thread_local worker_thread_executor* s_tl_this_worker = nullptr;

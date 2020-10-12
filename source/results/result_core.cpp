@@ -1,5 +1,5 @@
-#include "result_core.h"
-#include "../executors/executor.h"
+#include "concurrencpp/results/result_core.h"
+#include "concurrencpp/executors/executor.h"
 
 using concurrencpp::details::wait_context;
 using concurrencpp::details::await_context;

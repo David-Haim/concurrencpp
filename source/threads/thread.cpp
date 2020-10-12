@@ -1,10 +1,10 @@
-#include "thread.h"
+#include "concurrencpp/threads/thread.h"
 
-#include "../platform_defs.h"
+#include "concurrencpp/platform_defs.h"
 
 #include <atomic>
 
-#include "../runtime/constants.h"
+#include "concurrencpp/runtime/constants.h"
 
 using concurrencpp::details::thread;
 

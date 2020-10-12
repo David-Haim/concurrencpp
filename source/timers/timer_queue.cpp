@@ -1,7 +1,7 @@
-#include "timer_queue.h"
-#include "timer.h"
+#include "concurrencpp/timers/timer_queue.h"
+#include "concurrencpp/timers/timer.h"
 
-#include "../results/result.h"
+#include "concurrencpp/results/result.h"
 
 #include <set>
 #include <unordered_map>
@@ -120,7 +120,8 @@ class timer_queue_internal {
       // regular timer, re-insert into the right position
       timer_node = temp_set.extract(temp_it);
       auto new_it = m_timers.insert(std::move(timer_node));
-      assert(m_iterator_mapper.contains(timer_ptr));
+      // AppleClang doesn't have std::unordered_map::contains yet
+      assert(m_iterator_mapper.find(timer_ptr) != m_iterator_mapper.end());
       m_iterator_mapper[timer_ptr] =
           new_it;  // update the iterator map, multiset::extract invalidates the
                    // timer

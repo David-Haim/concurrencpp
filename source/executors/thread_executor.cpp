@@ -1,5 +1,5 @@
-#include "thread_executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/thread_executor.h"
+#include "concurrencpp/executors/constants.h"
 
 using concurrencpp::thread_executor;
 using concurrencpp::details::thread_worker;

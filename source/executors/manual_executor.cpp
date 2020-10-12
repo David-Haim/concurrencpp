@@ -1,5 +1,5 @@
-#include "manual_executor.h"
-#include "constants.h"
+#include "concurrencpp/executors/manual_executor.h"
+#include "concurrencpp/executors/constants.h"
 
 using concurrencpp::manual_executor;
 

@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_EXECUTOR_H
 #define CONCURRENCPP_EXECUTOR_H
 
-#include "../results/result.h"
+#include "concurrencpp/results/result.h"
 
 #include <span>
 #include <string>

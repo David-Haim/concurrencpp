@@ -1,14 +1,14 @@
-#include "runtime.h"
-#include "constants.h"
+#include "concurrencpp/runtime/runtime.h"
+#include "concurrencpp/runtime/constants.h"
 
-#include "../executors/constants.h"
-#include "../executors/inline_executor.h"
-#include "../executors/thread_pool_executor.h"
-#include "../executors/thread_executor.h"
-#include "../executors/worker_thread_executor.h"
-#include "../executors/manual_executor.h"
+#include "concurrencpp/executors/constants.h"
+#include "concurrencpp/executors/inline_executor.h"
+#include "concurrencpp/executors/thread_pool_executor.h"
+#include "concurrencpp/executors/thread_executor.h"
+#include "concurrencpp/executors/worker_thread_executor.h"
+#include "concurrencpp/executors/manual_executor.h"
 
-#include "../timers/timer_queue.h"
+#include "concurrencpp/timers/timer_queue.h"
 
 namespace concurrencpp::details {
 size_t default_max_cpu_workers() noexcept {

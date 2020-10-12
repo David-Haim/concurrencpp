@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_DERIVABLE_EXECUTOR_H
 #define CONCURRENCPP_DERIVABLE_EXECUTOR_H
 
-#include "executor.h"
+#include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp {
 template<class concrete_executor_type>
