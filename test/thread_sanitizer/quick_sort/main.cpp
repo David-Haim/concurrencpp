@@ -1,5 +1,6 @@
 #include "concurrencpp.h"
 
+#include <algorithm>
 #include <iostream>
 
 concurrencpp::result<void> quick_sort(
