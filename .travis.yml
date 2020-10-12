@@ -31,19 +31,20 @@ jobs:
 script:
   - >-
     echo "---- Configure and build examples ----" &&
-    cmake -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
+    "$CMAKE" -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
     inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
     &&
     echo "---- Configure and build library ----" &&
-    cmake -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME inc-ignore
-    lib-ignore "$CMAKE" "$NINJA" $JOBS
+    "$CMAKE" -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
     &&
     echo "---- Install library ----" &&
     cmake --install build/install --config Release
     &&
     echo "---- Configure and build tests ----" &&
-    cmake -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME inc-ignore
-    lib-ignore "$CMAKE" "$NINJA" $JOBS -D TEST_INSTALLED_VERSION:BOOL=YES
+    "$CMAKE" -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
+    -D TEST_INSTALLED_VERSION:BOOL=YES
     &&
     echo "---- Run tests ----" &&
     cd build/test && "$CTEST" -C Release -V -j $JOBS
