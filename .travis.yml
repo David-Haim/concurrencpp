@@ -17,6 +17,9 @@ env:
     - CTEST_OUTPUT_ON_FAILURE=1 NINJA_STATUS="[%f/%t %o/sec] "
 
 jobs:
+  allow_failures:
+    - os: osx
+
   include:
     - os: osx
       osx_image: xcode10.3
