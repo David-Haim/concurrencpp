@@ -1,4 +1,4 @@
-#ifndef  CONCURRENCPP_H
+#ifndef CONCURRENCPP_H
 #define CONCURRENCPP_H
 
 #include "../src/forward_declerations.h"
