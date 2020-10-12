@@ -31,7 +31,7 @@ file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/${cmake_dir}" cmake_dir)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/ninja" ninja_out)
 
 function(echo MESSAGE)
-  execute_process(${CMAKE_COMMAND} -E echo "${MESSAGE}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E echo "${MESSAGE}")
 endfunction()
 
 set(export_script "${export_script}export CTEST=\"${cmake_dir}/ctest\"\n")
