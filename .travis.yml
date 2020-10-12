@@ -1,0 +1,59 @@
+language: cpp
+
+os: linux
+dist: bionic
+
+git:
+  depth: false
+
+  quiet: true
+
+branches:
+  only: [master]
+
+env:
+  global:
+    - CMAKE_VERSION=3.18.4 NINJA_VERSION=1.10.1
+    - CTEST_OUTPUT_ON_FAILURE=1 NINJA_STATUS="[%f/%t %o/sec] "
+
+jobs:
+  include:
+    - os: osx
+      osx_image: xcode10.3
+      compiler: clang
+      before_install: [export JOBS=$(sysctl -n hw.logicalcpu)]
+      install:
+        - mkdir -p build/tools
+        - cd build/tools
+        - >-
+          cmake -D RUNNER_OS=macOS -P ../../cmake/ciToolsUpdate.cmake
+          || travis_terminate 1
+        - . ./export.sh
+        - cd ../..
+
+script:
+  - set -e
+
+  # Configure and build examples
+  - >-
+    "$CMAKE" -P cmake/ciBuild.cmake -- example build/example $TRAVIS_OS_NAME
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
+
+  # Configure and build library
+  - >-
+    "$CMAKE" -P cmake/ciBuild.cmake -- . build/install $TRAVIS_OS_NAME
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
+
+  # Install library
+  - cmake --install build/install --config Release
+
+  # Configure and build tests
+  - >-
+    "$CMAKE" -P cmake/ciBuild.cmake -- test build/test $TRAVIS_OS_NAME
+    inc-ignore lib-ignore "$CMAKE" "$NINJA" $JOBS
+    -D TEST_INSTALLED_VERSION:BOOL=YES
+
+  # Run tests
+  - cd build/test && "$CTEST" -C Release -V -j $JOBS
+
+  - set +e
