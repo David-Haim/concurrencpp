@@ -9,18 +9,84 @@ include(../cmake/coroutineOptions.cmake)
 # Enable warnings from includes
 set(concurrencpp_INCLUDE_WITHOUT_SYSTEM ON CACHE INTERNAL "")
 
-# Enable thread sanitizer tests on Clang
-if(CXX_COMPILER_ID MATCHES "Clang")
-  set(CONCURRENCPP_ENABLE_THREAD_SANITIZER ON CACHE INTERNAL "")
+option(TEST_INSTALLED_VERSION "Use installed library" OFF)
+if(TEST_INSTALLED_VERSION)
+  find_package(concurrencpp REQUIRED CONFIG)
+else()
+  include(FetchContent)
+  FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+  FetchContent_MakeAvailable(concurrencpp)
 endif()
-
-include(FetchContent)
-FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-FetchContent_MakeAvailable(concurrencpp)
 
 # ---- Test ----
 
 enable_testing()
+
+# TODO: remove this once tests were properly fixed
+set(test_sources
+        source/helpers/assertions.cpp
+        source/helpers/object_observer.cpp
+        source/main.cpp
+        source/tester/tester.cpp
+        source/tests/all_tests.cpp
+        source/tests/coroutine_tests/coroutine_promises_test.cpp
+        source/tests/coroutine_tests/coroutines_tests.cpp
+        source/tests/executor_tests/inline_executor_tests.cpp
+        source/tests/executor_tests/manual_executor_tests.cpp
+        source/tests/executor_tests/thread_executor_tests.cpp
+        source/tests/executor_tests/thread_pool_executor_tests.cpp
+        source/tests/executor_tests/worker_thread_executor_tests.cpp
+        source/tests/result_tests/make_result_tests.cpp
+        source/tests/result_tests/result_await_tests.cpp
+        source/tests/result_tests/result_promise_tests.cpp
+        source/tests/result_tests/result_resolve_tests.cpp
+        source/tests/result_tests/result_tests.cpp
+        source/tests/result_tests/when_all_tests.cpp
+        source/tests/result_tests/when_any_tests.cpp
+        source/tests/runtime_tests.cpp
+        source/tests/timer_tests/timer_queue_tests.cpp
+        source/tests/timer_tests/timer_tests.cpp)
+
+set(test_headers
+        include/helpers/assertions.h
+        include/helpers/object_observer.h
+        include/helpers/random.h
+        include/helpers/result_generator.h
+        include/helpers/thread_helpers.h
+        include/tester/tester.h
+        include/tests/all_tests.h
+        include/tests/executor_tests/executor_test_helpers.h
+        include/tests/test_utils/executor_shutdowner.h
+        include/tests/test_utils/proxy_coro.h
+        include/tests/test_utils/result_factory.h
+        include/tests/test_utils/test_executors.h
+        include/tests/test_utils/test_ready_result.h)
+
+function(temp_test NAMESPACE NAME)
+  set(target ${NAMESPACE}_${NAME})
+  add_executable(${target} ${ARGN})
+  target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
+  target_compile_features(${target} PRIVATE cxx_std_20)
+  target_coroutine_options(${target})
+  target_include_directories(${target}
+          PRIVATE
+          "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
+  add_test(NAME ${NAMESPACE}.${NAME} COMMAND ${target})
+  set_property(TEST ${NAMESPACE}.${NAME} PROPERTY RUN_SERIAL YES)
+endfunction()
+
+temp_test(dummy main ${test_headers} ${test_sources})
+
+if(NOT CONCURRENCPP_ENABLE_THREAD_SANITIZER)
+  return()
+endif()
+
+set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result when_all when_any)
+foreach(source IN LISTS tsan_sources)
+  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp)
+endforeach()
+
+return()
 
 # add_test(NAMESPACE <namespace> NAME <name> [PROPERTIES ...])
 #

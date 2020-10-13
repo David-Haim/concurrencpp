@@ -3,11 +3,11 @@
 #include <iostream>
 
 int main() {
-	concurrencpp::runtime runtime;
-	auto result = runtime.thread_pool_executor()->submit([] {
-		std::cout << "hello world" << std::endl;
-	});
+  concurrencpp::runtime runtime;
+  auto result = runtime.thread_pool_executor()->submit([] {
+    std::cout << "hello world" << std::endl;
+  });
 
-	result.get();
-	return 0;
+  result.get();
+  return 0;
 }
