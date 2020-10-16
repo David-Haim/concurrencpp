@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_EXECUTOR_TEST_HELPERS_H
 #define CONCURRENCPP_EXECUTOR_TEST_HELPERS_H
 
-#include "../../concurrencpp/src/executors/executor.h"
+#include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp::tests {
 struct executor_shutdowner {

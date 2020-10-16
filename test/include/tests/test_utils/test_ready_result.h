@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_TEST_READY_RESULT_H
 #define CONCURRENCPP_TEST_READY_RESULT_H
 
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
 #include "result_factory.h"
 
