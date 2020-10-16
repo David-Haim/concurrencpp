@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_PROXY_CORO_H
 #define CONCURRENCPP_PROXY_CORO_H
 
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
 
 namespace concurrencpp::tests {
 template<class type>

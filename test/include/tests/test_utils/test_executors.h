@@ -1,7 +1,8 @@
 #ifndef CONCURRENCPP_RESULT_TEST_EXECUTORS_H
 #define CONCURRENCPP_RESULT_TEST_EXECUTORS_H
 
-#include "concurrencpp.h"
+#include "concurrencpp/concurrencpp.h"
+
 #include "result_factory.h"
 #include "test_ready_result.h"
 
