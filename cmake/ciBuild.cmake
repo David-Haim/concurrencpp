@@ -17,16 +17,10 @@ else()
   list(SUBLIST temp ${index} -1 args)
 endif()
 
-list(POP_FRONT args source build os inc lib cmake ninja cores)
+list(POP_FRONT args source build os cmake ninja cores)
 
 include(cmake/exec.cmake)
 include(cmake/setCiVars.cmake)
-
-if(os MATCHES "^ubuntu|^linux")
-  set(flags ${flags}
-    -D "CMAKE_CXX_FLAGS=-nostdinc++ -cxx-isystem ${inc}/c++/v1/ -Wno-unused-command-line-argument"
-    -D "CMAKE_EXE_LINKER_FLAGS=-L ${lib} -Wl,-rpath,${lib} -lc++abi")
-endif()
 
 exec(${cmake} -S ${source} -B ${build} -G Ninja -D CMAKE_MAKE_PROGRAM=${ninja}
 -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=build/prefix ${flags} ${args})
