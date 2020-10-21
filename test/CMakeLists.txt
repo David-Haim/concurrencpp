@@ -14,7 +14,7 @@ if(ENABLE_THREAD_SANITIZER AND CXX_COMPILER_ID MATCHES "Clang")
   # Instead of polluting the lists file, we inject a command definition
   # override that will apply the sanitizer flag
   set(CMAKE_PROJECT_concurrencpp_INCLUDE
-          "${CMAKE_CURRENT_LIST_DIR}/concurrencppInject.cmake"
+          "${CMAKE_CURRENT_LIST_DIR}/../cmake/concurrencppInjectTSAN.cmake"
           CACHE INTERNAL "")
 endif()
 
