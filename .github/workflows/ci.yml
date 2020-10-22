@@ -20,20 +20,24 @@ env:
 jobs:
   tests:
     strategy:
-      fail-fast: false
-
       matrix:
         conf:
           - name: Ubuntu (Clang 10 - TSAN)
-            os: ubuntu-latest
+            os: ubuntu-20.04
             cc: clang-10
             cxx: clang++-10
             tsan: YES
 
           - name: Ubuntu (Clang 10 - no TSAN)
-            os: ubuntu-latest
+            os: ubuntu-20.04
             cc: clang-10
             cxx: clang++-10
+            tsan: NO
+
+          - name: macOS (Xcode 10.3)
+            os: macos-latest
+            cc: clang
+            cxx: clang++
             tsan: NO
 
           - name: Windows (Visual Studio Enterprise 2019)
@@ -56,6 +60,10 @@ jobs:
       - uses: friendlyanon/fetch-core-count@v1
         id: cores
 
+      - name: Switch to Xcode 10.3
+        if: startsWith(matrix.conf.os, 'macos')
+        run: sudo xcode-select -s /Applications/Xcode_10.3.app
+
       - run: cmake -E make_directory build/tools
 
       - name: Install CMake and Ninja
@@ -64,29 +72,11 @@ jobs:
         run: cmake -D RUNNER_OS=${{ runner.os }}
           -P ../../cmake/ciToolsUpdate.cmake
 
-      - name: Install Clang 10
-        if: startsWith(matrix.conf.os, 'ubuntu')
-        working-directory: ${{ env.HOME }}
-        run: |
-          wget --quiet https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 10 > /dev/null
-
-      - name: Install libc++
-        id: libcxx
-        if: startsWith(matrix.conf.os, 'ubuntu')
-        working-directory: build/tools
-        env:
-          JOB_COUNT: ${{ steps.cores.outputs.plus_one }}
-        run: ../../script/install_libcxx.sh
-
       - name: Combine CI variables
         id: args
         shell: cmake -P {0}
         run: >
           message([==[::set-output name=args::${{ matrix.conf.os }}
-          "${{ steps.libcxx.outputs.include || 'none' }}"
-          "${{ steps.libcxx.outputs.lib || 'none' }}"
           "${{ steps.tools.outputs.cmake }}"
           "${{ steps.tools.outputs.ninja }}"
           ${{ steps.cores.outputs.plus_one }}]==])
@@ -95,26 +85,16 @@ jobs:
         run: cmake -P cmake/ciBuild.cmake -- example build/example
           ${{ steps.args.outputs.args }}
 
-      - name: Build library
-        run: cmake -P cmake/ciBuild.cmake -- . build/install
-          ${{ steps.args.outputs.args }}
-          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
-
-      - name: Install library
-        shell: cmake -P {0}
-        run: >
-          include(cmake/exec.cmake)
-
-          exec("${{ steps.tools.outputs.cmake }}" --install build/install
-          --config Release)
-
       - name: Build tests
+        id: build_tests
+        continue-on-error: ${{ !startsWith(matrix.conf.os, 'ubuntu') }}
         run: cmake -P cmake/ciBuild.cmake -- test build/test
           ${{ steps.args.outputs.args }}
-          -D TEST_INSTALLED_VERSION:BOOL=YES
-          -D CONCURRENCPP_ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
+          -D ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
 
       - name: Run tests
+        continue-on-error: ${{ !startsWith(matrix.conf.os, 'ubuntu') }}
+        if: steps.build_tests.outcome == 'success'
         working-directory: build/test
         shell: cmake -P {0}
         run: >

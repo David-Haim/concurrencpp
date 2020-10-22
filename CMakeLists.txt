@@ -6,12 +6,6 @@ project(concurrencpp
 
 include(cmake/coroutineOptions.cmake)
 
-# ---- Options ----
-
-option(CONCURRENCPP_ENABLE_THREAD_SANITIZER "\
-Build concurrencpp with LLVM thread sanitizer. \
-Does not have an effect if the compiler is not Clang based." OFF)
-
 # ---- Warning guard ----
 
 # Protect dependents from this project's warnings if the guard isn't disabled
@@ -80,10 +74,6 @@ target_coroutine_options(concurrencpp)
 
 find_library(LIBRT NAMES rt DOC "Path to the Real Time shared library")
 target_link_libraries(concurrencpp PUBLIC "$<$<BOOL:${LIBRT}>:${LIBRT}>")
-
-if(CONCURRENCPP_ENABLE_THREAD_SANITIZER AND CXX_COMPILER_ID MATCHES "Clang")
-  target_compile_options(concurrencpp PRIVATE -fsanitize=thread)
-endif()
 
 # ---- Install ----
 
