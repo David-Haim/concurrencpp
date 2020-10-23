@@ -10,25 +10,25 @@
 #include "helpers/object_observer.h"
 
 namespace concurrencpp::tests {
-template<class type>
-void test_when_any_vector_empty_result();
+    template<class type>
+    void test_when_any_vector_empty_result();
 
-template<class type>
-void test_when_any_vector_empty_range();
+    template<class type>
+    void test_when_any_vector_empty_range();
 
-template<class type>
-result<void> test_when_any_vector_valid(std::shared_ptr<thread_executor> ex);
+    template<class type>
+    result<void> test_when_any_vector_valid(std::shared_ptr<thread_executor> ex);
 
-template<class type>
-void test_when_any_vector_impl();
+    template<class type>
+    void test_when_any_vector_impl();
 
-void test_when_any_vector();
+    void test_when_any_vector();
 
-void test_when_any_tuple_empty_result();
+    void test_when_any_tuple_empty_result();
 
-result<void> test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex);
+    result<void> test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex);
 
-void test_when_any_tuple();
+    void test_when_any_tuple();
 }  // namespace concurrencpp::tests
 
 template<class type>

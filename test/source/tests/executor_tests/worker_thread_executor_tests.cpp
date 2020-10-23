@@ -11,31 +11,31 @@
 #include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::tests {
-void test_worker_thread_executor_name();
+    void test_worker_thread_executor_name();
 
-void test_worker_thread_executor_shutdown_method_access();
-void test_worker_thread_executor_shutdown_thread_join();
-void test_worker_thread_executor_shutdown_coro_raii();
-void test_worker_thread_executor_shutdown_coro_more_than_once();
-void test_worker_thread_executor_shutdown();
+    void test_worker_thread_executor_shutdown_method_access();
+    void test_worker_thread_executor_shutdown_thread_join();
+    void test_worker_thread_executor_shutdown_coro_raii();
+    void test_worker_thread_executor_shutdown_coro_more_than_once();
+    void test_worker_thread_executor_shutdown();
 
-void test_worker_thread_executor_max_concurrency_level();
+    void test_worker_thread_executor_max_concurrency_level();
 
-void test_worker_thread_executor_post_foreign();
-void test_worker_thread_executor_post_inline();
-void test_worker_thread_executor_post();
+    void test_worker_thread_executor_post_foreign();
+    void test_worker_thread_executor_post_inline();
+    void test_worker_thread_executor_post();
 
-void test_worker_thread_executor_submit_foreign();
-void test_worker_thread_executor_submit_inline();
-void test_worker_thread_executor_submit();
+    void test_worker_thread_executor_submit_foreign();
+    void test_worker_thread_executor_submit_inline();
+    void test_worker_thread_executor_submit();
 
-void test_worker_thread_executor_bulk_post_foreign();
-void test_worker_thread_executor_bulk_post_inline();
-void test_worker_thread_executor_bulk_post();
+    void test_worker_thread_executor_bulk_post_foreign();
+    void test_worker_thread_executor_bulk_post_inline();
+    void test_worker_thread_executor_bulk_post();
 
-void test_worker_thread_executor_bulk_submit_foreign();
-void test_worker_thread_executor_bulk_submit_inline();
-void test_worker_thread_executor_bulk_submit();
+    void test_worker_thread_executor_bulk_submit_foreign();
+    void test_worker_thread_executor_bulk_submit_inline();
+    void test_worker_thread_executor_bulk_submit();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;

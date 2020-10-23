@@ -11,41 +11,41 @@
 #include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::tests {
-void test_thread_executor_name();
+    void test_thread_executor_name();
 
-void test_thread_executor_shutdown_join();
-void test_thread_executor_shutdown_method_access();
-void test_thread_executor_shutdown_more_than_once();
-void test_thread_executor_shutdown();
+    void test_thread_executor_shutdown_join();
+    void test_thread_executor_shutdown_method_access();
+    void test_thread_executor_shutdown_more_than_once();
+    void test_thread_executor_shutdown();
 
-void test_thread_executor_max_concurrency_level();
+    void test_thread_executor_max_concurrency_level();
 
-void test_thread_executor_post_foreign();
-void test_thread_executor_post_inline();
-void test_thread_executor_post();
+    void test_thread_executor_post_foreign();
+    void test_thread_executor_post_inline();
+    void test_thread_executor_post();
 
-void test_thread_executor_submit_foreign();
-void test_thread_executor_submit_inline();
-void test_thread_executor_submit();
+    void test_thread_executor_submit_foreign();
+    void test_thread_executor_submit_inline();
+    void test_thread_executor_submit();
 
-void test_thread_executor_bulk_post_foreign();
-void test_thread_executor_bulk_post_inline();
-void test_thread_executor_bulk_post();
+    void test_thread_executor_bulk_post_foreign();
+    void test_thread_executor_bulk_post_inline();
+    void test_thread_executor_bulk_post();
 
-void test_thread_executor_bulk_submit_foreign();
-void test_thread_executor_bulk_submit_inline();
-void test_thread_executor_bulk_submit();
+    void test_thread_executor_bulk_submit_foreign();
+    void test_thread_executor_bulk_submit_inline();
+    void test_thread_executor_bulk_submit();
 
-void assert_execution_threads(
-    const std::unordered_map<size_t, size_t>& execution_map,
-    const size_t expected_thread_count) {
-    assert_equal(execution_map.size(), expected_thread_count);
+    void assert_execution_threads(
+        const std::unordered_map<size_t, size_t>& execution_map,
+        const size_t expected_thread_count) {
+        assert_equal(execution_map.size(), expected_thread_count);
 
-    for (const auto& thread_pair : execution_map) {
-        assert_not_equal(thread_pair.first, size_t(0));
-        assert_equal(thread_pair.second, size_t(1));
+        for (const auto& thread_pair : execution_map) {
+            assert_not_equal(thread_pair.first, size_t(0));
+            assert_equal(thread_pair.second, size_t(1));
+        }
     }
-}
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_thread_executor_name() {

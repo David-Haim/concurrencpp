@@ -6,16 +6,16 @@
 using mock_process_monitor::monitor;
 
 namespace mock_process_monitor {
-size_t random_in_range(size_t min, size_t max) {
-    static const int dummy = [] {
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-        return 0;
-    }();
-    (void)dummy;
+    size_t random_in_range(size_t min, size_t max) {
+        static const int dummy = [] {
+            std::srand(static_cast<unsigned int>(std::time(nullptr)));
+            return 0;
+        }();
+        (void)dummy;
 
-    const auto range = max - min + 1;
-    return std::rand() % range + min;
-}
+        const auto range = max - min + 1;
+        return std::rand() % range + min;
+    }
 }  // namespace mock_process_monitor
 
 monitor::monitor() noexcept :

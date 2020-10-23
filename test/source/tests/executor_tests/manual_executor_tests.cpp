@@ -11,40 +11,40 @@
 #include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::tests {
-void test_manual_executor_name();
+    void test_manual_executor_name();
 
-void test_manual_executor_shutdown_method_access();
-void test_manual_executor_shutdown_coro_raii();
-void test_manual_executor_shutdown_more_than_once();
-void test_manual_executor_shutdown();
+    void test_manual_executor_shutdown_method_access();
+    void test_manual_executor_shutdown_coro_raii();
+    void test_manual_executor_shutdown_more_than_once();
+    void test_manual_executor_shutdown();
 
-void test_manual_executor_max_concurrency_level();
+    void test_manual_executor_max_concurrency_level();
 
-void test_manual_executor_post_foreign();
-void test_manual_executor_post_inline();
-void test_manual_executor_post();
+    void test_manual_executor_post_foreign();
+    void test_manual_executor_post_inline();
+    void test_manual_executor_post();
 
-void test_manual_executor_submit_foreign();
-void test_manual_executor_submit_inline();
-void test_manual_executor_submit();
+    void test_manual_executor_submit_foreign();
+    void test_manual_executor_submit_inline();
+    void test_manual_executor_submit();
 
-void test_manual_executor_bulk_post_foreign();
-void test_manual_executor_bulk_post_inline();
-void test_manual_executor_bulk_post();
+    void test_manual_executor_bulk_post_foreign();
+    void test_manual_executor_bulk_post_inline();
+    void test_manual_executor_bulk_post();
 
-void test_manual_executor_bulk_submit_foreign();
-void test_manual_executor_bulk_submit_inline();
-void test_manual_executor_bulk_submit();
+    void test_manual_executor_bulk_submit_foreign();
+    void test_manual_executor_bulk_submit_inline();
+    void test_manual_executor_bulk_submit();
 
-void test_manual_executor_loop_once();
-void test_manual_executor_loop_once_timed();
+    void test_manual_executor_loop_once();
+    void test_manual_executor_loop_once_timed();
 
-void test_manual_executor_loop();
+    void test_manual_executor_loop();
 
-void test_manual_executor_clear();
+    void test_manual_executor_clear();
 
-void test_manual_executor_wait_for_task();
-void test_manual_executor_wait_for_task_timed();
+    void test_manual_executor_wait_for_task();
+    void test_manual_executor_wait_for_task_timed();
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_manual_executor_name() {

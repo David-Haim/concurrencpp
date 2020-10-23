@@ -11,32 +11,32 @@ using concurrencpp::details::idle_worker_set;
 using concurrencpp::details::thread_pool_worker;
 
 namespace concurrencpp::details {
-class randomizer {
+    class randomizer {
 
-   private:
-    uint32_t m_seed;
+       private:
+        uint32_t m_seed;
 
-   public:
-    randomizer(uint32_t seed) noexcept :
-        m_seed(seed) {}
+       public:
+        randomizer(uint32_t seed) noexcept :
+            m_seed(seed) {}
 
-    uint32_t operator()() noexcept {
-        m_seed = (214013 * m_seed + 2531011);
-        return (m_seed >> 16) & 0x7FFF;
-    }
-};
+        uint32_t operator()() noexcept {
+            m_seed = (214013 * m_seed + 2531011);
+            return (m_seed >> 16) & 0x7FFF;
+        }
+    };
 
-struct thread_pool_per_thread_data {
-    thread_pool_worker* this_worker;
-    randomizer randomizer;
-    size_t this_thread_index;
+    struct thread_pool_per_thread_data {
+        thread_pool_worker* this_worker;
+        randomizer randomizer;
+        size_t this_thread_index;
 
-    thread_pool_per_thread_data() noexcept :
-        this_worker(nullptr), randomizer(static_cast<uint32_t>(std::rand())),
-        this_thread_index(static_cast<size_t>(-1)) {}
-};
+        thread_pool_per_thread_data() noexcept :
+            this_worker(nullptr), randomizer(static_cast<uint32_t>(std::rand())),
+            this_thread_index(static_cast<size_t>(-1)) {}
+    };
 
-static thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
+    static thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
 }  // namespace concurrencpp::details
 
 idle_worker_set::idle_worker_set(size_t size) :

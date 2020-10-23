@@ -11,9 +11,9 @@
 using namespace std::chrono_literals;
 
 namespace concurrencpp::tests {
-void test_timer_queue_make_timer();
-void test_timer_queue_make_oneshot_timer();
-void test_timer_queue_make_delay_object();
+    void test_timer_queue_make_timer();
+    void test_timer_queue_make_oneshot_timer();
+    void test_timer_queue_make_delay_object();
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_timer_queue_make_timer() {

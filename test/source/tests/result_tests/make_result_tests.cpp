@@ -9,11 +9,11 @@
 #include "helpers/object_observer.h"
 
 namespace concurrencpp::tests {
-template<class type>
-void test_make_ready_result_impl();
-void test_make_ready_result();
+    template<class type>
+    void test_make_ready_result_impl();
+    void test_make_ready_result();
 
-void test_make_exceptional_result();
+    void test_make_exceptional_result();
 }  // namespace concurrencpp::tests
 
 template<class type>

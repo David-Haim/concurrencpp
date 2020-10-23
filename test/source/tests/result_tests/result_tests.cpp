@@ -9,43 +9,43 @@
 #include "helpers/random.h"
 
 namespace concurrencpp::tests {
-template<class type>
-void test_result_constructor_impl();
-void test_result_constructor();
+    template<class type>
+    void test_result_constructor_impl();
+    void test_result_constructor();
 
-template<class type>
-void test_result_status_impl();
-void test_result_status();
+    template<class type>
+    void test_result_status_impl();
+    void test_result_status();
 
-template<class type>
-void test_result_get_impl();
-void test_result_get();
+    template<class type>
+    void test_result_get_impl();
+    void test_result_get();
 
-template<class type>
-void test_result_wait_impl();
-void test_result_wait();
+    template<class type>
+    void test_result_wait_impl();
+    void test_result_wait();
 
-template<class type>
-void test_result_wait_for_impl();
-void test_result_wait_for();
+    template<class type>
+    void test_result_wait_for_impl();
+    void test_result_wait_for();
 
-template<class type>
-void test_result_wait_until_impl();
-void test_result_wait_until();
+    template<class type>
+    void test_result_wait_until_impl();
+    void test_result_wait_until();
 
-template<class type>
-void test_result_assignment_operator_empty_to_empty();
-template<class type>
-void test_result_assignment_operator_non_empty_to_non_empty();
-template<class type>
-void test_result_assignment_operator_empty_to_non_empty();
-template<class type>
-void test_result_assignment_operator_non_empty_to_empty();
-template<class type>
-void test_result_assignment_operator_assign_to_self();
-template<class type>
-void test_result_assignment_operator_impl();
-void test_result_assignment_operator();
+    template<class type>
+    void test_result_assignment_operator_empty_to_empty();
+    template<class type>
+    void test_result_assignment_operator_non_empty_to_non_empty();
+    template<class type>
+    void test_result_assignment_operator_empty_to_non_empty();
+    template<class type>
+    void test_result_assignment_operator_non_empty_to_empty();
+    template<class type>
+    void test_result_assignment_operator_assign_to_self();
+    template<class type>
+    void test_result_assignment_operator_impl();
+    void test_result_assignment_operator();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result;

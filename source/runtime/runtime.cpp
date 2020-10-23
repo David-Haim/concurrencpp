@@ -11,19 +11,19 @@
 #include "concurrencpp/timers/timer_queue.h"
 
 namespace concurrencpp::details {
-size_t default_max_cpu_workers() noexcept {
-    return static_cast<size_t>(thread::hardware_concurrency() *
-                               consts::k_cpu_threadpool_worker_count_factor);
-}
+    size_t default_max_cpu_workers() noexcept {
+        return static_cast<size_t>(thread::hardware_concurrency() *
+                                   consts::k_cpu_threadpool_worker_count_factor);
+    }
 
-size_t default_max_background_workers() noexcept {
-    return static_cast<size_t>(
-        thread::hardware_concurrency() *
-        consts::k_background_threadpool_worker_count_factor);
-}
+    size_t default_max_background_workers() noexcept {
+        return static_cast<size_t>(
+            thread::hardware_concurrency() *
+            consts::k_background_threadpool_worker_count_factor);
+    }
 
-constexpr static auto k_default_max_worker_wait_time =
-    std::chrono::seconds(consts::k_max_worker_waiting_time_sec);
+    constexpr static auto k_default_max_worker_wait_time =
+        std::chrono::seconds(consts::k_max_worker_waiting_time_sec);
 }  // namespace concurrencpp::details
 
 using concurrencpp::runtime;

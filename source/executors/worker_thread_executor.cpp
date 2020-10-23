@@ -4,7 +4,7 @@
 #include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
-static thread_local worker_thread_executor* s_tl_this_worker = nullptr;
+    static thread_local worker_thread_executor* s_tl_this_worker = nullptr;
 }
 
 using concurrencpp::worker_thread_executor;

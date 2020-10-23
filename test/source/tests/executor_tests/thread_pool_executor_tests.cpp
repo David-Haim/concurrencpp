@@ -8,32 +8,32 @@
 #include "helpers/object_observer.h"
 
 namespace concurrencpp::tests {
-void test_thread_pool_executor_name();
+    void test_thread_pool_executor_name();
 
-void test_thread_pool_executor_shutdown_coro_raii();
-void test_thread_pool_executor_shutdown_thread_join();
-void test_thread_pool_executor_shutdown_method_access();
-void test_thread_pool_executor_shutdown_method_more_than_once();
-void test_thread_pool_executor_shutdown();
+    void test_thread_pool_executor_shutdown_coro_raii();
+    void test_thread_pool_executor_shutdown_thread_join();
+    void test_thread_pool_executor_shutdown_method_access();
+    void test_thread_pool_executor_shutdown_method_more_than_once();
+    void test_thread_pool_executor_shutdown();
 
-void test_thread_pool_executor_post_foreign();
-void test_thread_pool_executor_post_inline();
-void test_thread_pool_executor_post();
+    void test_thread_pool_executor_post_foreign();
+    void test_thread_pool_executor_post_inline();
+    void test_thread_pool_executor_post();
 
-void test_thread_pool_executor_submit_foreign();
-void test_thread_pool_executor_submit_inline();
-void test_thread_pool_executor_submit();
+    void test_thread_pool_executor_submit_foreign();
+    void test_thread_pool_executor_submit_inline();
+    void test_thread_pool_executor_submit();
 
-void test_thread_pool_executor_bulk_post_foreign();
-void test_thread_pool_executor_bulk_post_inline();
-void test_thread_pool_executor_bulk_post();
+    void test_thread_pool_executor_bulk_post_foreign();
+    void test_thread_pool_executor_bulk_post_inline();
+    void test_thread_pool_executor_bulk_post();
 
-void test_thread_pool_executor_bulk_submit_foreign();
-void test_thread_pool_executor_bulk_submit_inline();
-void test_thread_pool_executor_bulk_submit();
+    void test_thread_pool_executor_bulk_submit_foreign();
+    void test_thread_pool_executor_bulk_submit_inline();
+    void test_thread_pool_executor_bulk_submit();
 
-void test_thread_pool_executor_enqueue_algorithm();
-void test_thread_pool_executor_dynamic_resizing();
+    void test_thread_pool_executor_enqueue_algorithm();
+    void test_thread_pool_executor_dynamic_resizing();
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_thread_pool_executor_name() {

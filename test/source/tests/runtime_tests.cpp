@@ -5,32 +5,32 @@
 #include "helpers/assertions.h"
 
 namespace concurrencpp::tests {
-void test_runtime_destructor();
-void test_runtime_version();
+    void test_runtime_destructor();
+    void test_runtime_version();
 }  // namespace concurrencpp::tests
 
 namespace concurrencpp::tests {
-struct dummy_executor : public concurrencpp::executor {
+    struct dummy_executor : public concurrencpp::executor {
 
-    bool shutdown_requested_flag = false;
+        bool shutdown_requested_flag = false;
 
-    dummy_executor(const char* name, int, float) :
-        executor(name) {}
+        dummy_executor(const char* name, int, float) :
+            executor(name) {}
 
-    void enqueue(std::experimental::coroutine_handle<>) override {}
-    void enqueue(std::span<std::experimental::coroutine_handle<>>) override {}
+        void enqueue(std::experimental::coroutine_handle<>) override {}
+        void enqueue(std::span<std::experimental::coroutine_handle<>>) override {}
 
-    int max_concurrency_level() const noexcept override {
-        return 0;
-    }
+        int max_concurrency_level() const noexcept override {
+            return 0;
+        }
 
-    bool shutdown_requested() const noexcept override {
-        return shutdown_requested_flag;
+        bool shutdown_requested() const noexcept override {
+            return shutdown_requested_flag;
+        };
+        void shutdown() noexcept override {
+            shutdown_requested_flag = true;
+        };
     };
-    void shutdown() noexcept override {
-        shutdown_requested_flag = true;
-    };
-};
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_runtime_destructor() {

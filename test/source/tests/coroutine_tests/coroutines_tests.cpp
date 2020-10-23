@@ -13,20 +13,20 @@
 #include "tests/test_utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
-template<class type>
-result<type> recursive_coroutine(executor_tag,
-                                 std::shared_ptr<thread_executor> te,
-                                 const size_t cur_depth,
-                                 const size_t max_depth,
-                                 const bool terminate_by_exception);
+    template<class type>
+    result<type> recursive_coroutine(executor_tag,
+                                     std::shared_ptr<thread_executor> te,
+                                     const size_t cur_depth,
+                                     const size_t max_depth,
+                                     const bool terminate_by_exception);
 
-template<class type>
-void test_recursive_coroutines_impl();
-void test_recursive_coroutines();
+    template<class type>
+    void test_recursive_coroutines_impl();
+    void test_recursive_coroutines();
 
-result<void> test_combo_coroutine_impl(std::shared_ptr<thread_executor> te,
-                                       const bool terminate_by_exception);
-void test_combo_coroutine();
+    result<void> test_combo_coroutine_impl(std::shared_ptr<thread_executor> te,
+                                           const bool terminate_by_exception);
+    void test_combo_coroutine();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result;

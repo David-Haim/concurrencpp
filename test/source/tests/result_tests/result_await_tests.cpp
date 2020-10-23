@@ -12,65 +12,65 @@
 #include "helpers/random.h"
 
 namespace concurrencpp::tests {
-template<class type>
-result<void> test_result_await_ready_val();
+    template<class type>
+    result<void> test_result_await_ready_val();
 
-template<class type>
-result<void> test_result_await_ready_err();
+    template<class type>
+    result<void> test_result_await_ready_err();
 
-template<class type>
-result<void> test_result_await_not_ready_val(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_not_ready_val(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void> test_result_await_not_ready_err(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_not_ready_err(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-void test_result_await_impl();
-void test_result_await();
+    template<class type>
+    void test_result_await_impl();
+    void test_result_await();
 
-template<class type>
-result<void> test_result_await_via_ready_val(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_ready_val(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void> test_result_await_via_ready_err(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_ready_err(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void> test_result_await_via_ready_val_force_rescheduling(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_ready_val_force_rescheduling(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void> test_result_await_via_ready_err_force_rescheduling(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_ready_err_force_rescheduling(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void>
-test_result_await_via_ready_val_force_rescheduling_executor_threw();
+    template<class type>
+    result<void>
+    test_result_await_via_ready_val_force_rescheduling_executor_threw();
 
-template<class type>
-result<void>
-test_result_await_via_ready_err_force_rescheduling_executor_threw();
+    template<class type>
+    result<void>
+    test_result_await_via_ready_err_force_rescheduling_executor_threw();
 
-template<class type>
-result<void> test_result_await_via_not_ready_val(
-    std::shared_ptr<test_executor> executor);
-template<class type>
-result<void> test_result_await_via_not_ready_err(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_not_ready_val(
+        std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_not_ready_err(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-result<void> test_result_await_via_not_ready_val_executor_threw(
-    std::shared_ptr<test_executor> executor);
-template<class type>
-result<void> test_result_await_via_not_ready_err_executor_threw(
-    std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_not_ready_val_executor_threw(
+        std::shared_ptr<test_executor> executor);
+    template<class type>
+    result<void> test_result_await_via_not_ready_err_executor_threw(
+        std::shared_ptr<test_executor> executor);
 
-template<class type>
-void test_result_await_via_impl();
-void test_result_await_via();
+    template<class type>
+    void test_result_await_via_impl();
+    void test_result_await_via();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result;

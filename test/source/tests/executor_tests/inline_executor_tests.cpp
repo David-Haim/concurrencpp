@@ -10,27 +10,27 @@
 #include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::tests {
-void test_inline_executor_name();
+    void test_inline_executor_name();
 
-void test_inline_executor_shutdown();
+    void test_inline_executor_shutdown();
 
-void test_inline_executor_max_concurrency_level();
+    void test_inline_executor_max_concurrency_level();
 
-void test_inline_executor_post_foreign();
-void test_inline_executor_post_inline();
-void test_inline_executor_post();
+    void test_inline_executor_post_foreign();
+    void test_inline_executor_post_inline();
+    void test_inline_executor_post();
 
-void test_inline_executor_submit_foreign();
-void test_inline_executor_submit_inline();
-void test_inline_executor_submit();
+    void test_inline_executor_submit_foreign();
+    void test_inline_executor_submit_inline();
+    void test_inline_executor_submit();
 
-void test_inline_executor_bulk_post_foreign();
-void test_inline_executor_bulk_post_inline();
-void test_inline_executor_bulk_post();
+    void test_inline_executor_bulk_post_foreign();
+    void test_inline_executor_bulk_post_inline();
+    void test_inline_executor_bulk_post();
 
-void test_inline_executor_bulk_submit_foreign();
-void test_inline_executor_bulk_submit_inline();
-void test_inline_executor_bulk_submit();
+    void test_inline_executor_bulk_submit_foreign();
+    void test_inline_executor_bulk_submit_inline();
+    void test_inline_executor_bulk_submit();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;

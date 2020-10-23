@@ -8,23 +8,23 @@
 #include <ctime>
 
 namespace mock_web_socket {
-bool failed() noexcept {
-    static const int dummy = [] {
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-        return 0;
-    }();
-    (void)dummy;
+    bool failed() noexcept {
+        static const int dummy = [] {
+            std::srand(static_cast<unsigned int>(std::time(nullptr)));
+            return 0;
+        }();
+        (void)dummy;
 
-    const auto randomized_num = std::rand() % 100;
-    return randomized_num <= 5;
-}
+        const auto randomized_num = std::rand() % 100;
+        return randomized_num <= 5;
+    }
 
-size_t random_in_range(size_t min, size_t max) {
-    const auto range = max - min + 1;
-    return std::rand() % range + min;
-}
+    size_t random_in_range(size_t min, size_t max) {
+        const auto range = max - min + 1;
+        return std::rand() % range + min;
+    }
 
-const std::string cities[] = {"London", "New York City", "Tokyo", "Paris", "Singapore", "Amsterdam", "Seoul", "Berlin", "Hong Kong", "Sydney"};
+    const std::string cities[] = {"London", "New York City", "Tokyo", "Paris", "Singapore", "Amsterdam", "Seoul", "Berlin", "Hong Kong", "Sydney"};
 }  // namespace mock_web_socket
 
 void mock_web_socket::web_socket::open(std::string_view) {

@@ -11,47 +11,47 @@
 #include <string>
 
 namespace concurrencpp::tests {
-template<class type>
-void test_result_promise_constructor_impl();
-void test_result_promise_constructor();
+    template<class type>
+    void test_result_promise_constructor_impl();
+    void test_result_promise_constructor();
 
-template<class type>
-void test_result_promise_destructor_impl();
-void test_result_promise_RAII_impl();
-void test_result_promise_destructor();
+    template<class type>
+    void test_result_promise_destructor_impl();
+    void test_result_promise_RAII_impl();
+    void test_result_promise_destructor();
 
-template<class type>
-void test_result_promise_get_result_impl();
-void test_result_promise_get_result();
+    template<class type>
+    void test_result_promise_get_result_impl();
+    void test_result_promise_get_result();
 
-template<class type, class arguments_tuple_type>
-void test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args);
-void test_result_promise_set_value();
+    template<class type, class arguments_tuple_type>
+    void test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args);
+    void test_result_promise_set_value();
 
-template<class type>
-void test_result_promise_set_exception_impl();
-void test_result_promise_set_exception();
+    template<class type>
+    void test_result_promise_set_exception_impl();
+    void test_result_promise_set_exception();
 
-template<class type>
-void test_result_promise_set_from_function_value_impl();
-template<class type>
-void test_result_promise_set_from_function_exception_impl();
-void test_result_promise_set_from_function();
+    template<class type>
+    void test_result_promise_set_from_function_value_impl();
+    template<class type>
+    void test_result_promise_set_from_function_exception_impl();
+    void test_result_promise_set_from_function();
 
-template<class type>
-void test_rp_assignment_operator_impl_empty_to_empty();
-template<class type>
-void test_rp_assignment_operator_impl_non_empty_to_empty();
-template<class type>
-void test_rp_assignment_operator_impl_empty_to_non_empty();
-template<class type>
-void test_rp_assignment_operator_impl_non_empty_to_non_empty();
-template<class type>
-void test_rp_assignment_operator_assign_to_self();
+    template<class type>
+    void test_rp_assignment_operator_impl_empty_to_empty();
+    template<class type>
+    void test_rp_assignment_operator_impl_non_empty_to_empty();
+    template<class type>
+    void test_rp_assignment_operator_impl_empty_to_non_empty();
+    template<class type>
+    void test_rp_assignment_operator_impl_non_empty_to_non_empty();
+    template<class type>
+    void test_rp_assignment_operator_assign_to_self();
 
-template<class type>
-void test_rp_assignment_operator_impl();
-void test_rp_assignment_operator();
+    template<class type>
+    void test_rp_assignment_operator_impl();
+    void test_rp_assignment_operator();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result_promise;
