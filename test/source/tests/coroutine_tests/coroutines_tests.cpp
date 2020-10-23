@@ -27,7 +27,11 @@ namespace concurrencpp::tests {
 using concurrencpp::result;
 
 template<class type>
-result<type> concurrencpp::tests::recursive_coroutine(executor_tag, std::shared_ptr<thread_executor> te, const size_t cur_depth, const size_t max_depth, const bool terminate_by_exception) {
+result<type> concurrencpp::tests::recursive_coroutine(executor_tag,
+                                                      std::shared_ptr<thread_executor> te,
+                                                      const size_t cur_depth,
+                                                      const size_t max_depth,
+                                                      const bool terminate_by_exception) {
 
     if (cur_depth < max_depth) {
         co_return co_await recursive_coroutine<type>({}, te, cur_depth + 1, max_depth, terminate_by_exception);

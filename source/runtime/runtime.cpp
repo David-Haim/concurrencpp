@@ -51,8 +51,8 @@ void executor_collection::shutdown_all() noexcept {
 */
 
 runtime_options::runtime_options() noexcept :
-    max_cpu_threads(details::default_max_cpu_workers()), max_cpu_thread_waiting_time(details::k_default_max_worker_wait_time), max_background_threads(details::default_max_background_workers()),
-    max_background_thread_waiting_time(details::k_default_max_worker_wait_time) {}
+    max_cpu_threads(details::default_max_cpu_workers()), max_cpu_thread_waiting_time(details::k_default_max_worker_wait_time),
+    max_background_threads(details::default_max_background_workers()), max_background_thread_waiting_time(details::k_default_max_worker_wait_time) {}
 
 /*
         runtime
@@ -66,11 +66,13 @@ runtime::runtime(const runtime_options& options) {
     m_inline_executor = std::make_shared<::concurrencpp::inline_executor>();
     m_registered_executors.register_executor(m_inline_executor);
 
-    m_thread_pool_executor = std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_thread_pool_executor_name, options.max_cpu_threads, options.max_cpu_thread_waiting_time);
+    m_thread_pool_executor =
+        std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_thread_pool_executor_name, options.max_cpu_threads, options.max_cpu_thread_waiting_time);
     m_registered_executors.register_executor(m_thread_pool_executor);
 
-    m_background_executor =
-        std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_background_executor_name, options.max_background_threads, options.max_background_thread_waiting_time);
+    m_background_executor = std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_background_executor_name,
+                                                                                   options.max_background_threads,
+                                                                                   options.max_background_thread_waiting_time);
     m_registered_executors.register_executor(m_background_executor);
 
     m_thread_executor = std::make_shared<::concurrencpp::thread_executor>();

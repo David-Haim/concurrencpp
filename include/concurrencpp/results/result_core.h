@@ -148,7 +148,8 @@ namespace concurrencpp::details {
     class result_core_base {
 
        public:
-        using consumer_context = std::variant<std::monostate, std::experimental::coroutine_handle<>, await_context, std::shared_ptr<wait_context>, std::shared_ptr<when_all_state_base>, when_any_ctx>;
+        using consumer_context =
+            std::variant<std::monostate, std::experimental::coroutine_handle<>, await_context, std::shared_ptr<wait_context>, std::shared_ptr<when_all_state_base>, when_any_ctx>;
 
         enum class pc_state { idle, producer, consumer };
 

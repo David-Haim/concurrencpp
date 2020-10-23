@@ -69,9 +69,11 @@ namespace concurrencpp {
 
         template<class executor_type, class... argument_types>
         std::shared_ptr<executor_type> make_executor(argument_types&&... arguments) {
-            static_assert(std::is_base_of_v<concurrencpp::executor, executor_type>, "concurrencpp::runtime::make_executor - <<executor_type>> is not a derived class of concurrencpp::executor.");
+            static_assert(std::is_base_of_v<concurrencpp::executor, executor_type>,
+                          "concurrencpp::runtime::make_executor - <<executor_type>> is not a derived class of concurrencpp::executor.");
 
-            static_assert(std::is_constructible_v<executor_type, argument_types...>, "concurrencpp::runtime::make_executor - can not build <<executor_type>> from <<argument_types...>>.");
+            static_assert(std::is_constructible_v<executor_type, argument_types...>,
+                          "concurrencpp::runtime::make_executor - can not build <<executor_type>> from <<argument_types...>>.");
 
             static_assert(!std::is_abstract_v<executor_type>, "concurrencpp::runtime::make_executor - <<executor_type>> is an abstract class.");
 

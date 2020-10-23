@@ -6,7 +6,8 @@
 namespace concurrencpp {
     template<class type, class... argument_types>
     result<type> make_ready_result(argument_types&&... arguments) {
-        static_assert(std::is_constructible_v<type, argument_types...> || std::is_same_v<type, void>, "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
+        static_assert(std::is_constructible_v<type, argument_types...> || std::is_same_v<type, void>,
+                      "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
 
         auto result_core_ptr = std::make_shared<details::result_core<type>>();
         result_core_ptr->set_result(std::forward<argument_types>(arguments)...);

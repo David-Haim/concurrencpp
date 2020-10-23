@@ -53,7 +53,8 @@ namespace concurrencpp {
 
             using decayed_type = typename std::decay_t<callable_type>;
 
-            auto timer_core = std::make_shared<details::timer_state<decayed_type>>(due_time, frequency, std::move(executor), weak_from_this(), is_oneshot, std::forward<callable_type>(callable));
+            auto timer_core =
+                std::make_shared<details::timer_state<decayed_type>>(due_time, frequency, std::move(executor), weak_from_this(), is_oneshot, std::forward<callable_type>(callable));
 
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
@@ -85,7 +86,11 @@ namespace concurrencpp {
                 throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
             }
 
-            return make_timer_impl(due_time.count(), frequency.count(), std::move(executor), false, details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
+            return make_timer_impl(due_time.count(),
+                                   frequency.count(),
+                                   std::move(executor),
+                                   false,
+                                   details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
         }
 
         template<class callable_type, class... argumet_types>

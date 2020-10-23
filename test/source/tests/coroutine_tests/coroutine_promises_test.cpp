@@ -79,7 +79,12 @@ void concurrencpp::tests::test_initialy_resumed_null_result_promise() {
 }
 
 namespace concurrencpp::tests {
-    result<std::pair<int, std::string>> initialy_resumed_result_coro(worker_ptr w0, worker_ptr w1, worker_ptr w2, worker_ptr w3, testing_stub stub, const bool terminate_by_exception) {
+    result<std::pair<int, std::string>> initialy_resumed_result_coro(worker_ptr w0,
+                                                                     worker_ptr w1,
+                                                                     worker_ptr w2,
+                                                                     worker_ptr w3,
+                                                                     testing_stub stub,
+                                                                     const bool terminate_by_exception) {
         int i = 0;
         std::string s = "";
 
@@ -188,8 +193,14 @@ void concurrencpp::tests::test_initialy_rescheduled_null_result_promise() {
 }
 
 namespace concurrencpp::tests {
-    result<std::pair<int, std::string>>
-    initialy_rescheduled_result_coro(executor_tag, worker_ptr w0, const std::thread::id caller_id, worker_ptr w1, worker_ptr w2, worker_ptr w3, testing_stub stub, const bool terminate_by_exception) {
+    result<std::pair<int, std::string>> initialy_rescheduled_result_coro(executor_tag,
+                                                                         worker_ptr w0,
+                                                                         const std::thread::id caller_id,
+                                                                         worker_ptr w1,
+                                                                         worker_ptr w2,
+                                                                         worker_ptr w3,
+                                                                         testing_stub stub,
+                                                                         const bool terminate_by_exception) {
 
         assert_not_equal(caller_id, std::this_thread::get_id());
 

@@ -28,7 +28,11 @@ namespace concurrencpp::details {
         }
 
        public:
-        timer_state_base(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, std::weak_ptr<concurrencpp::timer_queue> timer_queue, bool is_oneshot) noexcept;
+        timer_state_base(size_t due_time,
+                         size_t frequency,
+                         std::shared_ptr<concurrencpp::executor> executor,
+                         std::weak_ptr<concurrencpp::timer_queue> timer_queue,
+                         bool is_oneshot) noexcept;
 
         virtual ~timer_state_base() noexcept = default;
 

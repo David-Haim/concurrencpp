@@ -51,7 +51,7 @@ SpacesInContainerLiterals: 'true'
 SpacesInParentheses: 'false'
 SpacesInSquareBrackets: 'false'
 Standard: Cpp11
-ColumnLimit: 200
+ColumnLimit: 180
 IndentWidth: 4
 BinPackArguments: 'false'
 BinPackParameters: 'false'

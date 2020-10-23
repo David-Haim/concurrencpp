@@ -10,8 +10,11 @@ using concurrencpp::timer;
 using concurrencpp::details::timer_state;
 using concurrencpp::details::timer_state_base;
 
-timer_state_base::timer_state_base(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, std::weak_ptr<concurrencpp::timer_queue> timer_queue, bool is_oneshot) noexcept
-    :
+timer_state_base::timer_state_base(size_t due_time,
+                                   size_t frequency,
+                                   std::shared_ptr<concurrencpp::executor> executor,
+                                   std::weak_ptr<concurrencpp::timer_queue> timer_queue,
+                                   bool is_oneshot) noexcept :
     m_timer_queue(std::move(timer_queue)),
     m_executor(std::move(executor)), m_due_time(due_time), m_frequency(frequency), m_deadline(make_deadline(milliseconds(due_time))), m_is_oneshot(is_oneshot) {
     assert(static_cast<bool>(m_executor));

@@ -218,7 +218,8 @@ namespace concurrencpp::details {
         }
 
        public:
-        when_any_tuple_state(result_types&&... results) : m_results(std::forward<result_types>(results)...), m_core_ptr(std::make_shared<result_core<when_any_result<tuple_type>>>()) {}
+        when_any_tuple_state(result_types&&... results) :
+            m_results(std::forward<result_types>(results)...), m_core_ptr(std::make_shared<result_core<when_any_result<tuple_type>>>()) {}
 
         void on_result_ready(size_t index) noexcept override {
             if (m_fulfilled.exchange(true, std::memory_order_relaxed)) {

@@ -120,12 +120,13 @@ void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>
 }
 
 thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::seconds max_idle_time) :
-    m_atomic_abort(false), m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time), m_worker_name(details::make_executor_worker_name(parent_pool.name)),
-    m_status(status::idle), m_abort(false) {
+    m_atomic_abort(false), m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
+    m_worker_name(details::make_executor_worker_name(parent_pool.name)), m_status(status::idle), m_abort(false) {
     m_idle_worker_list.reserve(pool_size);
 }
 
-thread_pool_worker::thread_pool_worker(thread_pool_worker&& rhs) noexcept : m_parent_pool(rhs.m_parent_pool), m_index(rhs.m_index), m_pool_size(rhs.m_pool_size), m_max_idle_time(rhs.m_max_idle_time) {
+thread_pool_worker::thread_pool_worker(thread_pool_worker&& rhs) noexcept :
+    m_parent_pool(rhs.m_parent_pool), m_index(rhs.m_index), m_pool_size(rhs.m_pool_size), m_max_idle_time(rhs.m_max_idle_time) {
     std::abort();  // shouldn't be called
 }
 
