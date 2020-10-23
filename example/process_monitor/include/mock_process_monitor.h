@@ -4,22 +4,22 @@
 #include <cstddef>
 
 namespace mock_process_monitor {
-class monitor {
+    class monitor {
 
- private:
-  size_t m_last_cpu_usage;
-  size_t m_last_memory_usage;
-  size_t m_last_thread_count;
-  size_t m_last_kernel_object_count;
+       private:
+        size_t m_last_cpu_usage;
+        size_t m_last_memory_usage;
+        size_t m_last_thread_count;
+        size_t m_last_kernel_object_count;
 
- public:
-  monitor() noexcept;
+       public:
+        monitor() noexcept;
 
-  size_t cpu_usage() noexcept;
-  size_t memory_usage() noexcept;
-  size_t thread_count() noexcept;
-  size_t kernel_object_count() noexcept;
-};
+        size_t cpu_usage() noexcept;
+        size_t memory_usage() noexcept;
+        size_t thread_count() noexcept;
+        size_t kernel_object_count() noexcept;
+    };
 }  // namespace mock_process_monitor
 
 #endif

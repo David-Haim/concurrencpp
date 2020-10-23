@@ -5,33 +5,33 @@
 #include <functional>
 
 namespace concurrencpp::tests {
-class test_step {
+    class test_step {
 
- private:
-  const char* m_step_name;
-  std::function<void()> m_step;
+       private:
+        const char* m_step_name;
+        std::function<void()> m_step;
 
- public:
-  test_step(const char* step_name, std::function<void()> callable);
+       public:
+        test_step(const char* step_name, std::function<void()> callable);
 
-  void launch_test_step() noexcept;
-};
+        void launch_test_step() noexcept;
+    };
 
-class tester {
+    class tester {
 
- private:
-  const char* m_test_name;
-  std::deque<test_step> m_steps;
+       private:
+        const char* m_test_name;
+        std::deque<test_step> m_steps;
 
-  void start_test();
-  void end_test();
+        void start_test();
+        void end_test();
 
- public:
-  tester(const char* test_name) noexcept;
+       public:
+        tester(const char* test_name) noexcept;
 
-  void launch_test() noexcept;
-  void add_step(const char* step_name, std::function<void()> callable);
-};
+        void launch_test() noexcept;
+        void add_step(const char* step_name, std::function<void()> callable);
+    };
 
 }  // namespace concurrencpp::tests
 
