@@ -93,8 +93,10 @@ namespace concurrencpp {
         const bool m_force_rescheduling;
 
        public:
-        resolve_via_awaitable(std::shared_ptr<details::result_core<type>> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept :
-            m_state(state), m_executor(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
+        resolve_via_awaitable(std::shared_ptr<details::result_core<type>> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept
+            :
+            m_state(state),
+            m_executor(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
 
         resolve_via_awaitable(resolve_via_awaitable&&) noexcept = default;
 

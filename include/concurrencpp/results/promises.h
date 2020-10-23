@@ -243,13 +243,19 @@ namespace std::experimental {
 
     // Bulk + no result
     template<class... arguments>
-    struct coroutine_traits<::concurrencpp::null_result, concurrencpp::details::executor_bulk_tag, std::vector<std::experimental::coroutine_handle<>>*, arguments...> {
+    struct coroutine_traits<::concurrencpp::null_result,
+                            concurrencpp::details::executor_bulk_tag,
+                            std::vector<std::experimental::coroutine_handle<>>*,
+                            arguments...> {
         using promise_type = concurrencpp::details::bulk_null_result_promise;
     };
 
     // Bulk + result
     template<class type, class... arguments>
-    struct coroutine_traits<::concurrencpp::result<type>, concurrencpp::details::executor_bulk_tag, std::vector<std::experimental::coroutine_handle<>>*, arguments...> {
+    struct coroutine_traits<::concurrencpp::result<type>,
+                            concurrencpp::details::executor_bulk_tag,
+                            std::vector<std::experimental::coroutine_handle<>>*,
+                            arguments...> {
         using promise_type = concurrencpp::details::bulk_result_promise<type>;
     };
 }  // namespace std::experimental

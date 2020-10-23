@@ -69,7 +69,8 @@ namespace concurrencpp::details {
         }
 
        public:
-        when_all_tuple_state(result_types&&... results) noexcept : m_tuple(std::forward<result_types>(results)...), m_core_ptr(std::make_shared<result_core<tuple_type>>()) {
+        when_all_tuple_state(result_types&&... results) noexcept :
+            m_tuple(std::forward<result_types>(results)...), m_core_ptr(std::make_shared<result_core<tuple_type>>()) {
             m_counter = sizeof...(result_types);
         }
 
@@ -273,7 +274,8 @@ namespace concurrencpp::details {
        public:
         template<class iterator_type>
         when_any_vector_state(iterator_type begin, iterator_type end) :
-            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)), m_core_ptr(std::make_shared<result_core<when_any_result<std::vector<type>>>>()) {}
+            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)),
+            m_core_ptr(std::make_shared<result_core<when_any_result<std::vector<type>>>>()) {}
 
         void on_result_ready(size_t index) noexcept override {
             if (m_fulfilled.exchange(true, std::memory_order_relaxed)) {

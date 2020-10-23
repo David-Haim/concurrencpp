@@ -48,7 +48,8 @@ void test_matrix(const matrix& mtx0, const matrix& mtx1, const matrix& mtx2) {
     }
 }
 
-result<void> do_multiply(executor_tag, std::shared_ptr<thread_pool_executor> executor, const matrix& mtx0, const matrix& mtx1, matrix& mtx2, size_t line, size_t col) {
+result<void>
+do_multiply(executor_tag, std::shared_ptr<thread_pool_executor> executor, const matrix& mtx0, const matrix& mtx1, matrix& mtx2, size_t line, size_t col) {
 
     double res = 0.0;
     for (size_t i = 0; i < 1024; i++) {

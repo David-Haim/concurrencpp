@@ -14,7 +14,11 @@
 
 namespace concurrencpp::tests {
     template<class type>
-    result<type> recursive_coroutine(executor_tag, std::shared_ptr<thread_executor> te, const size_t cur_depth, const size_t max_depth, const bool terminate_by_exception);
+    result<type> recursive_coroutine(executor_tag,
+                                     std::shared_ptr<thread_executor> te,
+                                     const size_t cur_depth,
+                                     const size_t max_depth,
+                                     const bool terminate_by_exception);
 
     template<class type>
     void test_recursive_coroutines_impl();

@@ -27,7 +27,9 @@ int main() {
 
 using namespace concurrencpp;
 
-void worker_thread_task(std::shared_ptr<worker_thread_executor> (&executors)[16], std::atomic_size_t& counter, std::shared_ptr<concurrencpp::details::wait_context> wc) {
+void worker_thread_task(std::shared_ptr<worker_thread_executor> (&executors)[16],
+                        std::atomic_size_t& counter,
+                        std::shared_ptr<concurrencpp::details::wait_context> wc) {
     const auto c = counter.fetch_add(1, std::memory_order_relaxed);
 
     if (c >= 10'000'000) {

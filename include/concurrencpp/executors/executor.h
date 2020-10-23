@@ -34,21 +34,25 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class return_type = typename std::invoke_result_t<callable_type>>
-        static result<return_type> bulk_submit_bridge(details::executor_bulk_tag, std::vector<std::experimental::coroutine_handle<>>* accumulator, callable_type callable) {
+        static result<return_type> bulk_submit_bridge(details::executor_bulk_tag,
+                                                      std::vector<std::experimental::coroutine_handle<>>* accumulator,
+                                                      callable_type callable) {
             co_return callable();
         }
 
        protected:
         template<class executor_type, class callable_type, class... argument_types>
         static void do_post(executor_type* executor_ptr, callable_type&& callable, argument_types&&... arguments) {
-            static_assert(std::is_invocable_v<callable_type, argument_types...>, "concurrencpp::executor::post - <<callable_type>> is not invokable with <<argument_types...>>");
+            static_assert(std::is_invocable_v<callable_type, argument_types...>,
+                          "concurrencpp::executor::post - <<callable_type>> is not invokable with <<argument_types...>>");
 
             post_bridge({}, executor_ptr, std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
         }
 
         template<class executor_type, class callable_type, class... argument_types>
         static auto do_submit(executor_type* executor_ptr, callable_type&& callable, argument_types&&... arguments) {
-            static_assert(std::is_invocable_v<callable_type, argument_types...>, "concurrencpp::executor::submit - <<callable_type>> is not invokable with <<argument_types...>>");
+            static_assert(std::is_invocable_v<callable_type, argument_types...>,
+                          "concurrencpp::executor::submit - <<callable_type>> is not invokable with <<argument_types...>>");
 
             using return_type = typename std::invoke_result_t<callable_type, argument_types...>;
 

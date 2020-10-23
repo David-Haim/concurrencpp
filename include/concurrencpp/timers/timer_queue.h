@@ -53,8 +53,12 @@ namespace concurrencpp {
 
             using decayed_type = typename std::decay_t<callable_type>;
 
-            auto timer_core =
-                std::make_shared<details::timer_state<decayed_type>>(due_time, frequency, std::move(executor), weak_from_this(), is_oneshot, std::forward<callable_type>(callable));
+            auto timer_core = std::make_shared<details::timer_state<decayed_type>>(due_time,
+                                                                                   frequency,
+                                                                                   std::move(executor),
+                                                                                   weak_from_this(),
+                                                                                   is_oneshot,
+                                                                                   std::forward<callable_type>(callable));
 
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
@@ -94,13 +98,20 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class... argumet_types>
-        timer make_one_shot_timer(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor, callable_type&& callable, argumet_types&&... arguments) {
+        timer make_one_shot_timer(std::chrono::milliseconds due_time,
+                                  std::shared_ptr<concurrencpp::executor> executor,
+                                  callable_type&& callable,
+                                  argumet_types&&... arguments) {
 
             if (!static_cast<bool>(executor)) {
                 throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
             }
 
-            return make_timer_impl(due_time.count(), 0, std::move(executor), true, details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
+            return make_timer_impl(due_time.count(),
+                                   0,
+                                   std::move(executor),
+                                   true,
+                                   details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
         }
 
         result<void> make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor);

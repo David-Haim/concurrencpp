@@ -21,7 +21,8 @@ void thread_worker::start(std::string worker_name, std::experimental::coroutine_
     });
 }
 
-thread_executor::thread_executor() : derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name), m_abort(false), m_atomic_abort(false) {}
+thread_executor::thread_executor() :
+    derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name), m_abort(false), m_atomic_abort(false) {}
 
 thread_executor::~thread_executor() noexcept {
     assert(m_workers.empty());
