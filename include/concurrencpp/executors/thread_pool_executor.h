@@ -20,8 +20,7 @@ namespace concurrencpp::details {
 namespace concurrencpp::details {
     class idle_worker_set {
 
-        enum class status { active,
-                            idle };
+        enum class status { active, idle };
 
         struct alignas(64) padded_flag {
             std::atomic<status> flag;
@@ -42,18 +41,14 @@ namespace concurrencpp::details {
         void set_active(size_t idle_thread) noexcept;
 
         size_t find_idle_worker(size_t caller_index) noexcept;
-        void find_idle_workers(size_t caller_index,
-                               std::vector<size_t>& result_buffer,
-                               size_t max_count) noexcept;
+        void find_idle_workers(size_t caller_index, std::vector<size_t>& result_buffer, size_t max_count) noexcept;
     };
 }  // namespace concurrencpp::details
 
 namespace concurrencpp::details {
     class alignas(64) thread_pool_worker {
 
-        enum class status { working,
-                            waiting,
-                            idle };
+        enum class status { working, waiting, idle };
 
        private:
         std::deque<std::experimental::coroutine_handle<>> m_private_queue;
@@ -84,10 +79,7 @@ namespace concurrencpp::details {
         void ensure_worker_active(std::unique_lock<std::mutex>& lock);
 
        public:
-        thread_pool_worker(thread_pool_executor& parent_pool,
-                           size_t index,
-                           size_t pool_size,
-                           std::chrono::seconds max_idle_time);
+        thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::seconds max_idle_time);
 
         thread_pool_worker(thread_pool_worker&& rhs) noexcept;
         ~thread_pool_worker() noexcept;
@@ -104,8 +96,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class alignas(64) thread_pool_executor final :
-        public derivable_executor<thread_pool_executor> {
+    class alignas(64) thread_pool_executor final : public derivable_executor<thread_pool_executor> {
 
         friend class details::thread_pool_worker;
 
@@ -121,18 +112,14 @@ namespace concurrencpp {
         void mark_worker_idle(size_t index) noexcept;
         void mark_worker_active(size_t index) noexcept;
 
-        void find_idle_workers(size_t caller_index,
-                               std::vector<size_t>& buffer,
-                               size_t max_count) noexcept;
+        void find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept;
 
         details::thread_pool_worker& worker_at(size_t index) noexcept {
             return m_workers[index];
         }
 
        public:
-        thread_pool_executor(std::string_view name,
-                             size_t size,
-                             std::chrono::seconds max_idle_time);
+        thread_pool_executor(std::string_view name, size_t size, std::chrono::seconds max_idle_time);
         ~thread_pool_executor() noexcept;
 
         void enqueue(std::experimental::coroutine_handle<> task) override;

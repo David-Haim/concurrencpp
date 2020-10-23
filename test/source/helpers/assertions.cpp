@@ -64,13 +64,10 @@ namespace concurrencpp::tests::details {
         return stream.str();
     }
 
-    std::string to_string(
-        std::chrono::time_point<std::chrono::high_resolution_clock> time_point) {
+    std::string to_string(std::chrono::time_point<std::chrono::high_resolution_clock> time_point) {
         auto time_from_epoch = time_point.time_since_epoch();
-        auto seconds_from_epoch =
-            std::chrono::duration_cast<std::chrono::seconds>(time_from_epoch);
-        return std::string("time_from_epoch[") +
-            std::to_string(seconds_from_epoch.count()) + "]";
+        auto seconds_from_epoch = std::chrono::duration_cast<std::chrono::seconds>(time_from_epoch);
+        return std::string("time_from_epoch[") + std::to_string(seconds_from_epoch.count()) + "]";
     }
 
     void assert_same_failed_impl(const std::string& a, const std::string& b) {
@@ -121,8 +118,7 @@ namespace concurrencpp::tests::details {
         std::abort();
     }
 
-    void assert_bigger_equal_failed_impl(const std::string& a,
-                                         const std::string& b) {
+    void assert_bigger_equal_failed_impl(const std::string& a, const std::string& b) {
         std::string error_msg = "assertion failed. ";
         error_msg += "expected [";
         error_msg += a;
@@ -134,8 +130,7 @@ namespace concurrencpp::tests::details {
         std::abort();
     }
 
-    void assert_smaller_equal_failed_impl(const std::string& a,
-                                          const std::string& b) {
+    void assert_smaller_equal_failed_impl(const std::string& a, const std::string& b) {
         std::string error_msg = "assertion failed. ";
         error_msg += "expected [";
         error_msg += a;

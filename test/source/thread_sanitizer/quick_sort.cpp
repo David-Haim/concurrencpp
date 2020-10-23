@@ -3,12 +3,7 @@
 #include <algorithm>
 #include <iostream>
 
-concurrencpp::result<void> quick_sort(
-    concurrencpp::executor_tag,
-    std::shared_ptr<concurrencpp::thread_pool_executor> tp,
-    int* a,
-    int lo,
-    int hi);
+concurrencpp::result<void> quick_sort(concurrencpp::executor_tag, std::shared_ptr<concurrencpp::thread_pool_executor> tp, int* a, int lo, int hi);
 
 int main() {
     concurrencpp::runtime_options opts;
@@ -22,8 +17,7 @@ int main() {
         i = rand() % 10 * 10'000;
     }
 
-    quick_sort({}, runtime.thread_pool_executor(), array.data(), 0, array.size() - 1)
-        .get();
+    quick_sort({}, runtime.thread_pool_executor(), array.data(), 0, array.size() - 1).get();
 
     const auto is_sorted = std::is_sorted(array.begin(), array.end());
     if (!is_sorted) {
@@ -81,11 +75,7 @@ int partition(int* a, int lo, int hi) {
                         quicksort(A, p + 1, hi)
 
 */
-result<void> quick_sort(executor_tag,
-                        std::shared_ptr<thread_pool_executor> tp,
-                        int* a,
-                        int lo,
-                        int hi) {
+result<void> quick_sort(executor_tag, std::shared_ptr<thread_pool_executor> tp, int* a, int lo, int hi) {
     if (lo >= hi) {
         co_return;
     }

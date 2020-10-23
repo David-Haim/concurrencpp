@@ -49,12 +49,9 @@ void concurrencpp::tests::test_when_any_vector_empty_result() {
         },
         concurrencpp::details::consts::k_when_any_empty_result_error_msg);
 
-    const auto all_valid = std::all_of(
-        results.begin(),
-        results.begin() + task_count,
-        [](const auto& result) {
-            return static_cast<bool>(result);
-        });
+    const auto all_valid = std::all_of(results.begin(), results.begin() + task_count, [](const auto& result) {
+        return static_cast<bool>(result);
+    });
 
     assert_true(all_valid);
 }
@@ -71,8 +68,7 @@ void concurrencpp::tests::test_when_any_vector_empty_range() {
 }
 
 template<class type>
-concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(
-    std::shared_ptr<thread_executor> ex) {
+concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::shared_ptr<thread_executor> ex) {
     const size_t task_count = 64;
     auto values = result_factory<type>::get_many(task_count);
     std::vector<result<type>> results;
@@ -98,12 +94,9 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(
 
     auto& done_result = any_done.results[any_done.index];
 
-    const auto all_valid = std::all_of(
-        any_done.results.begin(),
-        any_done.results.end(),
-        [](const auto& result) {
-            return static_cast<bool>(result);
-        });
+    const auto all_valid = std::all_of(any_done.results.begin(), any_done.results.end(), [](const auto& result) {
+        return static_cast<bool>(result);
+    });
 
     assert_true(all_valid);
 
@@ -175,8 +168,7 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
     assert_true(static_cast<bool>(int_res));
 }
 
-concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(
-    std::shared_ptr<thread_executor> ex) {
+concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex) {
     std::atomic_size_t counter = 0;
     random randomizer;
 
@@ -253,41 +245,34 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(
         return result_factory<std::string&>::get();
     });
 
-    auto any_done = co_await when_any(
-        std::move(int_res_val),
-        std::move(int_res_ex),
-        std::move(s_res_val),
-        std::move(s_res_ex),
-        std::move(void_res_val),
-        std::move(void_res_ex),
-        std::move(int_ref_res_val),
-        std::move(int_ref_res_ex),
-        std::move(s_ref_res_val),
-        std::move(s_ref_res_ex));
+    auto any_done = co_await when_any(std::move(int_res_val),
+                                      std::move(int_res_ex),
+                                      std::move(s_res_val),
+                                      std::move(s_res_ex),
+                                      std::move(void_res_val),
+                                      std::move(void_res_ex),
+                                      std::move(int_ref_res_val),
+                                      std::move(int_ref_res_ex),
+                                      std::move(s_ref_res_val),
+                                      std::move(s_ref_res_ex));
 
     assert_bigger_equal(counter.load(std::memory_order_relaxed), size_t(1));
 
     switch (any_done.index) {
         case 0: {
-            test_ready_result_result(std::move(std::get<0>(any_done.results)),
-                                     result_factory<int>::get());
+            test_ready_result_result(std::move(std::get<0>(any_done.results)), result_factory<int>::get());
             break;
         }
         case 1: {
-            test_ready_result_costume_exception(
-                std::move(std::get<1>(any_done.results)),
-                0);
+            test_ready_result_costume_exception(std::move(std::get<1>(any_done.results)), 0);
             break;
         }
         case 2: {
-            test_ready_result_result(std::move(std::get<2>(any_done.results)),
-                                     result_factory<std::string>::get());
+            test_ready_result_result(std::move(std::get<2>(any_done.results)), result_factory<std::string>::get());
             break;
         }
         case 3: {
-            test_ready_result_costume_exception(
-                std::move(std::get<3>(any_done.results)),
-                1);
+            test_ready_result_costume_exception(std::move(std::get<3>(any_done.results)), 1);
             break;
         }
         case 4: {
@@ -295,31 +280,23 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(
             break;
         }
         case 5: {
-            test_ready_result_costume_exception(
-                std::move(std::get<5>(any_done.results)),
-                2);
+            test_ready_result_costume_exception(std::move(std::get<5>(any_done.results)), 2);
             break;
         }
         case 6: {
-            test_ready_result_result(std::move(std::get<6>(any_done.results)),
-                                     result_factory<int&>::get());
+            test_ready_result_result(std::move(std::get<6>(any_done.results)), result_factory<int&>::get());
             break;
         }
         case 7: {
-            test_ready_result_costume_exception(
-                std::move(std::get<7>(any_done.results)),
-                3);
+            test_ready_result_costume_exception(std::move(std::get<7>(any_done.results)), 3);
             break;
         }
         case 8: {
-            test_ready_result_result(std::move(std::get<8>(any_done.results)),
-                                     result_factory<std::string&>::get());
+            test_ready_result_result(std::move(std::get<8>(any_done.results)), result_factory<std::string&>::get());
             break;
         }
         case 9: {
-            test_ready_result_costume_exception(
-                std::move(std::get<9>(any_done.results)),
-                4);
+            test_ready_result_costume_exception(std::move(std::get<9>(any_done.results)), 4);
             break;
         }
         default: {

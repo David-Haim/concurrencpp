@@ -144,8 +144,7 @@ namespace concurrencpp::tests {
             return str;
         }
 
-        static std::vector<std::reference_wrapper<std::string>> get_many(
-            size_t count) {
+        static std::vector<std::reference_wrapper<std::string>> get_many(size_t count) {
             static std::vector<std::string> s_res(64);
             std::vector<std::reference_wrapper<std::string>> res;
             res.reserve(count);

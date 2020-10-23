@@ -19,22 +19,18 @@ namespace concurrencpp::details {
         thread m_thread;
         thread_executor& m_parent_pool;
 
-        void execute_and_retire(std::experimental::coroutine_handle<> task,
-                                typename std::list<thread_worker>::iterator self_it);
+        void execute_and_retire(std::experimental::coroutine_handle<> task, typename std::list<thread_worker>::iterator self_it);
 
        public:
         thread_worker(thread_executor& parent_pool) noexcept;
         ~thread_worker() noexcept;
 
-        void start(const std::string worker_name,
-                   std::experimental::coroutine_handle<> task,
-                   std::list<thread_worker>::iterator self_it);
+        void start(const std::string worker_name, std::experimental::coroutine_handle<> task, std::list<thread_worker>::iterator self_it);
     };
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class alignas(64) thread_executor final :
-        public derivable_executor<thread_executor> {
+    class alignas(64) thread_executor final : public derivable_executor<thread_executor> {
 
         friend class ::concurrencpp::details::thread_worker;
 

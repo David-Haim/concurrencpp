@@ -7,8 +7,7 @@
 #include <deque>
 
 namespace concurrencpp {
-    class alignas(64) manual_executor final :
-        public derivable_executor<manual_executor> {
+    class alignas(64) manual_executor final : public derivable_executor<manual_executor> {
 
        private:
         mutable std::mutex m_lock;

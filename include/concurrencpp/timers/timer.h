@@ -20,8 +20,7 @@ namespace concurrencpp::details {
         const std::shared_ptr<executor> m_executor;
         const size_t m_due_time;
         std::atomic_size_t m_frequency;
-        time_point
-            m_deadline;  // set by the c.tor, changed only by the timer_queue thread.
+        time_point m_deadline;  // set by the c.tor, changed only by the timer_queue thread.
         const bool m_is_oneshot;
 
         static time_point make_deadline(milliseconds diff) noexcept {
@@ -29,11 +28,7 @@ namespace concurrencpp::details {
         }
 
        public:
-        timer_state_base(size_t due_time,
-                         size_t frequency,
-                         std::shared_ptr<concurrencpp::executor> executor,
-                         std::weak_ptr<concurrencpp::timer_queue> timer_queue,
-                         bool is_oneshot) noexcept;
+        timer_state_base(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, std::weak_ptr<concurrencpp::timer_queue> timer_queue, bool is_oneshot) noexcept;
 
         virtual ~timer_state_base() noexcept = default;
 
@@ -88,11 +83,7 @@ namespace concurrencpp::details {
                     std::weak_ptr<concurrencpp::timer_queue> timer_queue,
                     bool is_oneshot,
                     given_callable_type&& callable) :
-            timer_state_base(due_time,
-                             frequency,
-                             std::move(executor),
-                             std::move(timer_queue),
-                             is_oneshot),
+            timer_state_base(due_time, frequency, std::move(executor), std::move(timer_queue), is_oneshot),
             m_callable(std::forward<given_callable_type>(callable)) {}
 
         void execute() override {

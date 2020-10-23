@@ -10,9 +10,7 @@ namespace concurrencpp::details {
 using concurrencpp::worker_thread_executor;
 
 worker_thread_executor::worker_thread_executor() :
-    derivable_executor<concurrencpp::worker_thread_executor>(
-        details::consts::k_worker_thread_executor_name),
-    m_private_atomic_abort(false), m_abort(false), m_atomic_abort(false) {
+    derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name), m_private_atomic_abort(false), m_abort(false), m_atomic_abort(false) {
     m_thread = details::thread(details::make_executor_worker_name(name), [this] {
         work_loop();
     });
@@ -79,8 +77,7 @@ void worker_thread_executor::work_loop() noexcept {
     }
 }
 
-void worker_thread_executor::enqueue_local(
-    std::experimental::coroutine_handle<> task) {
+void worker_thread_executor::enqueue_local(std::experimental::coroutine_handle<> task) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
         details::throw_executor_shutdown_exception(name);
     }
@@ -88,8 +85,7 @@ void worker_thread_executor::enqueue_local(
     m_private_queue.emplace_back(task);
 }
 
-void worker_thread_executor::enqueue_local(
-    std::span<std::experimental::coroutine_handle<>> tasks) {
+void worker_thread_executor::enqueue_local(std::span<std::experimental::coroutine_handle<>> tasks) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
         details::throw_executor_shutdown_exception(name);
     }
@@ -97,8 +93,7 @@ void worker_thread_executor::enqueue_local(
     m_private_queue.insert(m_private_queue.end(), tasks.begin(), tasks.end());
 }
 
-void worker_thread_executor::enqueue_foreign(
-    std::experimental::coroutine_handle<> task) {
+void worker_thread_executor::enqueue_foreign(std::experimental::coroutine_handle<> task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
@@ -110,8 +105,7 @@ void worker_thread_executor::enqueue_foreign(
     m_condition.notify_one();
 }
 
-void worker_thread_executor::enqueue_foreign(
-    std::span<std::experimental::coroutine_handle<>> tasks) {
+void worker_thread_executor::enqueue_foreign(std::span<std::experimental::coroutine_handle<>> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
@@ -123,8 +117,7 @@ void worker_thread_executor::enqueue_foreign(
     m_condition.notify_one();
 }
 
-void worker_thread_executor::enqueue(
-    std::experimental::coroutine_handle<> task) {
+void worker_thread_executor::enqueue(std::experimental::coroutine_handle<> task) {
     if (details::s_tl_this_worker == this) {
         return enqueue_local(task);
     }
@@ -132,8 +125,7 @@ void worker_thread_executor::enqueue(
     enqueue_foreign(task);
 }
 
-void worker_thread_executor::enqueue(
-    std::span<std::experimental::coroutine_handle<>> tasks) {
+void worker_thread_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
     if (details::s_tl_this_worker == this) {
         return enqueue_local(tasks);
     }

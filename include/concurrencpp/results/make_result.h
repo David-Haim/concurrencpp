@@ -6,10 +6,7 @@
 namespace concurrencpp {
     template<class type, class... argument_types>
     result<type> make_ready_result(argument_types&&... arguments) {
-        static_assert(
-            std::is_constructible_v<type, argument_types...> ||
-                std::is_same_v<type, void>,
-            "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
+        static_assert(std::is_constructible_v<type, argument_types...> || std::is_same_v<type, void>, "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
 
         auto result_core_ptr = std::make_shared<details::result_core<type>>();
         result_core_ptr->set_result(std::forward<argument_types>(arguments)...);
@@ -27,8 +24,7 @@ namespace concurrencpp {
     template<class type>
     result<type> make_exceptional_result(std::exception_ptr exception_ptr) {
         if (!static_cast<bool>(exception_ptr)) {
-            throw std::invalid_argument(
-                details::consts::k_make_exceptional_result_exception_null_error_msg);
+            throw std::invalid_argument(details::consts::k_make_exceptional_result_exception_null_error_msg);
         }
 
         auto result_core_ptr = std::make_shared<details::result_core<type>>();

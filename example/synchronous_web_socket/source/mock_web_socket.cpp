@@ -42,6 +42,5 @@ std::string mock_web_socket::web_socket::receive_msg() {
     const auto random_city = cities[random_in_range(0, std::size(cities) - 1)];
     const auto random_temperature = random_in_range(-5, 37);
 
-    return std::string("Current temperature in ") + random_city + " is " +
-        std::to_string(random_temperature) + " deg. C";
+    return std::string("Current temperature in ") + random_city + " is " + std::to_string(random_temperature) + " deg. C";
 }

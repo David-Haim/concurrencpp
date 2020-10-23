@@ -27,10 +27,7 @@ int main() {
 
 using namespace concurrencpp;
 
-void worker_thread_task(
-    std::shared_ptr<worker_thread_executor> (&executors)[16],
-    std::atomic_size_t& counter,
-    std::shared_ptr<concurrencpp::details::wait_context> wc) {
+void worker_thread_task(std::shared_ptr<worker_thread_executor> (&executors)[16], std::atomic_size_t& counter, std::shared_ptr<concurrencpp::details::wait_context> wc) {
     const auto c = counter.fetch_add(1, std::memory_order_relaxed);
 
     if (c >= 10'000'000) {
@@ -65,9 +62,7 @@ void test_worker_thread_executor() {
     wc->wait();
 }
 
-void thread_pool_task(std::shared_ptr<thread_pool_executor> tpe,
-                      std::atomic_size_t& counter,
-                      std::shared_ptr<concurrencpp::details::wait_context> wc) {
+void thread_pool_task(std::shared_ptr<thread_pool_executor> tpe, std::atomic_size_t& counter, std::shared_ptr<concurrencpp::details::wait_context> wc) {
     const auto c = counter.fetch_add(1, std::memory_order_relaxed);
 
     if (c >= 10'000'000) {
@@ -95,9 +90,7 @@ void test_thread_pool_executor() {
     wc->wait();
 }
 
-void thread_task(std::shared_ptr<thread_executor> tp,
-                 std::atomic_size_t& counter,
-                 std::shared_ptr<concurrencpp::details::wait_context> wc) {
+void thread_task(std::shared_ptr<thread_executor> tp, std::atomic_size_t& counter, std::shared_ptr<concurrencpp::details::wait_context> wc) {
     const auto c = counter.fetch_add(1, std::memory_order_relaxed);
     if (c >= 1'024 * 4) {
         if (c == 1'024 * 4) {
@@ -123,10 +116,7 @@ void test_thread_executor() {
     wc->wait();
 }
 
-void manual_executor_work_loop(
-    std::shared_ptr<manual_executor> (&executors)[16],
-    std::atomic_size_t& counter,
-    const size_t worker_index) {
+void manual_executor_work_loop(std::shared_ptr<manual_executor> (&executors)[16], std::atomic_size_t& counter, const size_t worker_index) {
 
     while (true) {
         const auto c = counter.fetch_add(1, std::memory_order_relaxed);

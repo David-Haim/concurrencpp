@@ -20,13 +20,11 @@ namespace concurrencpp::tests::details {
     std::string to_string(const char* str);
     std::string to_string(const std::string_view str);
     std::string to_string(std::thread::id);
-    std::string to_string(
-        std::chrono::time_point<std::chrono::high_resolution_clock> time_point);
+    std::string to_string(std::chrono::time_point<std::chrono::high_resolution_clock> time_point);
 
     template<class type>
     std::string to_string(type* value) {
-        return std::string("pointer[") +
-            to_string(reinterpret_cast<intptr_t>(value)) + "]";
+        return std::string("pointer[") + to_string(reinterpret_cast<intptr_t>(value)) + "]";
     }
 
     template<class type>
@@ -38,10 +36,8 @@ namespace concurrencpp::tests::details {
     void assert_not_same_failed_impl(const std::string& a, const std::string& b);
     void assert_bigger_failed_impl(const std::string& a, const std::string& b);
     void assert_smaller_failed_impl(const std::string& a, const std::string& b);
-    void assert_bigger_equal_failed_impl(const std::string& a,
-                                         const std::string& b);
-    void assert_smaller_equal_failed_impl(const std::string& a,
-                                          const std::string& b);
+    void assert_bigger_equal_failed_impl(const std::string& a, const std::string& b);
+    void assert_smaller_equal_failed_impl(const std::string& a, const std::string& b);
 }  // namespace concurrencpp::tests::details
 
 namespace concurrencpp::tests {
@@ -54,19 +50,16 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_same_failed_impl(details::to_string(given_value),
-                                         details::to_string(expected_value));
+        details::assert_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
-    inline void assert_not_equal(const a_type& given_value,
-                                 const b_type& expected_value) {
+    inline void assert_not_equal(const a_type& given_value, const b_type& expected_value) {
         if (given_value != expected_value) {
             return;
         }
 
-        details::assert_same_failed_impl(details::to_string(given_value),
-                                         details::to_string(expected_value));
+        details::assert_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
@@ -75,8 +68,7 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_bigger_failed_impl(details::to_string(given_value),
-                                           details::to_string(expected_value));
+        details::assert_bigger_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
@@ -85,30 +77,25 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_smaller_failed_impl(details::to_string(given_value),
-                                            details::to_string(expected_value));
+        details::assert_smaller_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
-    void assert_bigger_equal(const a_type& given_value,
-                             const b_type& expected_value) {
+    void assert_bigger_equal(const a_type& given_value, const b_type& expected_value) {
         if (given_value >= expected_value) {
             return;
         }
 
-        details::assert_bigger_equal_failed_impl(details::to_string(given_value),
-                                                 details::to_string(expected_value));
+        details::assert_bigger_equal_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
-    void assert_smaller_equal(const a_type& given_value,
-                              const b_type& expected_value) {
+    void assert_smaller_equal(const a_type& given_value, const b_type& expected_value) {
         if (given_value <= expected_value) {
             return;
         }
 
-        details::assert_smaller_equal_failed_impl(details::to_string(given_value),
-                                                  details::to_string(expected_value));
+        details::assert_smaller_equal_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class exception_type, class task_type>
@@ -124,8 +111,7 @@ namespace concurrencpp::tests {
     }
 
     template<class exception_type, class task_type>
-    void assert_throws_with_error_message(task_type&& task,
-                                          std::string_view error_msg) {
+    void assert_throws_with_error_message(task_type&& task, std::string_view error_msg) {
         try {
             task();
         } catch (const exception_type& e) {

@@ -16,12 +16,9 @@ namespace concurrencpp {
     template<class type>
     class result {
 
-        static constexpr auto valid_result_type_v =
-            std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
+        static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
 
-        static_assert(
-            valid_result_type_v,
-            "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
+        static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
 
         friend class details::when_result_helper;
 
@@ -41,8 +38,7 @@ namespace concurrencpp {
         ~result() noexcept = default;
         result(result&& rhs) noexcept = default;
 
-        result(std::shared_ptr<details::result_core<type>> state) noexcept :
-            m_state(std::move(state)) {}
+        result(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
 
         result& operator=(result&& rhs) noexcept {
             if (this != &rhs) {
@@ -76,8 +72,7 @@ namespace concurrencpp {
         }
 
         template<class clock, class duration>
-        result_status wait_until(
-            std::chrono::time_point<clock, duration> timeout_time) {
+        result_status wait_until(std::chrono::time_point<clock, duration> timeout_time) {
             throw_if_empty(details::consts::k_result_wait_until_error_msg);
             return m_state->wait_until(timeout_time);
         }
@@ -94,13 +89,11 @@ namespace concurrencpp {
             return awaitable<type> {std::move(m_state)};
         }
 
-        auto await_via(std::shared_ptr<concurrencpp::executor> executor,
-                       bool force_rescheduling = true) {
+        auto await_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
             throw_if_empty(details::consts::k_result_await_via_error_msg);
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(
-                    details::consts::k_result_await_via_executor_null_error_msg);
+                throw std::invalid_argument(details::consts::k_result_await_via_executor_null_error_msg);
             }
 
             return via_awaitable<type> {std::move(m_state), std::move(executor), force_rescheduling};
@@ -111,13 +104,11 @@ namespace concurrencpp {
             return resolve_awaitable<type> {std::move(m_state)};
         }
 
-        auto resolve_via(std::shared_ptr<concurrencpp::executor> executor,
-                         bool force_rescheduling = true) {
+        auto resolve_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
             throw_if_empty(details::consts::k_result_resolve_via_error_msg);
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(
-                    details::consts::k_result_resolve_via_executor_null_error_msg);
+                throw std::invalid_argument(details::consts::k_result_resolve_via_executor_null_error_msg);
             }
 
             return resolve_via_awaitable<type> {std::move(m_state), std::move(executor), force_rescheduling};
@@ -150,20 +141,15 @@ namespace concurrencpp {
                 return;
             }
 
-            auto exception_ptr = std::make_exception_ptr(
-                errors::broken_task("result_promise - broken task."));
+            auto exception_ptr = std::make_exception_ptr(errors::broken_task("result_promise - broken task."));
             m_state->set_exception(exception_ptr);
             m_state->publish_result();
         }
 
        public:
-        result_promise() :
-            m_state(std::make_shared<details::result_core<type>>()),
-            m_result_retrieved(false) {}
+        result_promise() : m_state(std::make_shared<details::result_core<type>>()), m_result_retrieved(false) {}
 
-        result_promise(result_promise&& rhs) noexcept :
-            m_state(std::move(rhs.m_state)),
-            m_result_retrieved(rhs.m_result_retrieved) {}
+        result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
 
         ~result_promise() noexcept {
             break_task_if_needed();
@@ -185,12 +171,8 @@ namespace concurrencpp {
 
         template<class... argument_types>
         void set_result(argument_types&&... arguments) {
-            constexpr auto is_constructable =
-                std::is_constructible_v<type, argument_types...> ||
-                std::is_same_v<void, type>;
-            static_assert(
-                is_constructable,
-                "result_promise::set_result() - <<type>> is not constructable from <<arguments...>>");
+            constexpr auto is_constructable = std::is_constructible_v<type, argument_types...> || std::is_same_v<void, type>;
+            static_assert(is_constructable, "result_promise::set_result() - <<type>> is not constructable from <<arguments...>>");
 
             throw_if_empty(details::consts::k_result_promise_set_result_error_msg);
 
@@ -203,9 +185,7 @@ namespace concurrencpp {
             throw_if_empty(details::consts::k_result_promise_set_exception_error_msg);
 
             if (!static_cast<bool>(exception_ptr)) {
-                throw std::invalid_argument(
-                    details::consts::
-                        k_result_promise_set_exception_null_exception_error_msg);
+                throw std::invalid_argument(details::consts::k_result_promise_set_exception_null_exception_error_msg);
             }
 
             m_state->set_exception(exception_ptr);
@@ -215,18 +195,12 @@ namespace concurrencpp {
 
         template<class callable_type, class... argument_types>
         void set_from_function(callable_type&& callable, argument_types&&... args) {
-            constexpr auto is_invokable =
-                std::is_invocable_r_v<type, callable_type, argument_types...>;
+            constexpr auto is_invokable = std::is_invocable_r_v<type, callable_type, argument_types...>;
 
-            static_assert(
-                is_invokable,
-                "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
+            static_assert(is_invokable, "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
 
-            throw_if_empty(
-                details::consts::k_result_promise_set_from_function_error_msg);
-            m_state->from_callable(
-                details::bind(std::forward<callable_type>(callable),
-                              std::forward<argument_types>(args)...));
+            throw_if_empty(details::consts::k_result_promise_set_from_function_error_msg);
+            m_state->from_callable(details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));
             m_state->publish_result();
             m_state.reset();
         }
@@ -235,9 +209,7 @@ namespace concurrencpp {
             throw_if_empty(details::consts::k_result_get_error_msg);
 
             if (m_result_retrieved) {
-                throw errors::result_already_retrieved(
-                    details::consts::
-                        k_result_promise_get_result_already_retrieved_error_msg);
+                throw errors::result_already_retrieved(details::consts::k_result_promise_get_result_already_retrieved_error_msg);
             }
 
             m_result_retrieved = true;

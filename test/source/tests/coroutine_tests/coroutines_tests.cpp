@@ -14,38 +14,23 @@
 
 namespace concurrencpp::tests {
     template<class type>
-    result<type> recursive_coroutine(executor_tag,
-                                     std::shared_ptr<thread_executor> te,
-                                     const size_t cur_depth,
-                                     const size_t max_depth,
-                                     const bool terminate_by_exception);
+    result<type> recursive_coroutine(executor_tag, std::shared_ptr<thread_executor> te, const size_t cur_depth, const size_t max_depth, const bool terminate_by_exception);
 
     template<class type>
     void test_recursive_coroutines_impl();
     void test_recursive_coroutines();
 
-    result<void> test_combo_coroutine_impl(std::shared_ptr<thread_executor> te,
-                                           const bool terminate_by_exception);
+    result<void> test_combo_coroutine_impl(std::shared_ptr<thread_executor> te, const bool terminate_by_exception);
     void test_combo_coroutine();
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result;
 
 template<class type>
-result<type> concurrencpp::tests::recursive_coroutine(
-    executor_tag,
-    std::shared_ptr<thread_executor> te,
-    const size_t cur_depth,
-    const size_t max_depth,
-    const bool terminate_by_exception) {
+result<type> concurrencpp::tests::recursive_coroutine(executor_tag, std::shared_ptr<thread_executor> te, const size_t cur_depth, const size_t max_depth, const bool terminate_by_exception) {
 
     if (cur_depth < max_depth) {
-        co_return co_await recursive_coroutine<type>(
-            {},
-            te,
-            cur_depth + 1,
-            max_depth,
-            terminate_by_exception);
+        co_return co_await recursive_coroutine<type>({}, te, cur_depth + 1, max_depth, terminate_by_exception);
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -86,9 +71,7 @@ void concurrencpp::tests::test_recursive_coroutines() {
     test_recursive_coroutines_impl<std::string&>();
 }
 
-result<void> concurrencpp::tests::test_combo_coroutine_impl(
-    std::shared_ptr<thread_executor> te,
-    const bool terminate_by_exception) {
+result<void> concurrencpp::tests::test_combo_coroutine_impl(std::shared_ptr<thread_executor> te, const bool terminate_by_exception) {
     auto int_result = co_await te->submit([] {
         return result_factory<int>::get();
     });

@@ -14,8 +14,7 @@ namespace concurrencpp::tests {
 
         bool shutdown_requested_flag = false;
 
-        dummy_executor(const char* name, int, float) :
-            executor(name) {}
+        dummy_executor(const char* name, int, float) : executor(name) {}
 
         void enqueue(std::experimental::coroutine_handle<>) override {}
         void enqueue(std::span<std::experimental::coroutine_handle<>>) override {}
@@ -44,10 +43,7 @@ void concurrencpp::tests::test_runtime_destructor() {
         executors[3] = runtime.thread_executor();
         executors[4] = runtime.make_worker_thread_executor();
         executors[5] = runtime.make_manual_executor();
-        executors[6] = runtime.template make_executor<dummy_executor>(
-            "dummy_executor",
-            1,
-            4.4f);
+        executors[6] = runtime.template make_executor<dummy_executor>("dummy_executor", 1, 4.4f);
 
         for (auto& executor : executors) {
             assert_true(static_cast<bool>(executor));
@@ -64,12 +60,9 @@ void concurrencpp::tests::test_runtime_version() {
     concurrencpp::runtime runtime;
 
     auto version = runtime.version();
-    assert_equal(std::get<0>(version),
-                 concurrencpp::details::consts::k_concurrencpp_version_major);
-    assert_equal(std::get<1>(version),
-                 concurrencpp::details::consts::k_concurrencpp_version_minor);
-    assert_equal(std::get<2>(version),
-                 concurrencpp::details::consts::k_concurrencpp_version_revision);
+    assert_equal(std::get<0>(version), concurrencpp::details::consts::k_concurrencpp_version_major);
+    assert_equal(std::get<1>(version), concurrencpp::details::consts::k_concurrencpp_version_minor);
+    assert_equal(std::get<2>(version), concurrencpp::details::consts::k_concurrencpp_version_revision);
 }
 
 void concurrencpp::tests::test_runtime() {

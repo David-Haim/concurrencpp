@@ -154,8 +154,7 @@ void concurrencpp::tests::test_result_promise_get_result() {
 }
 
 template<class type, class arguments_tuple_type>
-void concurrencpp::tests::test_result_promise_set_value_impl(
-    const arguments_tuple_type& tuple_args) {
+void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args) {
     auto set_rp = [](auto rp, auto tuple) {
         auto setter = [rp = std::move(rp)](auto&&... args) mutable {
             rp.set_result(args...);
@@ -215,10 +214,9 @@ void concurrencpp::tests::test_result_promise_set_value_impl(
     {
         concurrencpp::result_promise<type> rp;
         auto dummy = std::move(rp);
-        assert_throws<concurrencpp::errors::empty_result_promise>(
-            [rp = std::move(rp), set_rp, tuple_args]() mutable {
-                set_rp(std::move(rp), tuple_args);
-            });
+        assert_throws<concurrencpp::errors::empty_result_promise>([rp = std::move(rp), set_rp, tuple_args]() mutable {
+            set_rp(std::move(rp), tuple_args);
+        });
     }
 }
 
@@ -228,10 +226,8 @@ void concurrencpp::tests::test_result_promise_set_value() {
     test_result_promise_set_value_impl<int>(int_tuple);
 
     const auto expected_str_result = result_factory<std::string>::get();
-    const auto modified_str_result =
-        std::string("  ") + expected_str_result + " ";
-    auto str_tuple =
-        std::make_tuple(modified_str_result, 2, expected_str_result.size());
+    const auto modified_str_result = std::string("  ") + expected_str_result + " ";
+    auto str_tuple = std::make_tuple(modified_str_result, 2, expected_str_result.size());
     test_result_promise_set_value_impl<std::string>(str_tuple);
 
     std::tuple<> empty_tuple;
@@ -320,8 +316,7 @@ void concurrencpp::tests::test_result_promise_set_from_function_value_impl() {
 }
 
 template<class type>
-void concurrencpp::tests::
-    test_result_promise_set_from_function_exception_impl() {
+void concurrencpp::tests::test_result_promise_set_from_function_exception_impl() {
     random randomizer;
     result_promise<type> rp;
     auto result = rp.get_result();
@@ -367,8 +362,7 @@ void concurrencpp::tests::test_rp_assignment_operator_impl_empty_to_empty() {
 }
 
 template<class type>
-void concurrencpp::tests::
-    test_rp_assignment_operator_impl_non_empty_to_empty() {
+void concurrencpp::tests::test_rp_assignment_operator_impl_non_empty_to_empty() {
     result_promise<type> rp1, rp2;
     auto dummy(std::move(rp2));
 
@@ -382,8 +376,7 @@ void concurrencpp::tests::
 }
 
 template<class type>
-void concurrencpp::tests::
-    test_rp_assignment_operator_impl_empty_to_non_empty() {
+void concurrencpp::tests::test_rp_assignment_operator_impl_empty_to_non_empty() {
     result_promise<type> rp1, rp2;
     auto dummy(std::move(rp2));
 
@@ -404,8 +397,7 @@ void concurrencpp::tests::
 }
 
 template<class type>
-void concurrencpp::tests::
-    test_rp_assignment_operator_impl_non_empty_to_non_empty() {
+void concurrencpp::tests::test_rp_assignment_operator_impl_non_empty_to_non_empty() {
     result_promise<type> rp1, rp2;
 
     auto result1 = rp1.get_result();

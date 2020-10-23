@@ -68,8 +68,7 @@ namespace concurrencpp::details {
         }
 
         template<class... argument_types>
-        void build_impl(std::true_type /*no_throw*/,
-                        argument_types&&... arguments) noexcept {
+        void build_impl(std::true_type /*no_throw*/, argument_types&&... arguments) noexcept {
             m_result.template emplace<1>(std::forward<argument_types>(arguments)...);
         }
 
@@ -96,8 +95,7 @@ namespace concurrencpp::details {
     class async_result<void> {
 
        public:
-        using result_context =
-            std::variant<std::monostate, std::monostate, std::exception_ptr>;
+        using result_context = std::variant<std::monostate, std::monostate, std::exception_ptr>;
 
        protected:
         result_context m_result;
@@ -121,8 +119,7 @@ namespace concurrencpp::details {
     class async_result<type&> {
 
        public:
-        using result_context =
-            std::variant<std::monostate, type*, std::exception_ptr>;
+        using result_context = std::variant<std::monostate, type*, std::exception_ptr>;
 
        protected:
         result_context m_result;
@@ -151,16 +148,9 @@ namespace concurrencpp::details {
     class result_core_base {
 
        public:
-        using consumer_context = std::variant<std::monostate,
-                                              std::experimental::coroutine_handle<>,
-                                              await_context,
-                                              std::shared_ptr<wait_context>,
-                                              std::shared_ptr<when_all_state_base>,
-                                              when_any_ctx>;
+        using consumer_context = std::variant<std::monostate, std::experimental::coroutine_handle<>, await_context, std::shared_ptr<wait_context>, std::shared_ptr<when_all_state_base>, when_any_ctx>;
 
-        enum class pc_state { idle,
-                              producer,
-                              consumer };
+        enum class pc_state { idle, producer, consumer };
 
        protected:
         consumer_context m_consumer;
@@ -179,19 +169,15 @@ namespace concurrencpp::details {
 
         bool await(std::experimental::coroutine_handle<> caller_handle) noexcept;
 
-        bool await_via(std::shared_ptr<concurrencpp::executor> executor,
-                       std::experimental::coroutine_handle<> caller_handle,
-                       bool force_rescheduling);
+        bool await_via(std::shared_ptr<concurrencpp::executor> executor, std::experimental::coroutine_handle<> caller_handle, bool force_rescheduling);
 
         void when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept;
 
-        when_any_status when_any(std::shared_ptr<when_any_state_base> when_any_state,
-                                 size_t index) noexcept;
+        when_any_status when_any(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept;
 
         void try_rewind_consumer() noexcept;
 
-        static void schedule_coroutine(executor& executor,
-                                       std::experimental::coroutine_handle<> handle);
+        static void schedule_coroutine(executor& executor, std::experimental::coroutine_handle<> handle);
         static void schedule_coroutine(await_context& await_ctx);
     };
 
@@ -214,9 +200,7 @@ namespace concurrencpp::details {
             try {
                 this->schedule_coroutine(await_ctx);
             } catch (...) {
-                auto executor_error = std::make_exception_ptr(errors::executor_exception(
-                    std::current_exception(),
-                    std::move(await_ctx.first)));
+                auto executor_error = std::make_exception_ptr(errors::executor_exception(std::current_exception(), std::move(await_ctx.first)));
 
                 // consumer can't interfere here
                 clear_producer();
@@ -226,15 +210,13 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(std::true_type /*is_void_type*/,
-                           callable_type&& callable) {
+        void from_callable(std::true_type /*is_void_type*/, callable_type&& callable) {
             callable();
             this->set_result();
         }
 
         template<class callable_type>
-        void from_callable(std::false_type /*is_void_type*/,
-                           callable_type&& callable) {
+        void from_callable(std::false_type /*is_void_type*/, callable_type&& callable) {
             this->set_result(callable());
         }
 
@@ -270,11 +252,9 @@ namespace concurrencpp::details {
         }
 
         template<class duration_unit, class ratio>
-        concurrencpp::result_status wait_for(
-            std::chrono::duration<duration_unit, ratio> duration) {
+        concurrencpp::result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
             auto get_result_status = [this] {
-                return this->m_result.index() == 1 ? result_status::value :
-                                                     result_status::exception;
+                return this->m_result.index() == 1 ? result_status::value : result_status::exception;
             };
 
             const auto state_0 = this->m_pc_state.load(std::memory_order_acquire);
@@ -288,18 +268,14 @@ namespace concurrencpp::details {
             m_consumer.emplace<3>(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
-            const auto idle_0 = this->m_pc_state.compare_exchange_strong(
-                expected_idle_state,
-                pc_state::consumer,
-                std::memory_order_acq_rel);
+            const auto idle_0 = this->m_pc_state.compare_exchange_strong(expected_idle_state, pc_state::consumer, std::memory_order_acq_rel);
 
             if (!idle_0) {
                 assert_done();
                 return get_result_status();
             }
 
-            const auto ms =
-                std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             if (wait_ctx->wait_for(static_cast<size_t>(ms + 1))) {
                 assert_done();
                 return get_result_status();
@@ -315,10 +291,7 @@ namespace concurrencpp::details {
        producer will not try to access the consumer if the flag doesn't say so.
     */
             auto expected_consumer_state = pc_state::consumer;
-            const auto idle_1 = this->m_pc_state.compare_exchange_strong(
-                expected_consumer_state,
-                pc_state::idle,
-                std::memory_order_acq_rel);
+            const auto idle_1 = this->m_pc_state.compare_exchange_strong(expected_consumer_state, pc_state::idle, std::memory_order_acq_rel);
 
             if (!idle_1) {
                 assert_done();
@@ -330,8 +303,7 @@ namespace concurrencpp::details {
         }
 
         template<class clock, class duration>
-        concurrencpp::result_status wait_until(
-            const std::chrono::time_point<clock, duration>& timeout_time) {
+        concurrencpp::result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
             const auto now = clock::now();
             if (timeout_time <= now) {
                 return status();
@@ -347,9 +319,7 @@ namespace concurrencpp::details {
         }
 
         void publish_result() noexcept {
-            const auto state_before = this->m_pc_state.exchange(
-                pc_state::producer,
-                std::memory_order_acq_rel);
+            const auto state_before = this->m_pc_state.exchange(pc_state::producer, std::memory_order_acq_rel);
 
             assert(state_before != pc_state::producer);
 

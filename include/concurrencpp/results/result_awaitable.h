@@ -14,15 +14,13 @@ namespace concurrencpp {
         std::shared_ptr<details::result_core<type>> m_state;
 
        public:
-        awaitable(std::shared_ptr<details::result_core<type>> state) noexcept :
-            m_state(std::move(state)) {}
+        awaitable(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
 
         awaitable(awaitable&& rhs) noexcept = default;
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
             if (!static_cast<bool>(m_state)) {
-                throw concurrencpp::errors::empty_awaitable(
-                    details::consts::k_result_awaitable_error_msg);
+                throw concurrencpp::errors::empty_awaitable(details::consts::k_result_awaitable_error_msg);
             }
 
             return m_state->await(caller_handle);
@@ -43,19 +41,14 @@ namespace concurrencpp {
         const bool m_force_rescheduling;
 
        public:
-        via_awaitable(std::shared_ptr<details::result_core<type>> state,
-                      std::shared_ptr<concurrencpp::executor> executor,
-                      bool force_rescheduling) noexcept :
-            m_state(std::move(state)),
-            m_executor(std::move(executor)),
-            m_force_rescheduling(force_rescheduling) {}
+        via_awaitable(std::shared_ptr<details::result_core<type>> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept :
+            m_state(std::move(state)), m_executor(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
 
         via_awaitable(via_awaitable&& rhs) noexcept = default;
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
             if (!static_cast<bool>(m_state)) {
-                throw concurrencpp::errors::empty_awaitable(
-                    details::consts::k_result_awaitable_error_msg);
+                throw concurrencpp::errors::empty_awaitable(details::consts::k_result_awaitable_error_msg);
             }
 
             return m_state->await_via(std::move(m_executor), caller_handle, m_force_rescheduling);
@@ -74,16 +67,13 @@ namespace concurrencpp {
         std::shared_ptr<details::result_core<type>> m_state;
 
        public:
-        resolve_awaitable(std::shared_ptr<details::result_core<type>> state) noexcept
-            :
-            m_state(std::move(state)) {}
+        resolve_awaitable(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
 
         resolve_awaitable(resolve_awaitable&&) noexcept = default;
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
             if (!static_cast<bool>(m_state)) {
-                throw concurrencpp::errors::empty_awaitable(
-                    details::consts::k_result_awaitable_error_msg);
+                throw concurrencpp::errors::empty_awaitable(details::consts::k_result_awaitable_error_msg);
             }
 
             return m_state->await(caller_handle);
@@ -103,19 +93,14 @@ namespace concurrencpp {
         const bool m_force_rescheduling;
 
        public:
-        resolve_via_awaitable(std::shared_ptr<details::result_core<type>> state,
-                              std::shared_ptr<concurrencpp::executor> executor,
-                              bool force_rescheduling) noexcept :
-            m_state(state),
-            m_executor(std::move(executor)),
-            m_force_rescheduling(force_rescheduling) {}
+        resolve_via_awaitable(std::shared_ptr<details::result_core<type>> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept :
+            m_state(state), m_executor(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
 
         resolve_via_awaitable(resolve_via_awaitable&&) noexcept = default;
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
             if (!static_cast<bool>(m_state)) {
-                throw concurrencpp::errors::empty_awaitable(
-                    details::consts::k_result_awaitable_error_msg);
+                throw concurrencpp::errors::empty_awaitable(details::consts::k_result_awaitable_error_msg);
             }
 
             return m_state->await_via(std::move(m_executor), caller_handle, m_force_rescheduling);

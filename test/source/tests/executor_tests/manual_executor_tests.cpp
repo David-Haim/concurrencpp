@@ -49,8 +49,7 @@ namespace concurrencpp::tests {
 
 void concurrencpp::tests::test_manual_executor_name() {
     auto executor = std::make_shared<concurrencpp::manual_executor>();
-    assert_equal(executor->name,
-                 concurrencpp::details::consts::k_manual_executor_name);
+    assert_equal(executor->name, concurrencpp::details::consts::k_manual_executor_name);
 }
 
 void concurrencpp::tests::test_manual_executor_shutdown_method_access() {
@@ -138,9 +137,7 @@ void concurrencpp::tests::test_manual_executor_max_concurrency_level() {
     auto executor = std::make_shared<manual_executor>();
     executor_shutdowner shutdown(executor);
 
-    assert_equal(
-        executor->max_concurrency_level(),
-        concurrencpp::details::consts::k_manual_executor_max_concurrency_level);
+    assert_equal(executor->max_concurrency_level(), concurrencpp::details::consts::k_manual_executor_max_concurrency_level);
 }
 
 void concurrencpp::tests::test_manual_executor_post_foreign() {
@@ -440,8 +437,7 @@ void concurrencpp::tests::test_manual_executor_loop_once() {
     const auto& execution_map = observer.get_execution_map();
 
     assert_equal(execution_map.size(), size_t(1));
-    assert_equal(execution_map.begin()->first,
-                 concurrencpp::details::thread::get_current_virtual_id());
+    assert_equal(execution_map.begin()->first, concurrencpp::details::thread::get_current_virtual_id());
 
     for (size_t i = 0; i < 10; i++) {
         assert_false(executor->loop_once());
@@ -458,12 +454,9 @@ void concurrencpp::tests::test_manual_executor_loop_once_timed() {
     {
         for (size_t i = 0; i < 10; i++) {
             const auto before = std::chrono::high_resolution_clock::now();
-            assert_false(
-                executor->loop_once(std::chrono::milliseconds(waiting_time)));
+            assert_false(executor->loop_once(std::chrono::milliseconds(waiting_time)));
             const auto after = std::chrono::high_resolution_clock::now();
-            const auto ms =
-                std::chrono::duration_cast<std::chrono::milliseconds>(after - before)
-                    .count();
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
             assert_bigger_equal(ms, waiting_time);
         }
     }
@@ -474,9 +467,7 @@ void concurrencpp::tests::test_manual_executor_loop_once_timed() {
         const auto before = std::chrono::high_resolution_clock::now();
         assert_true(executor->loop_once(std::chrono::milliseconds(waiting_time)));
         const auto after = std::chrono::high_resolution_clock::now();
-        const auto ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(after - before)
-                .count();
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
         assert_smaller_equal(ms, 5);
         assert_equal(observer.get_execution_count(), size_t(1));
         assert_equal(observer.get_destruction_count(), size_t(1));
@@ -484,14 +475,12 @@ void concurrencpp::tests::test_manual_executor_loop_once_timed() {
 
     // case 3: goes to sleep, then woken by an incoming task
     {
-        const auto later =
-            std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
+        const auto later = std::chrono::high_resolution_clock::now() + std::chrono::seconds(2);
 
-        std::thread thread(
-            [executor, later, stub = observer.get_testing_stub()]() mutable {
-                std::this_thread::sleep_until(later);
-                executor->post(std::move(stub));
-            });
+        std::thread thread([executor, later, stub = observer.get_testing_stub()]() mutable {
+            std::this_thread::sleep_until(later);
+            executor->post(std::move(stub));
+        });
 
         assert_true(executor->loop_once(std::chrono::seconds(100)));
         const auto now = std::chrono::high_resolution_clock::now();
@@ -551,8 +540,7 @@ void concurrencpp::tests::test_manual_executor_loop() {
     const auto& execution_map = observer.get_execution_map();
 
     assert_equal(execution_map.size(), size_t(1));
-    assert_equal(execution_map.begin()->first,
-                 concurrencpp::details::thread::get_current_virtual_id());
+    assert_equal(execution_map.begin()->first, concurrencpp::details::thread::get_current_virtual_id());
 
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
@@ -590,8 +578,7 @@ void concurrencpp::tests::test_manual_executor_clear() {
 void concurrencpp::tests::test_manual_executor_wait_for_task() {
     auto executor = std::make_shared<concurrencpp::manual_executor>();
     executor_shutdowner shutdown(executor);
-    auto enqueuing_time =
-        std::chrono::system_clock::now() + std::chrono::milliseconds(2'500);
+    auto enqueuing_time = std::chrono::system_clock::now() + std::chrono::milliseconds(2'500);
 
     std::thread enqueuing_thread([executor, enqueuing_time]() mutable {
         std::this_thread::sleep_until(enqueuing_time);
@@ -614,15 +601,13 @@ void concurrencpp::tests::test_manual_executor_wait_for_task_timed() {
         const auto before = std::chrono::system_clock::now();
         const auto task_found = executor->wait_for_task(waiting_time);
         const auto after = std::chrono::system_clock::now();
-        const auto time_elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
+        const auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
 
         assert_false(task_found);
         assert_bigger_equal(time_elapsed, waiting_time);
     }
 
-    auto enqueuing_time =
-        std::chrono::system_clock::now() + std::chrono::milliseconds(2'500);
+    auto enqueuing_time = std::chrono::system_clock::now() + std::chrono::milliseconds(2'500);
 
     std::thread enqueuing_thread([executor, enqueuing_time]() mutable {
         std::this_thread::sleep_until(enqueuing_time);
@@ -642,8 +627,7 @@ void concurrencpp::tests::test_manual_executor() {
 
     tester.add_step("name", test_manual_executor_name);
     tester.add_step("shutdown", test_manual_executor_shutdown);
-    tester.add_step("max_concurrency_level",
-                    test_manual_executor_max_concurrency_level);
+    tester.add_step("max_concurrency_level", test_manual_executor_max_concurrency_level);
     tester.add_step("post", test_manual_executor_post);
     tester.add_step("submit", test_manual_executor_submit);
     tester.add_step("bulk_post", test_manual_executor_bulk_post);
@@ -652,8 +636,7 @@ void concurrencpp::tests::test_manual_executor() {
     tester.add_step("loop_once (ms)", test_manual_executor_loop_once_timed);
     tester.add_step("loop", test_manual_executor_loop);
     tester.add_step("wait_for_task", test_manual_executor_wait_for_task);
-    tester.add_step("wait_for_task (ms)",
-                    test_manual_executor_wait_for_task_timed);
+    tester.add_step("wait_for_task (ms)", test_manual_executor_wait_for_task_timed);
     tester.add_step("clear", test_manual_executor_clear);
 
     tester.launch_test();

@@ -3,10 +3,8 @@
 #include <iostream>
 #include <random>
 
-concurrencpp::result<void> when_any_vector_test(
-    std::shared_ptr<concurrencpp::thread_executor> te);
-concurrencpp::result<void> when_any_tuple_test(
-    std::shared_ptr<concurrencpp::thread_executor> te);
+concurrencpp::result<void> when_any_vector_test(std::shared_ptr<concurrencpp::thread_executor> te);
+concurrencpp::result<void> when_any_tuple_test(std::shared_ptr<concurrencpp::thread_executor> te);
 
 int main() {
     concurrencpp::runtime runtime;
@@ -24,17 +22,14 @@ struct random_ctx {
     std::mt19937 mt;
     std::uniform_int_distribution<size_t> dist;
 
-    random_ctx() :
-        mt(rd()), dist(1, 5 * 1000) {}
+    random_ctx() : mt(rd()), dist(1, 5 * 1000) {}
 
     size_t operator()() noexcept {
         return dist(mt);
     }
 };
 
-std::vector<result<int>> run_loop_once(std::shared_ptr<thread_executor> te,
-                                       random_ctx& r,
-                                       size_t count) {
+std::vector<result<int>> run_loop_once(std::shared_ptr<thread_executor> te, random_ctx& r, size_t count) {
     std::vector<result<int>> results;
     results.reserve(count);
 
@@ -49,8 +44,7 @@ std::vector<result<int>> run_loop_once(std::shared_ptr<thread_executor> te,
     return results;
 }
 
-result<void> when_any_vector_test(
-    std::shared_ptr<concurrencpp::thread_executor> te) {
+result<void> when_any_vector_test(std::shared_ptr<concurrencpp::thread_executor> te) {
     random_ctx r;
 
     auto loop = run_loop_once(te, r, 1'024);
@@ -84,13 +78,21 @@ std::vector<result<int>> to_vector(std::tuple<result_sequence...>& results) {
         std::forward<decltype(results)>(results));
 }
 
-concurrencpp::result<void> when_any_tuple_test(
-    std::shared_ptr<concurrencpp::thread_executor> te) {
+concurrencpp::result<void> when_any_tuple_test(std::shared_ptr<concurrencpp::thread_executor> te) {
     random_ctx r;
     auto loop = run_loop_once(te, r, 10);
 
     for (size_t i = 0; i < 256; i++) {
-        auto any = co_await when_any(std::move(loop[0]), std::move(loop[1]), std::move(loop[2]), std::move(loop[3]), std::move(loop[4]), std::move(loop[5]), std::move(loop[6]), std::move(loop[7]), std::move(loop[8]), std::move(loop[9]));
+        auto any = co_await when_any(std::move(loop[0]),
+                                     std::move(loop[1]),
+                                     std::move(loop[2]),
+                                     std::move(loop[3]),
+                                     std::move(loop[4]),
+                                     std::move(loop[5]),
+                                     std::move(loop[6]),
+                                     std::move(loop[7]),
+                                     std::move(loop[8]),
+                                     std::move(loop[9]));
 
         loop = to_vector(any.results);
 

@@ -2,8 +2,7 @@
 
 #include <iostream>
 
-concurrencpp::result<void> when_all_test(
-    std::shared_ptr<concurrencpp::thread_executor> tpe);
+concurrencpp::result<void> when_all_test(std::shared_ptr<concurrencpp::thread_executor> tpe);
 
 int main() {
     concurrencpp::runtime runtime;

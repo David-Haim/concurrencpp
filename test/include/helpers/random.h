@@ -12,8 +12,7 @@ namespace concurrencpp::tests {
         std::uniform_int_distribution<intptr_t> dist;
 
        public:
-        random() noexcept :
-            mt(rd()), dist(-1'000'000, 1'000'000) {}
+        random() noexcept : mt(rd()), dist(-1'000'000, 1'000'000) {}
 
         intptr_t operator()() {
             return dist(mt);

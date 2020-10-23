@@ -13,8 +13,7 @@ namespace concurrencpp {
         }
 
        public:
-        derivable_executor(std::string_view name) :
-            executor(name) {}
+        derivable_executor(std::string_view name) : executor(name) {}
 
         template<class callable_type, class... argument_types>
         void post(callable_type&& callable, argument_types&&... arguments) {
@@ -31,10 +30,8 @@ namespace concurrencpp {
             return do_bulk_post(self(), callable_list);
         }
 
-        template<class callable_type,
-                 class return_type = std::invoke_result_t<callable_type>>
-        std::vector<concurrencpp::result<return_type>> bulk_submit(
-            std::span<callable_type> callable_list) {
+        template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
+        std::vector<concurrencpp::result<return_type>> bulk_submit(std::span<callable_type> callable_list) {
             return do_bulk_submit(self(), callable_list);
         }
     };

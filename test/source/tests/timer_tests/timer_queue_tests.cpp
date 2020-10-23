@@ -25,16 +25,14 @@ void concurrencpp::tests::test_timer_queue_make_timer() {
             timer_queue->make_timer(100ms, 100ms, {}, [] {
             });
         },
-        concurrencpp::details::consts::
-            k_timer_queue_make_timer_executor_null_err_msg);
+        concurrencpp::details::consts::k_timer_queue_make_timer_executor_null_err_msg);
 
     timer_queue->shutdown();
     assert_true(timer_queue->shutdown_requested());
 
     assert_throws_with_error_message<errors::timer_queue_shutdown>(
         [timer_queue] {
-            auto inline_executor =
-                std::make_shared<concurrencpp::inline_executor>();
+            auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
             timer_queue->make_timer(100ms, 100ms, inline_executor, [] {
             });
         },
@@ -50,16 +48,14 @@ void concurrencpp::tests::test_timer_queue_make_oneshot_timer() {
             timer_queue->make_one_shot_timer(100ms, {}, [] {
             });
         },
-        concurrencpp::details::consts::
-            k_timer_queue_make_oneshot_timer_executor_null_err_msg);
+        concurrencpp::details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
 
     timer_queue->shutdown();
     assert_true(timer_queue->shutdown_requested());
 
     assert_throws_with_error_message<errors::timer_queue_shutdown>(
         [timer_queue] {
-            auto inline_executor =
-                std::make_shared<concurrencpp::inline_executor>();
+            auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
             timer_queue->make_one_shot_timer(100ms, inline_executor, [] {
             });
         },
@@ -74,16 +70,14 @@ void concurrencpp::tests::test_timer_queue_make_delay_object() {
         [timer_queue] {
             timer_queue->make_delay_object(100ms, {});
         },
-        concurrencpp::details::consts::
-            k_timer_queue_make_delay_object_executor_null_err_msg);
+        concurrencpp::details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
 
     timer_queue->shutdown();
     assert_true(timer_queue->shutdown_requested());
 
     assert_throws_with_error_message<errors::timer_queue_shutdown>(
         [timer_queue] {
-            auto inline_executor =
-                std::make_shared<concurrencpp::inline_executor>();
+            auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
             timer_queue->make_delay_object(100ms, inline_executor);
         },
         concurrencpp::details::consts::k_timer_queue_shutdown_err_msg);

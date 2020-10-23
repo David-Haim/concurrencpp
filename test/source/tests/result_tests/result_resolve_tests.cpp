@@ -18,54 +18,42 @@ namespace concurrencpp::tests {
     result<void> test_result_resolve_ready_err();
 
     template<class type>
-    result<void> test_result_resolve_not_ready_val(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_not_ready_val(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void> test_result_resolve_not_ready_err(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_not_ready_err(std::shared_ptr<test_executor> executor);
 
     template<class type>
     void test_result_resolve_impl();
     void test_result_resolve();
 
     template<class type>
-    result<void> test_result_resolve_via_ready_val(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_ready_val(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void> test_result_resolve_via_ready_err(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_ready_err(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void> test_result_resolve_via_ready_val_force_rescheduling(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_ready_val_force_rescheduling(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void> test_result_resolve_via_ready_err_force_rescheduling(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_ready_err_force_rescheduling(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void>
-    test_result_resolve_via_ready_val_force_rescheduling_executor_threw();
+    result<void> test_result_resolve_via_ready_val_force_rescheduling_executor_threw();
 
     template<class type>
-    result<void>
-    test_result_resolve_via_ready_err_force_rescheduling_executor_threw();
+    result<void> test_result_resolve_via_ready_err_force_rescheduling_executor_threw();
 
     template<class type>
-    result<void> test_result_resolve_via_not_ready_val(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_not_ready_val(std::shared_ptr<test_executor> executor);
     template<class type>
-    result<void> test_result_resolve_via_not_ready_err(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_not_ready_err(std::shared_ptr<test_executor> executor);
 
     template<class type>
-    result<void> test_result_resolve_via_not_ready_val_executor_threw(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_not_ready_val_executor_threw(std::shared_ptr<test_executor> executor);
     template<class type>
-    result<void> test_result_resolve_via_not_ready_err_executor_threw(
-        std::shared_ptr<test_executor> executor);
+    result<void> test_result_resolve_via_not_ready_err_executor_threw(std::shared_ptr<test_executor> executor);
 
     template<class type>
     void test_result_resolve_via_impl();
@@ -110,8 +98,7 @@ result<void> concurrencpp::tests::test_result_resolve_ready_err() {
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_not_ready_val(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_not_ready_val(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -120,15 +107,13 @@ result<void> concurrencpp::tests::test_result_resolve_not_ready_val(
     auto done_result = co_await result.resolve();
 
     assert_false(static_cast<bool>(result));
-    assert_true(
-        executor->scheduled_inline());  // the thread that set the value is the
+    assert_true(executor->scheduled_inline());  // the thread that set the value is the
     // thread that resumes the coroutine.
     test_ready_result_result(std::move(done_result));
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_not_ready_err(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_not_ready_err(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -137,8 +122,7 @@ result<void> concurrencpp::tests::test_result_resolve_not_ready_err(
     auto done_result = co_await result.resolve();
 
     assert_false(static_cast<bool>(result));
-    assert_true(
-        executor->scheduled_inline());  // the thread that set the err is the
+    assert_true(executor->scheduled_inline());  // the thread that set the err is the
     // thread that resumes the coroutine.
     test_ready_result_costume_exception(std::move(done_result), id);
 }
@@ -187,8 +171,7 @@ void concurrencpp::tests::test_result_resolve() {
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_via_ready_val(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_val(std::shared_ptr<test_executor> executor) {
     auto result = result_factory<type>::make_ready();
 
     const auto thread_id_0 = std::this_thread::get_id();
@@ -204,8 +187,7 @@ result<void> concurrencpp::tests::test_result_resolve_via_ready_val(
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_via_ready_err(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_err(std::shared_ptr<test_executor> executor) {
     random randomizer;
     const auto id = randomizer();
     auto result = make_exceptional_result<type>(costume_exception(id));
@@ -223,9 +205,7 @@ result<void> concurrencpp::tests::test_result_resolve_via_ready_err(
 }
 
 template<class type>
-result<void>
-concurrencpp::tests::test_result_resolve_via_ready_val_force_rescheduling(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_val_force_rescheduling(std::shared_ptr<test_executor> executor) {
     auto result = result_factory<type>::make_ready();
 
     auto done_result = co_await result.resolve_via(executor, true);
@@ -237,9 +217,7 @@ concurrencpp::tests::test_result_resolve_via_ready_val_force_rescheduling(
 }
 
 template<class type>
-result<void>
-concurrencpp::tests::test_result_resolve_via_ready_err_force_rescheduling(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_err_force_rescheduling(std::shared_ptr<test_executor> executor) {
     random randomizer;
     auto id = static_cast<size_t>(randomizer());
     auto result = make_exceptional_result<type>(costume_exception(id));
@@ -253,8 +231,7 @@ concurrencpp::tests::test_result_resolve_via_ready_err_force_rescheduling(
 }
 
 template<class type>
-result<void> concurrencpp::tests::
-    test_result_resolve_via_ready_val_force_rescheduling_executor_threw() {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_val_force_rescheduling_executor_threw() {
     auto result = result_factory<type>::make_ready();
     auto te = std::make_shared<throwing_executor>();
 
@@ -275,8 +252,7 @@ result<void> concurrencpp::tests::
 }
 
 template<class type>
-result<void> concurrencpp::tests::
-    test_result_resolve_via_ready_err_force_rescheduling_executor_threw() {
+result<void> concurrencpp::tests::test_result_resolve_via_ready_err_force_rescheduling_executor_threw() {
     auto result = result_factory<type>::make_exceptional();
     auto te = std::make_shared<throwing_executor>();
 
@@ -297,8 +273,7 @@ result<void> concurrencpp::tests::
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_via_not_ready_val(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_not_ready_val(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -313,8 +288,7 @@ result<void> concurrencpp::tests::test_result_resolve_via_not_ready_val(
 }
 
 template<class type>
-result<void> concurrencpp::tests::test_result_resolve_via_not_ready_err(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_not_ready_err(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -329,9 +303,7 @@ result<void> concurrencpp::tests::test_result_resolve_via_not_ready_err(
 }
 
 template<class type>
-result<void>
-concurrencpp::tests::test_result_resolve_via_not_ready_val_executor_threw(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_not_ready_val_executor_threw(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -344,14 +316,12 @@ concurrencpp::tests::test_result_resolve_via_not_ready_val_executor_threw(
     assert_false(static_cast<bool>(result));
     assert_false(executor->scheduled_async());
     assert_true(executor->scheduled_inline());  // since te threw, execution is
-        // resumed in ex::m_setting_thread
+                                                // resumed in ex::m_setting_thread
     test_executor_error_thrown(std::move(done_result), te);
 }
 
 template<class type>
-result<void>
-concurrencpp::tests::test_result_resolve_via_not_ready_err_executor_threw(
-    std::shared_ptr<test_executor> executor) {
+result<void> concurrencpp::tests::test_result_resolve_via_not_ready_err_executor_threw(std::shared_ptr<test_executor> executor) {
     result_promise<type> rp;
     auto result = rp.get_result();
 
@@ -365,7 +335,7 @@ concurrencpp::tests::test_result_resolve_via_not_ready_err_executor_threw(
     assert_false(static_cast<bool>(result));
     assert_false(executor->scheduled_async());
     assert_true(executor->scheduled_inline());  // since te threw, execution is
-        // resumed in ex::m_setting_thread
+                                                // resumed in ex::m_setting_thread
     test_executor_error_thrown(std::move(done_result), te);
 }
 
@@ -383,8 +353,7 @@ void concurrencpp::tests::test_result_resolve_via_impl() {
             auto result = result_factory<type>::make_ready();
             result.resolve_via({}, true);
         },
-        concurrencpp::details::consts::
-            k_result_resolve_via_executor_null_error_msg);
+        concurrencpp::details::consts::k_result_resolve_via_executor_null_error_msg);
 
     // if the result is ready by value, and force_rescheduling = false, resume in
     // the calling thread
@@ -420,13 +389,11 @@ void concurrencpp::tests::test_result_resolve_via_impl() {
 
     // if execution is rescheduled by a throwing executor, reschedule inline and
     // throw executor_exception
-    test_result_resolve_via_ready_val_force_rescheduling_executor_threw<type>()
-        .get();
+    test_result_resolve_via_ready_val_force_rescheduling_executor_threw<type>().get();
 
     // if execution is rescheduled by a throwing executor, reschedule inline and
     // throw executor_exception
-    test_result_resolve_via_ready_err_force_rescheduling_executor_threw<type>()
-        .get();
+    test_result_resolve_via_ready_err_force_rescheduling_executor_threw<type>().get();
 
     // if result is not ready - the execution resumes through the executor
     {

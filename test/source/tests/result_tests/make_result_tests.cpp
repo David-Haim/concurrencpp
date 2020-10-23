@@ -42,8 +42,7 @@ void concurrencpp::tests::test_make_exceptional_result() {
         [] {
             make_exceptional_result<std::string>({});
         },
-        concurrencpp::details::consts::
-            k_make_exceptional_result_exception_null_error_msg);
+        concurrencpp::details::consts::k_make_exceptional_result_exception_null_error_msg);
 
     auto assert_ok = [](result<int>& result) {
         assert_equal(result.status(), result_status::exception);
@@ -60,8 +59,7 @@ void concurrencpp::tests::test_make_exceptional_result() {
     result<int> res = make_exceptional_result<int>(std::runtime_error("error"));
     assert_ok(res);
 
-    res = make_exceptional_result<int>(
-        std::make_exception_ptr(std::runtime_error("error")));
+    res = make_exceptional_result<int>(std::make_exception_ptr(std::runtime_error("error")));
     assert_ok(res);
 }
 

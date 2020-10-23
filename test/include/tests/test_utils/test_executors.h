@@ -21,8 +21,7 @@ namespace concurrencpp::tests {
         bool m_abort;
 
        public:
-        test_executor() noexcept :
-            executor("test_executor"), m_abort(false) {}
+        test_executor() noexcept : executor("test_executor"), m_abort(false) {}
 
         ~test_executor() noexcept {
             shutdown();
@@ -112,8 +111,7 @@ namespace concurrencpp::tests {
     struct executor_enqueue_exception {};
 
     struct throwing_executor : public concurrencpp::executor {
-        throwing_executor() :
-            executor("throwing_executor") {}
+        throwing_executor() : executor("throwing_executor") {}
 
         void enqueue(std::experimental::coroutine_handle<>) override {
             throw executor_enqueue_exception();
@@ -137,9 +135,7 @@ namespace concurrencpp::tests {
     };
 
     template<class type>
-    void test_executor_error_thrown(
-        concurrencpp::result<type> result,
-        std::shared_ptr<concurrencpp::executor> throwing_executor) {
+    void test_executor_error_thrown(concurrencpp::result<type> result, std::shared_ptr<concurrencpp::executor> throwing_executor) {
         assert_equal(result.status(), concurrencpp::result_status::exception);
         try {
             result.get();

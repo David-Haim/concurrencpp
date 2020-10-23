@@ -8,8 +8,7 @@
 #include <deque>
 
 namespace concurrencpp {
-    class alignas(64) worker_thread_executor final :
-        public derivable_executor<worker_thread_executor> {
+    class alignas(64) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
 
        private:
         std::deque<std::experimental::coroutine_handle<>> m_private_queue;

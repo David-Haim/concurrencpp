@@ -52,8 +52,7 @@ class weather_reporter {
     mock_web_socket::web_socket m_web_socket;
 
     void work_loop() {
-        std::cout << "weather_reporter::work_loop started running on thread "
-                  << std::this_thread::get_id() << std::endl;
+        std::cout << "weather_reporter::work_loop started running on thread " << std::this_thread::get_id() << std::endl;
 
         try {
             m_web_socket.open(m_endpoint_url);
@@ -62,9 +61,7 @@ class weather_reporter {
             return;
         }
 
-        std::cout
-            << "websocket connected successfully to the weather server, waiting for updates."
-            << std::endl;
+        std::cout << "websocket connected successfully to the weather server, waiting for updates." << std::endl;
 
         while (!m_cancelled.load()) {
             const auto msg = m_web_socket.receive_msg();
@@ -73,8 +70,7 @@ class weather_reporter {
     }
 
    public:
-    weather_reporter(std::string_view endpoint_url) :
-        m_cancelled(false), m_endpoint_url(endpoint_url) {}
+    weather_reporter(std::string_view endpoint_url) : m_cancelled(false), m_endpoint_url(endpoint_url) {}
 
     ~weather_reporter() noexcept {
         m_cancelled.store(true);
@@ -87,15 +83,12 @@ class weather_reporter {
 
 int main() {
     concurrencpp::runtime runtime;
-    auto reporter = std::make_shared<weather_reporter>(
-        "wss://www.example.com/weather-server");
+    auto reporter = std::make_shared<weather_reporter>("wss://www.example.com/weather-server");
     runtime.thread_executor()->post([reporter]() mutable {
         reporter->launch();
     });
 
-    std::cout
-        << "weather reporter is on and running asynchronously. press any key to exit."
-        << std::endl;
+    std::cout << "weather reporter is on and running asynchronously. press any key to exit." << std::endl;
 
     // do other things in the main thread or in other threads without having the
     // websocket blocking on reads.

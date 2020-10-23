@@ -26,10 +26,7 @@
 
 #include "concurrencpp/concurrencpp.h"
 
-concurrencpp::result<void> replace_chars_in_file(concurrencpp::runtime& runtime,
-                                                 const std::string file_path,
-                                                 char from,
-                                                 char to) {
+concurrencpp::result<void> replace_chars_in_file(concurrencpp::runtime& runtime, const std::string file_path, char from, char to) {
 
     auto file_content_result = runtime.background_executor()->submit([file_path] {
         std::ifstream input;
@@ -44,8 +41,7 @@ concurrencpp::result<void> replace_chars_in_file(concurrencpp::runtime& runtime,
     // execution resumes inside the blocking-threadpool. it is important to resume
     // execution in the cpu-threadpool by calling result::await_via or
     // result::resolve_via.
-    auto file_content =
-        co_await file_content_result.await_via(runtime.thread_pool_executor());
+    auto file_content = co_await file_content_result.await_via(runtime.thread_pool_executor());
 
     for (auto& c : file_content) {
         if (c == from) {
@@ -55,13 +51,12 @@ concurrencpp::result<void> replace_chars_in_file(concurrencpp::runtime& runtime,
 
     // schedule the write operation on the background executor and await on it to
     // finish.
-    co_await runtime.background_executor()->submit(
-        [file_path, file_content = std::move(file_content)] {
-            std::ofstream output;
-            output.exceptions(std::ofstream::badbit);
-            output.open(file_path, std::ios::binary);
-            output.write(file_content.data(), file_content.size());
-        });
+    co_await runtime.background_executor()->submit([file_path, file_content = std::move(file_content)] {
+        std::ofstream output;
+        output.exceptions(std::ofstream::badbit);
+        output.open(file_path, std::ios::binary);
+        output.write(file_content.data(), file_content.size());
+    });
 
     std::cout << "file has been modified successfully" << std::endl;
 }

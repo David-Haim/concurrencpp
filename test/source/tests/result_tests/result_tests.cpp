@@ -259,8 +259,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         const auto time_before = high_resolution_clock::now();
         result.wait();
         const auto time_after = high_resolution_clock::now();
-        const auto total_blocking_time =
-            duration_cast<milliseconds>(time_after - time_before).count();
+        const auto total_blocking_time = duration_cast<milliseconds>(time_after - time_before).count();
 
         assert_smaller_equal(total_blocking_time, 3);
         test_ready_result_result(std::move(result));
@@ -278,8 +277,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         const auto time_before = high_resolution_clock::now();
         result.wait();
         const auto time_after = high_resolution_clock::now();
-        const auto total_blocking_time =
-            duration_cast<milliseconds>(time_after - time_before).count();
+        const auto total_blocking_time = duration_cast<milliseconds>(time_after - time_before).count();
 
         assert_smaller_equal(total_blocking_time, 3);
         test_ready_result_costume_exception(std::move(result), id);
@@ -455,9 +453,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
     // if time_point <= now, the function is equivalent to result::status
     {
         result_promise<type> rp_idle, rp_val, rp_err;
-        result<type> idle_result = rp_idle.get_result(),
-                     value_result = rp_val.get_result(),
-                     err_result = rp_err.get_result();
+        result<type> idle_result = rp_idle.get_result(), value_result = rp_val.get_result(), err_result = rp_err.get_result();
 
         rp_val.set_from_function(result_factory<type>::get);
         rp_err.set_from_function(result_factory<type>::throw_ex);
@@ -465,12 +461,9 @@ void concurrencpp::tests::test_result_wait_until_impl() {
         const auto now = high_resolution_clock::now();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        assert_equal(idle_result.wait_until(now),
-                     concurrencpp::result_status::idle);
-        assert_equal(value_result.wait_until(now),
-                     concurrencpp::result_status::value);
-        assert_equal(err_result.wait_until(now),
-                     concurrencpp::result_status::exception);
+        assert_equal(idle_result.wait_until(now), concurrencpp::result_status::idle);
+        assert_equal(value_result.wait_until(now), concurrencpp::result_status::value);
+        assert_equal(err_result.wait_until(now), concurrencpp::result_status::exception);
     }
 
     // if the result is ready by value, don't block and return status::value
@@ -603,8 +596,7 @@ void concurrencpp::tests::test_result_assignment_operator_empty_to_empty() {
 }
 
 template<class type>
-void concurrencpp::tests::
-    test_result_assignment_operator_non_empty_to_non_empty() {
+void concurrencpp::tests::test_result_assignment_operator_non_empty_to_non_empty() {
     result_promise<type> rp_0, rp_1;
     result<type> result_0 = rp_0.get_result(), result_1 = rp_1.get_result();
     result_0 = std::move(result_1);

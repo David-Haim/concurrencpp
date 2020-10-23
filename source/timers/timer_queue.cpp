@@ -45,7 +45,7 @@ namespace concurrencpp::details {
             auto timer_it = m_iterator_mapper.find(existing_timer);
             if (timer_it == m_iterator_mapper.end()) {
                 assert(existing_timer->is_oneshot());  // the timer was already deleted by
-                    // the queue when it was fired.
+                                                       // the queue when it was fired.
                 return;
             }
 
@@ -122,8 +122,7 @@ namespace concurrencpp::details {
                 auto new_it = m_timers.insert(std::move(timer_node));
                 // AppleClang doesn't have std::unordered_map::contains yet
                 assert(m_iterator_mapper.find(timer_ptr) != m_iterator_mapper.end());
-                m_iterator_mapper[timer_ptr] =
-                    new_it;  // update the iterator map, multiset::extract invalidates the
+                m_iterator_mapper[timer_ptr] = new_it;  // update the iterator map, multiset::extract invalidates the
                 // timer
             }
 
@@ -138,16 +137,14 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
-timer_queue::timer_queue() noexcept :
-    m_atomic_abort(false), m_abort(false) {}
+timer_queue::timer_queue() noexcept : m_atomic_abort(false), m_abort(false) {}
 
 timer_queue::~timer_queue() noexcept {
     shutdown();
     assert(!m_worker.joinable());
 }
 
-void timer_queue::add_timer(std::unique_lock<std::mutex>& lock,
-                            timer_ptr new_timer) noexcept {
+void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept {
     assert(lock.owns_lock());
     m_request_queue.emplace_back(std::move(new_timer), timer_request::add);
     lock.unlock();
@@ -158,8 +155,7 @@ void timer_queue::add_timer(std::unique_lock<std::mutex>& lock,
 void timer_queue::remove_timer(timer_ptr existing_timer) noexcept {
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
-        m_request_queue.emplace_back(std::move(existing_timer),
-                                     timer_request::remove);
+        m_request_queue.emplace_back(std::move(existing_timer), timer_request::remove);
     }
 
     m_condition.notify_one();
@@ -201,8 +197,7 @@ bool timer_queue::shutdown_requested() const noexcept {
 }
 
 void timer_queue::shutdown() noexcept {
-    const auto state_before =
-        m_atomic_abort.exchange(true, std::memory_order_relaxed);
+    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (state_before) {
         return;  // timer_queue has been shut down already.
     }
@@ -233,12 +228,9 @@ void timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
     });
 }
 
-concurrencpp::result<void> timer_queue::make_delay_object(
-    std::chrono::milliseconds due_time,
-    std::shared_ptr<executor> executor) {
+concurrencpp::result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<executor> executor) {
     if (!static_cast<bool>(executor)) {
-        throw std::invalid_argument(
-            details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
+        throw std::invalid_argument(details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
     }
 
     concurrencpp::result_promise<void> promise;

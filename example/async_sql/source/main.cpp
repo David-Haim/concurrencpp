@@ -54,13 +54,9 @@ result<std::shared_ptr<db_connection>> connect_async() {
         result_promise<std::shared_ptr<db_connection>> m_result_promise;
 
        public:
-        connection_callback(
-            result_promise<std::shared_ptr<db_connection>> result_promise) noexcept
-            :
-            m_result_promise(std::move(result_promise)) {}
+        connection_callback(result_promise<std::shared_ptr<db_connection>> result_promise) noexcept : m_result_promise(std::move(result_promise)) {}
 
-        void on_connection(std::exception_ptr error,
-                           std::shared_ptr<db_connection> connection) override {
+        void on_connection(std::exception_ptr error, std::shared_ptr<db_connection> connection) override {
             if (error) {
                 return m_result_promise.set_exception(error);
             }
@@ -69,22 +65,17 @@ result<std::shared_ptr<db_connection>> connect_async() {
         }
     };
 
-    auto connection = std::make_shared<db_connection>(
-        "http://123.45.67.89:8080/db",
-        "admin",
-        "password");
+    auto connection = std::make_shared<db_connection>("http://123.45.67.89:8080/db", "admin", "password");
     result_promise<std::shared_ptr<db_connection>> result_promise;
     auto result = result_promise.get_result();
-    std::unique_ptr<connection_callback_base> callback(
-        new connection_callback(std::move(result_promise)));
+    std::unique_ptr<connection_callback_base> callback(new connection_callback(std::move(result_promise)));
 
     connection->connect(std::move(callback));
 
     return result;
 }
 
-result<std::vector<std::vector<std::any>>> query_async(
-    std::shared_ptr<db_connection> open_connection) {
+result<std::vector<std::vector<std::any>>> query_async(std::shared_ptr<db_connection> open_connection) {
     using query_result_type = std::vector<std::vector<std::any>>;
 
     class query_callback final : public query_callback_base {
@@ -93,12 +84,9 @@ result<std::vector<std::vector<std::any>>> query_async(
         result_promise<query_result_type> m_result_promise;
 
        public:
-        query_callback(result_promise<query_result_type> result_promise) noexcept :
-            m_result_promise(std::move(result_promise)) {}
+        query_callback(result_promise<query_result_type> result_promise) noexcept : m_result_promise(std::move(result_promise)) {}
 
-        void on_query(std::exception_ptr error,
-                      std::shared_ptr<db_connection> connection,
-                      query_result_type results) override {
+        void on_query(std::exception_ptr error, std::shared_ptr<db_connection> connection, query_result_type results) override {
             (void)connection;
             if (error) {
                 return m_result_promise.set_exception(error);
@@ -110,12 +98,9 @@ result<std::vector<std::vector<std::any>>> query_async(
 
     result_promise<query_result_type> result_promise;
     auto result = result_promise.get_result();
-    std::unique_ptr<query_callback_base> callback(
-        new query_callback(std::move(result_promise)));
+    std::unique_ptr<query_callback_base> callback(new query_callback(std::move(result_promise)));
 
-    open_connection->query(
-        "select first_name, last_name, age from db.users where birth_month=3",
-        std::move(callback));
+    open_connection->query("select first_name, last_name, age from db.users where birth_month=3", std::move(callback));
     return result;
 }
 

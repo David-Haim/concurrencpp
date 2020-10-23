@@ -19,9 +19,7 @@ namespace concurrencpp::tests {
         std::atomic_size_t m_total_idling;
 
        public:
-        test_listener() noexcept :
-            m_total_created(0), m_total_destroyed(0), m_total_waiting(0),
-            m_total_resuming(0), m_total_idling(0) {}
+        test_listener() noexcept : m_total_created(0), m_total_destroyed(0), m_total_waiting(0), m_total_resuming(0), m_total_idling(0) {}
 
         virtual ~test_listener() noexcept = default;
 
@@ -86,8 +84,7 @@ namespace concurrencpp::tests {
             bool m_unblocked;
 
            public:
-            waiter_impl() :
-                m_unblocked(false) {}
+            waiter_impl() : m_unblocked(false) {}
 
             ~waiter_impl() {
                 notify_all();
@@ -114,8 +111,7 @@ namespace concurrencpp::tests {
         const std::shared_ptr<waiter_impl> m_impl;
 
        public:
-        waiter() :
-            m_impl(std::make_shared<waiter_impl>()) {}
+        waiter() : m_impl(std::make_shared<waiter_impl>()) {}
 
         waiter(const waiter&) noexcept = default;
 

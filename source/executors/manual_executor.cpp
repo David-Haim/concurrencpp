@@ -3,8 +3,7 @@
 
 using concurrencpp::manual_executor;
 
-void manual_executor::destroy_tasks(
-    std::unique_lock<std::mutex>& lock) noexcept {
+void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept {
     assert(lock.owns_lock());
     (void)lock;
 
@@ -15,10 +14,7 @@ void manual_executor::destroy_tasks(
     m_tasks.clear();
 }
 
-manual_executor::manual_executor() :
-    derivable_executor<concurrencpp::manual_executor>(
-        details::consts::k_manual_executor_name),
-    m_abort(false), m_atomic_abort(false) {}
+manual_executor::manual_executor() : derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {}
 
 void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -31,8 +27,7 @@ void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
     m_condition.notify_all();
 }
 
-void manual_executor::enqueue(
-    std::span<std::experimental::coroutine_handle<>> tasks) {
+void manual_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
@@ -131,8 +126,7 @@ void manual_executor::wait_for_task() {
     }
 }
 
-bool manual_executor::wait_for_task(
-    std::chrono::milliseconds max_waiting_time) {
+bool manual_executor::wait_for_task(std::chrono::milliseconds max_waiting_time) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     const auto res = m_condition.wait_for(lock, max_waiting_time, [this] {
         return !m_tasks.empty() || m_abort;

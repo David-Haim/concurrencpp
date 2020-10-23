@@ -19,8 +19,7 @@
 #include <cassert>
 
 namespace concurrencpp::details {
-    enum class timer_request { add,
-                               remove };
+    enum class timer_request { add, remove };
 }
 
 namespace concurrencpp {
@@ -29,10 +28,8 @@ namespace concurrencpp {
        public:
         using timer_ptr = std::shared_ptr<details::timer_state_base>;
         using clock_type = std::chrono::high_resolution_clock;
-        using time_point =
-            std::chrono::time_point<std::chrono::high_resolution_clock>;
-        using request_queue =
-            std::vector<std::pair<timer_ptr, details::timer_request>>;
+        using time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
+        using request_queue = std::vector<std::pair<timer_ptr, details::timer_request>>;
 
         friend class concurrencpp::timer;
 
@@ -46,33 +43,21 @@ namespace concurrencpp {
 
         void ensure_worker_thread(std::unique_lock<std::mutex>& lock);
 
-        void add_timer(std::unique_lock<std::mutex>& lock,
-                       timer_ptr new_timer) noexcept;
+        void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept;
         void remove_timer(timer_ptr existing_timer) noexcept;
 
         template<class callable_type>
-        timer_ptr make_timer_impl(size_t due_time,
-                                  size_t frequency,
-                                  std::shared_ptr<concurrencpp::executor> executor,
-                                  bool is_oneshot,
-                                  callable_type&& callable) {
+        timer_ptr make_timer_impl(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, bool is_oneshot, callable_type&& callable) {
 
             assert(static_cast<bool>(executor));
 
             using decayed_type = typename std::decay_t<callable_type>;
 
-            auto timer_core = std::make_shared<details::timer_state<decayed_type>>(
-                due_time,
-                frequency,
-                std::move(executor),
-                weak_from_this(),
-                is_oneshot,
-                std::forward<callable_type>(callable));
+            auto timer_core = std::make_shared<details::timer_state<decayed_type>>(due_time, frequency, std::move(executor), weak_from_this(), is_oneshot, std::forward<callable_type>(callable));
 
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
-                throw errors::timer_queue_shutdown(
-                    details::consts::k_timer_queue_shutdown_err_msg);
+                throw errors::timer_queue_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
             }
 
             ensure_worker_thread(lock);
@@ -97,43 +82,23 @@ namespace concurrencpp {
                          argumet_types&&... arguments) {
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(
-                    details::consts::k_timer_queue_make_timer_executor_null_err_msg);
+                throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
             }
 
-            return make_timer_impl(
-                due_time.count(),
-                frequency.count(),
-                std::move(executor),
-                false,
-                details::bind(std::forward<callable_type>(callable),
-                              std::forward<argumet_types>(arguments)...));
+            return make_timer_impl(due_time.count(), frequency.count(), std::move(executor), false, details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
         }
 
         template<class callable_type, class... argumet_types>
-        timer make_one_shot_timer(std::chrono::milliseconds due_time,
-                                  std::shared_ptr<concurrencpp::executor> executor,
-                                  callable_type&& callable,
-                                  argumet_types&&... arguments) {
+        timer make_one_shot_timer(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor, callable_type&& callable, argumet_types&&... arguments) {
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(
-                    details::consts::
-                        k_timer_queue_make_oneshot_timer_executor_null_err_msg);
+                throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
             }
 
-            return make_timer_impl(
-                due_time.count(),
-                0,
-                std::move(executor),
-                true,
-                details::bind(std::forward<callable_type>(callable),
-                              std::forward<argumet_types>(arguments)...));
+            return make_timer_impl(due_time.count(), 0, std::move(executor), true, details::bind(std::forward<callable_type>(callable), std::forward<argumet_types>(arguments)...));
         }
 
-        result<void> make_delay_object(
-            std::chrono::milliseconds due_time,
-            std::shared_ptr<concurrencpp::executor> executor);
+        result<void> make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor);
     };
 }  // namespace concurrencpp
 

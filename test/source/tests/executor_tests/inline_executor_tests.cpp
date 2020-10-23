@@ -39,8 +39,7 @@ void concurrencpp::tests::test_inline_executor_name() {
     auto executor = std::make_shared<inline_executor>();
     executor_shutdowner shutdown(executor);
 
-    assert_equal(executor->name,
-                 concurrencpp::details::consts::k_inline_executor_name);
+    assert_equal(executor->name, concurrencpp::details::consts::k_inline_executor_name);
 }
 
 void concurrencpp::tests::test_inline_executor_shutdown() {
@@ -68,9 +67,7 @@ void concurrencpp::tests::test_inline_executor_max_concurrency_level() {
     auto executor = std::make_shared<inline_executor>();
     executor_shutdowner shutdown(executor);
 
-    assert_equal(
-        executor->max_concurrency_level(),
-        concurrencpp::details::consts::k_inline_executor_max_concurrency_level);
+    assert_equal(executor->max_concurrency_level(), concurrencpp::details::consts::k_inline_executor_max_concurrency_level);
 }
 
 void concurrencpp::tests::test_inline_executor_post_foreign() {
@@ -303,8 +300,7 @@ void concurrencpp::tests::test_inline_executor() {
 
     tester.add_step("name", test_inline_executor_name);
     tester.add_step("shutdown", test_inline_executor_shutdown);
-    tester.add_step("max_concurrency_level",
-                    test_inline_executor_max_concurrency_level);
+    tester.add_step("max_concurrency_level", test_inline_executor_max_concurrency_level);
     tester.add_step("post", test_inline_executor_post);
     tester.add_step("submit", test_inline_executor_submit);
     tester.add_step("bulk_post", test_inline_executor_bulk_post);

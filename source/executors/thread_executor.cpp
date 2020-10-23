@@ -4,32 +4,24 @@
 using concurrencpp::thread_executor;
 using concurrencpp::details::thread_worker;
 
-thread_worker::thread_worker(thread_executor& parent_pool) noexcept :
-    m_parent_pool(parent_pool) {}
+thread_worker::thread_worker(thread_executor& parent_pool) noexcept : m_parent_pool(parent_pool) {}
 
 thread_worker::~thread_worker() noexcept {
     m_thread.join();
 }
 
-void thread_worker::execute_and_retire(
-    std::experimental::coroutine_handle<> task,
-    typename std::list<thread_worker>::iterator self_it) {
+void thread_worker::execute_and_retire(std::experimental::coroutine_handle<> task, typename std::list<thread_worker>::iterator self_it) {
     task();
     m_parent_pool.retire_worker(self_it);
 }
 
-void thread_worker::start(std::string worker_name,
-                          std::experimental::coroutine_handle<> task,
-                          std::list<thread_worker>::iterator self_it) {
+void thread_worker::start(std::string worker_name, std::experimental::coroutine_handle<> task, std::list<thread_worker>::iterator self_it) {
     m_thread = thread(std::move(worker_name), [this, task, self_it] {
         execute_and_retire(task, self_it);
     });
 }
 
-thread_executor::thread_executor() :
-    derivable_executor<concurrencpp::thread_executor>(
-        details::consts::k_thread_executor_name),
-    m_abort(false), m_atomic_abort(false) {}
+thread_executor::thread_executor() : derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name), m_abort(false), m_atomic_abort(false) {}
 
 thread_executor::~thread_executor() noexcept {
     assert(m_workers.empty());
@@ -50,8 +42,7 @@ void thread_executor::enqueue(std::experimental::coroutine_handle<> task) {
     enqueue_impl(task);
 }
 
-void thread_executor::enqueue(
-    std::span<std::experimental::coroutine_handle<>> tasks) {
+void thread_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);

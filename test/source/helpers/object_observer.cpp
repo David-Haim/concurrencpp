@@ -12,8 +12,7 @@ namespace concurrencpp::tests::details {
         size_t m_execution_count;
 
        public:
-        object_observer_state() :
-            m_destruction_count(0), m_execution_count(0) {}
+        object_observer_state() : m_destruction_count(0), m_execution_count(0) {}
 
         size_t get_destruction_count() const noexcept {
             std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -38,8 +37,7 @@ namespace concurrencpp::tests::details {
         }
 
         void on_execute() {
-            const auto this_id =
-                ::concurrencpp::details::thread::get_current_virtual_id();
+            const auto this_id = ::concurrencpp::details::thread::get_current_virtual_id();
 
             {
                 std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -95,8 +93,7 @@ void testing_stub::operator()() noexcept {
     }
 }
 
-value_testing_stub& value_testing_stub::operator=(
-    value_testing_stub&& rhs) noexcept {
+value_testing_stub& value_testing_stub::operator=(value_testing_stub&& rhs) noexcept {
     testing_stub::operator=(std::move(rhs));
     return *this;
 }
@@ -106,34 +103,25 @@ size_t value_testing_stub::operator()() noexcept {
     return m_return_value;
 }
 
-object_observer::object_observer() :
-    m_state(std::make_shared<details::object_observer_state>()) {}
+object_observer::object_observer() : m_state(std::make_shared<details::object_observer_state>()) {}
 
-testing_stub object_observer::get_testing_stub(
-    std::chrono::milliseconds dummy_work_time) noexcept {
+testing_stub object_observer::get_testing_stub(std::chrono::milliseconds dummy_work_time) noexcept {
     return {m_state, dummy_work_time};
 }
 
-value_testing_stub object_observer::get_testing_stub(
-    int value,
-    std::chrono::milliseconds dummy_work_time) noexcept {
+value_testing_stub object_observer::get_testing_stub(int value, std::chrono::milliseconds dummy_work_time) noexcept {
     return {m_state, dummy_work_time, value};
 }
 
-value_testing_stub object_observer::get_testing_stub(
-    size_t value,
-    std::chrono::milliseconds dummy_work_time) noexcept {
+value_testing_stub object_observer::get_testing_stub(size_t value, std::chrono::milliseconds dummy_work_time) noexcept {
     return {m_state, dummy_work_time, static_cast<int>(value)};
 }
 
-bool object_observer::wait_execution_count(size_t count,
-                                           std::chrono::milliseconds timeout) {
+bool object_observer::wait_execution_count(size_t count, std::chrono::milliseconds timeout) {
     return m_state->wait_execution_count(count, timeout);
 }
 
-bool object_observer::wait_destruction_count(
-    size_t count,
-    std::chrono::milliseconds timeout) {
+bool object_observer::wait_destruction_count(size_t count, std::chrono::milliseconds timeout) {
     return m_state->wait_destruction_count(count, timeout);
 }
 
@@ -145,8 +133,7 @@ size_t object_observer::get_execution_count() const noexcept {
     return m_state->get_execution_count();
 }
 
-std::unordered_map<size_t, size_t> object_observer::get_execution_map()
-    const noexcept {
+std::unordered_map<size_t, size_t> object_observer::get_execution_map() const noexcept {
     return m_state->get_execution_map();
 }
 

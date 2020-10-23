@@ -7,9 +7,7 @@ namespace concurrencpp::tests {
     struct executor_shutdowner {
         std::shared_ptr<concurrencpp::executor> executor;
 
-        executor_shutdowner(std::shared_ptr<concurrencpp::executor> executor) noexcept
-            :
-            executor(std::move(executor)) {}
+        executor_shutdowner(std::shared_ptr<concurrencpp::executor> executor) noexcept : executor(std::move(executor)) {}
 
         ~executor_shutdowner() noexcept {
             executor->shutdown();

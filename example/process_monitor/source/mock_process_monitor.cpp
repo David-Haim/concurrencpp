@@ -18,9 +18,7 @@ namespace mock_process_monitor {
     }
 }  // namespace mock_process_monitor
 
-monitor::monitor() noexcept :
-    m_last_cpu_usage(5), m_last_memory_usage(15), m_last_thread_count(4),
-    m_last_kernel_object_count(21) {}
+monitor::monitor() noexcept : m_last_cpu_usage(5), m_last_memory_usage(15), m_last_thread_count(4), m_last_kernel_object_count(21) {}
 
 size_t monitor::cpu_usage() noexcept {
     size_t max_range, min_range;
