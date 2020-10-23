@@ -25,13 +25,13 @@ std::string to_string(
 
 template<class type>
 std::string to_string(type* value) {
-  return std::string("pointer[") +
-      to_string(reinterpret_cast<intptr_t>(value)) + "]";
+    return std::string("pointer[") +
+        to_string(reinterpret_cast<intptr_t>(value)) + "]";
 }
 
 template<class type>
 std::string to_string(const type&) {
-  return "{object}";
+    return "{object}";
 }
 
 void assert_same_failed_impl(const std::string& a, const std::string& b);
@@ -50,91 +50,91 @@ void assert_false(bool condition);
 
 template<class a_type, class b_type>
 void assert_equal(const a_type& given_value, const b_type& expected_value) {
-  if (given_value == expected_value) {
-    return;
-  }
+    if (given_value == expected_value) {
+        return;
+    }
 
-  details::assert_same_failed_impl(details::to_string(given_value),
-                                   details::to_string(expected_value));
+    details::assert_same_failed_impl(details::to_string(given_value),
+                                     details::to_string(expected_value));
 }
 
 template<class a_type, class b_type>
 inline void assert_not_equal(const a_type& given_value,
                              const b_type& expected_value) {
-  if (given_value != expected_value) {
-    return;
-  }
+    if (given_value != expected_value) {
+        return;
+    }
 
-  details::assert_same_failed_impl(details::to_string(given_value),
-                                   details::to_string(expected_value));
-}
-
-template<class a_type, class b_type>
-void assert_bigger(const a_type& given_value, const b_type& expected_value) {
-  if (given_value > expected_value) {
-    return;
-  }
-
-  details::assert_bigger_failed_impl(details::to_string(given_value),
+    details::assert_same_failed_impl(details::to_string(given_value),
                                      details::to_string(expected_value));
 }
 
 template<class a_type, class b_type>
-void assert_smaller(const a_type& given_value, const b_type& expected_value) {
-  if (given_value < expected_value) {
-    return;
-  }
+void assert_bigger(const a_type& given_value, const b_type& expected_value) {
+    if (given_value > expected_value) {
+        return;
+    }
 
-  details::assert_smaller_failed_impl(details::to_string(given_value),
-                                      details::to_string(expected_value));
+    details::assert_bigger_failed_impl(details::to_string(given_value),
+                                       details::to_string(expected_value));
+}
+
+template<class a_type, class b_type>
+void assert_smaller(const a_type& given_value, const b_type& expected_value) {
+    if (given_value < expected_value) {
+        return;
+    }
+
+    details::assert_smaller_failed_impl(details::to_string(given_value),
+                                        details::to_string(expected_value));
 }
 
 template<class a_type, class b_type>
 void assert_bigger_equal(const a_type& given_value,
                          const b_type& expected_value) {
-  if (given_value >= expected_value) {
-    return;
-  }
+    if (given_value >= expected_value) {
+        return;
+    }
 
-  details::assert_bigger_equal_failed_impl(details::to_string(given_value),
-                                           details::to_string(expected_value));
+    details::assert_bigger_equal_failed_impl(details::to_string(given_value),
+                                             details::to_string(expected_value));
 }
 
 template<class a_type, class b_type>
 void assert_smaller_equal(const a_type& given_value,
                           const b_type& expected_value) {
-  if (given_value <= expected_value) {
-    return;
-  }
+    if (given_value <= expected_value) {
+        return;
+    }
 
-  details::assert_smaller_equal_failed_impl(details::to_string(given_value),
-                                            details::to_string(expected_value));
+    details::assert_smaller_equal_failed_impl(details::to_string(given_value),
+                                              details::to_string(expected_value));
 }
 
 template<class exception_type, class task_type>
 void assert_throws(task_type&& task) {
-  try {
-    task();
-  } catch (const exception_type&) {
-    return;
-  } catch (...) {
-  }
+    try {
+        task();
+    } catch (const exception_type&) {
+        return;
+    } catch (...) {
+    }
 
-  assert_false(true);
+    assert_false(true);
 }
 
 template<class exception_type, class task_type>
 void assert_throws_with_error_message(task_type&& task,
                                       std::string_view error_msg) {
-  try {
-    task();
-  } catch (const exception_type& e) {
-    assert_equal(error_msg, e.what());
-    return;
-  } catch (...) {
-  }
+    try {
+        task();
+    } catch (const exception_type& e) {
+        assert_equal(error_msg, e.what());
+        return;
+    } catch (...) {
+    }
 
-  assert_false(true);
+    assert_false(true);
 }
 
 }  // namespace concurrencpp::tests

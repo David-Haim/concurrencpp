@@ -5,8 +5,8 @@
 
 namespace mock_web_socket {
 struct web_socket {
-  void open(std::string_view url);
-  std::string receive_msg();
+    void open(std::string_view url);
+    std::string receive_msg();
 };
 }  // namespace mock_web_socket
 

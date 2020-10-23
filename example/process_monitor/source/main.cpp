@@ -19,31 +19,30 @@ using namespace std::chrono_literals;
 
 class process_stat_printer {
 
- private:
-  mock_process_monitor::monitor m_process_monitor;
+   private:
+    mock_process_monitor::monitor m_process_monitor;
 
- public:
-  void operator()() noexcept {
-    const auto cpu_usage = m_process_monitor.cpu_usage();
-    const auto memory_usage = m_process_monitor.memory_usage();
-    const auto thread_count = m_process_monitor.thread_count();
-    const auto kernel_object_count = m_process_monitor.kernel_object_count();
+   public:
+    void operator()() noexcept {
+        const auto cpu_usage = m_process_monitor.cpu_usage();
+        const auto memory_usage = m_process_monitor.memory_usage();
+        const auto thread_count = m_process_monitor.thread_count();
+        const auto kernel_object_count = m_process_monitor.kernel_object_count();
 
-    std::cout << "cpu(%): " << cpu_usage << ", "
-              << "memory(%): " << memory_usage << ", "
-              << "thread count: " << thread_count << ", "
-              << "kernel-object count: " << kernel_object_count << std::endl;
-  }
+        std::cout << "cpu(%): " << cpu_usage << ", "
+                  << "memory(%): " << memory_usage << ", "
+                  << "thread count: " << thread_count << ", "
+                  << "kernel-object count: " << kernel_object_count << std::endl;
+    }
 };
 
 int main(int, const char**) {
-  concurrencpp::runtime runtime;
-  auto timer_queue = runtime.timer_queue();
-  auto thread_pool_executor = runtime.thread_pool_executor();
-  auto timer = timer_queue->make_timer(2500ms, 2500ms, thread_pool_executor,
-                                       process_stat_printer());
+    concurrencpp::runtime runtime;
+    auto timer_queue = runtime.timer_queue();
+    auto thread_pool_executor = runtime.thread_pool_executor();
+    auto timer = timer_queue->make_timer(2500ms, 2500ms, thread_pool_executor, process_stat_printer());
 
-  std::cout << "press enter to quit" << std::endl;
-  std::getchar();
-  return 0;
+    std::cout << "press enter to quit" << std::endl;
+    std::getchar();
+    return 0;
 }

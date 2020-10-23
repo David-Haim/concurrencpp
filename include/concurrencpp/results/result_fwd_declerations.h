@@ -26,7 +26,9 @@ struct executor_tag {};
 
 struct null_result {};
 
-enum class result_status { idle, value, exception };
+enum class result_status { idle,
+                           value,
+                           exception };
 }  // namespace concurrencpp
 
 namespace concurrencpp::details {
@@ -40,7 +42,8 @@ struct executor_bulk_tag {};
 
 class when_result_helper;
 
-enum class when_any_status { set, result_ready };
+enum class when_any_status { set,
+                             result_ready };
 }  // namespace concurrencpp::details
 
 #endif
