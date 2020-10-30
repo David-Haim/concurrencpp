@@ -93,7 +93,7 @@ jobs:
           -D ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
 
       - name: Run tests
-        continue-on-error: ${{ !startsWith(matrix.conf.os, 'ubuntu') }}
+        continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
         if: steps.build_tests.outcome == 'success'
         working-directory: build/test
         shell: cmake -P {0}
