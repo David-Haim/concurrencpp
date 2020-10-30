@@ -895,8 +895,8 @@ int main() {
 	concurrencpp::runtime runtime;
 	std::atomic_size_t counter = 1;
 	concurrencpp::timer timer = runtime.timer_queue()->make_timer(
-		1'500ms,
-		2'000ms,
+		1500ms,
+		2000ms,
 		runtime.thread_pool_executor(),
 		[&] {
 			const auto c = counter.fetch_add(1);
@@ -924,7 +924,7 @@ using namespace std::chrono_literals;
 int main() {
 	concurrencpp::runtime runtime;
 	concurrencpp::timer timer = runtime.timer_queue()->make_one_shot_timer(
-		3'000ms,
+		3000ms,
 		runtime.thread_executor(),
 		[&] {
 			std::cout << "hello and goodbye" << std::endl;
@@ -957,7 +957,7 @@ concurrencpp::null_result delayed_task(
 		std::cout << "task was invoked " << counter << " times." << std::endl;
 		counter++;
 
-		co_await tq->make_delay_object(1'500ms, ex);
+		co_await tq->make_delay_object(1500ms, ex);
 	}
 }
 
@@ -1195,5 +1195,6 @@ int main() {
 In this example, we created an executor which logs actions like enqueuing a task or executing it. We implement the `executor` interface, and we request the runtime to create, store and monitor an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors. 
 
 ### Supported platforms and tools
-**Operating systems:** Linux, macOS, Windows (Windows 10 and above)
-**Compilers**: MSVC (Visual Studio 2019 and above), Clang (clang-9 and above, recommended version: clang-11 and above)
+
+* **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
+* **Compilers:** MSVC (Visual Studio 2019 and above), Clang (clang-9 and above, recommended version: clang-11 and above)
