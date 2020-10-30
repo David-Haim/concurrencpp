@@ -87,7 +87,7 @@ jobs:
 
       - name: Build tests
         id: build_tests
-        continue-on-error: ${{ !startsWith(matrix.conf.os, 'ubuntu') }}
+        continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
         run: cmake -P cmake/ciBuild.cmake -- test build/test
           ${{ steps.args.outputs.args }}
           -D ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
