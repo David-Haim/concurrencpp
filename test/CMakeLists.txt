@@ -24,6 +24,7 @@ FetchContent_MakeAvailable(concurrencpp)
 
 if(use_tsan)
   target_compile_options(concurrencpp PRIVATE -fsanitize=thread)
+  target_link_options(concurrencpp PRIVATE -fsanitize=thread)
 endif()
 
 # ---- Test ----
