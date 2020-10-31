@@ -23,8 +23,10 @@ FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
 
 if(use_tsan)
-  target_compile_options(concurrencpp PRIVATE -fsanitize=thread)
+  target_compile_options(concurrencpp PUBLIC -fsanitize=thread)
+  target_link_options(concurrencpp PUBLIC -fsanitize=thread)
 endif()
+
 
 # ---- Test ----
 
