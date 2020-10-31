@@ -10,9 +10,12 @@ option(ENABLE_THREAD_SANITIZER "\
 Build concurrencpp with LLVM thread sanitizer. \
 Does not have an effect if the compiler is not Clang based." OFF)
 
-set(use_tsan NO)
-if(ENABLE_THREAD_SANITIZER AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(use_tsan YES)
+if(ENABLE_THREAD_SANITIZER AND CXX_COMPILER_ID MATCHES "Clang")
+  # Instead of polluting the lists file, we inject a command definition
+  # override that will apply the sanitizer flag
+  set(CMAKE_PROJECT_concurrencpp_INCLUDE
+          "${CMAKE_CURRENT_LIST_DIR}/../cmake/concurrencppInjectTSAN.cmake"
+          CACHE INTERNAL "")
 endif()
 
 # Enable warnings from includes
@@ -21,12 +24,6 @@ set(concurrencpp_INCLUDE_WITHOUT_SYSTEM ON CACHE INTERNAL "")
 include(FetchContent)
 FetchContent_Declare(concurrencpp SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 FetchContent_MakeAvailable(concurrencpp)
-
-if(use_tsan)
-  target_compile_options(concurrencpp PUBLIC -fsanitize=thread)
-  target_link_options(concurrencpp PUBLIC -fsanitize=thread)
-endif()
-
 
 # ---- Test ----
 
@@ -87,7 +84,7 @@ endfunction()
 
 temp_test(dummy main ${test_headers} ${test_sources})
 
-if(NOT use_tsan)
+if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
@@ -134,7 +131,7 @@ endfunction()
 
 # TODO: add tests
 
-if(NOT use_tsan)
+if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
