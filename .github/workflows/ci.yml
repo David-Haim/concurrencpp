@@ -34,7 +34,7 @@ jobs:
             cxx: clang++-10
             tsan: NO
 
-          - name: macOS
+          - name: macOS (Clang 10 - no TSAN)
             os: macos-latest
             cc: clang
             cxx: clang++
