@@ -60,10 +60,6 @@ jobs:
       - uses: friendlyanon/fetch-core-count@v1
         id: cores
 
-      - name: Switch to Xcode 10.3
-        if: startsWith(matrix.conf.os, 'macos') 
-        run: sudo xcode-select -s /Applications/Xcode_12.2.app
-
       - run: cmake -E make_directory build/tools
 
       - name: Install CMake and Ninja
