@@ -335,17 +335,17 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
         object_observer observer;
         const size_t worker_count = 6;
         auto wc = std::make_shared<concurrencpp::details::wait_context>();
-	    auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
+        auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
-	
+
         for (size_t i = 0; i < worker_count; i++) {
             executor->post([wc, stub = observer.get_testing_stub()]() mutable {
-				wc->wait();
-				stub();
-			});
+                wc->wait();
+                stub();
+            });
         }
 
-		wc->notify();
+        wc->notify();
 
         observer.wait_execution_count(worker_count, std::chrono::seconds(6));
 
