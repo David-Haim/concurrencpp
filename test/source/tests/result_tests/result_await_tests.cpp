@@ -3,9 +3,8 @@
 
 #include "tests/test_utils/result_factory.h"
 #include "tests/test_utils/test_ready_result.h"
-#include "tests/test_utils/test_executors.h"
+#include "tests/test_utils/throwing_executor.h"
 #include "tests/test_utils/executor_shutdowner.h"
-#include "tests/test_utils/proxy_coro.h"
 
 #include "tester/tester.h"
 #include "helpers/assertions.h"
@@ -13,142 +12,182 @@
 
 namespace concurrencpp::tests {
     template<class type>
-    result<void> test_result_await_ready_val();
-
-    template<class type>
-    result<void> test_result_await_ready_err();
-
-    template<class type>
-    result<void> test_result_await_not_ready_val(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_not_ready_err(std::shared_ptr<test_executor> executor);
-
-    template<class type>
     void test_result_await_impl();
     void test_result_await();
 
     template<class type>
-    result<void> test_result_await_via_ready_val(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_via_ready_err(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_via_ready_val_force_rescheduling(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_via_ready_err_force_rescheduling(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_via_ready_val_force_rescheduling_executor_threw();
-
-    template<class type>
-    result<void> test_result_await_via_ready_err_force_rescheduling_executor_threw();
-
-    template<class type>
-    result<void> test_result_await_via_not_ready_val(std::shared_ptr<test_executor> executor);
-    template<class type>
-    result<void> test_result_await_via_not_ready_err(std::shared_ptr<test_executor> executor);
-
-    template<class type>
-    result<void> test_result_await_via_not_ready_val_executor_threw(std::shared_ptr<test_executor> executor);
-    template<class type>
-    result<void> test_result_await_via_not_ready_err_executor_threw(std::shared_ptr<test_executor> executor);
-
-    template<class type>
     void test_result_await_via_impl();
     void test_result_await_via();
+
 }  // namespace concurrencpp::tests
 
 using concurrencpp::result;
-using concurrencpp::result_promise;
-using namespace std::chrono;
+using concurrencpp::details::thread;
 
 /*
-        At this point, we know result::resolve(_via) works perfectly so we wrap
-   co_await operator in another resolving-coroutine and we continue testing it
-   as a resolve test. co_await will do its thing and it'll forward the
-   result/exception to a resolving coroutine. since result::resolve(_via) works
-   with no bugs, every failure is caused by result::co_await
-*/
+ *  In this test suit, we need to check all the possible scenarios that "await" can have.
+ *  Our tests are split into 2 branches: when the result is already ready at the moment of resolving and
+ *  when it's not.
+ *
+ *  If the result is already ready, the test matrix looks like this:
+ *  status[value, exception]
+ *  Overall 2 scenarios
+ *
+ * If the result is not ready, the test matrix looks like this:
+ * status[value, exception]
+ * Overall 2 scenarios
+ *
+ * These tests are almost identical to result::resolve(_via) tests. If we got here,
+ * that means that result::resolve(_via) works correctly. so we modify the resolving tests to use regular
+ * "await" and then continue as a regular resolving test. If any assert fails, it's result::await(_via) fault and not
+ * result:resolve(_via)
+ */
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_ready_val() {
-    auto result = result_factory<type>::make_ready();
-    const auto thread_id_0 = std::this_thread::get_id();
-
-    auto result_proxy = [result = std::move(result)]() mutable -> concurrencpp::result<type> {
-        co_return co_await result;
+namespace concurrencpp::tests {
+    template<class type, result_status status>
+    struct test_await_ready_result {
+        result<void> operator()();
     };
 
-    auto done_result = co_await result_proxy().resolve();
+    template<class type>
+    struct test_await_ready_result<type, result_status::value> {
 
-    const auto thread_id_1 = std::this_thread::get_id();
+       private:
+        uintptr_t m_thread_id_0 = 0;
 
-    assert_false(static_cast<bool>(result));
-    assert_equal(thread_id_0, thread_id_1);
-    test_ready_result_result(std::move(done_result));
-}
+        result<type> proxy_task() {
+            auto result = result_factory<type>::make_ready();
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_ready_err() {
-    random randomizer;
-    const auto id = randomizer();
-    auto result = make_exceptional_result<type>(costume_exception(id));
+            m_thread_id_0 = thread::get_current_virtual_id();
 
-    const auto thread_id_0 = std::this_thread::get_id();
+            co_return co_await result;
+        }
 
-    auto result_proxy = [result = std::move(result)]() mutable -> concurrencpp::result<type> {
-        co_return co_await result;
+       public:
+        result<void> operator()() {
+            auto done_result = co_await proxy_task().resolve();
+
+            const auto thread_id_1 = thread::get_current_virtual_id();
+
+            assert_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_result(std::move(done_result));
+        }
     };
 
-    auto done_result = co_await result_proxy().resolve();
+    template<class type>
+    struct test_await_ready_result<type, result_status::exception> {
 
-    const auto thread_id_1 = std::this_thread::get_id();
+       private:
+        uintptr_t m_thread_id_0 = 0;
 
-    assert_false(static_cast<bool>(result));
-    assert_equal(thread_id_0, thread_id_1);
-    test_ready_result_costume_exception(std::move(done_result), id);
-}
+        result<type> proxy_task(const size_t id) {
+            auto result = make_exceptional_result<type>(costume_exception(id));
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_not_ready_val(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
+            m_thread_id_0 = thread::get_current_virtual_id();
 
-    executor->set_rp_value(std::move(rp));
+            co_return co_await result;
+        }
 
-    auto result_proxy = [result = std::move(result)]() mutable -> concurrencpp::result<type> {
-        co_return co_await result;
+       public:
+        result<void> operator()() {
+            const auto id = 1234567;
+            auto done_result = co_await proxy_task(id).resolve();
+
+            const auto thread_id_1 = thread::get_current_virtual_id();
+            ;
+            assert_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
     };
 
-    auto done_result = co_await result_proxy().resolve();
-
-    assert_false(static_cast<bool>(result));
-    assert_true(executor->scheduled_inline());  // the thread that set the value is the
-    // thread that resumes the coroutine.
-    test_ready_result_result(std::move(done_result));
-}
-
-template<class type>
-result<void> concurrencpp::tests::test_result_await_not_ready_err(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
-
-    const auto id = executor->set_rp_err(std::move(rp));
-
-    auto result_proxy = [result = std::move(result)]() mutable -> concurrencpp::result<type> {
-        co_return co_await result;
+    template<class type, result_status status>
+    struct test_await_not_ready_result {
+        result<void> operator()(std::shared_ptr<thread_executor> executor);
     };
 
-    auto done_result = co_await result_proxy().resolve();
+    template<class type>
+    struct test_await_not_ready_result<type, result_status::value> {
 
-    assert_false(static_cast<bool>(result));
-    assert_true(executor->scheduled_inline());  // the thread that set the value is the
-    // thread that resumes the coroutine.
-    test_ready_result_costume_exception(std::move(done_result), id);
-}
+       private:
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<type> proxy_task(std::shared_ptr<manual_executor> manual_executor) {
+            auto result = manual_executor->submit([]() -> decltype(auto) {
+                return result_factory<type>::get();
+            });
+
+            co_return co_await result;
+        }
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor) {
+            auto done_result = co_await proxy_task(manual_executor).resolve();
+
+            m_resuming_thread_id = thread::get_current_virtual_id();
+
+            test_ready_result_result(std::move(done_result));
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor);
+
+            co_await thread_executor->submit([this, manual_executor] {
+                m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+    template<class type>
+    struct test_await_not_ready_result<type, result_status::exception> {
+
+       private:
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<type> proxy_task(std::shared_ptr<manual_executor> manual_executor, const size_t id) {
+            auto result = manual_executor->submit([id]() -> decltype(auto) {
+                throw costume_exception(id);
+                return result_factory<type>::get();
+            });
+
+            co_return co_await result;
+        }
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor) {
+            const auto id = 1234567;
+            auto done_result = co_await proxy_task(manual_executor, id).resolve();
+
+            m_resuming_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor);
+
+            co_await thread_executor->submit([this, manual_executor] {
+                m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+}  // namespace concurrencpp::tests
 
 template<class type>
 void concurrencpp::tests::test_result_await_impl() {
@@ -156,33 +195,18 @@ void concurrencpp::tests::test_result_await_impl() {
     {
         assert_throws<concurrencpp::errors::empty_result>([] {
             result<type> result;
-            result.operator co_await();
+            result.resolve();
         });
     }
 
-    // ready result resumes immediately in the awaiting thread with no
-    // rescheduling
-    test_result_await_ready_val<type>().get();
+    auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
+    auto manual_executor = std::make_shared<concurrencpp::manual_executor>();
+    executor_shutdowner es0(thread_executor), es1(manual_executor);
 
-    // ready result resumes immediately in the awaiting thread with no
-    // rescheduling
-    test_result_await_ready_err<type>().get();
-
-    // if value or exception are not available - suspend and resume in the setting
-    // thread
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_not_ready_val<type>(te).get();
-    }
-
-    // if value or exception are not available - suspend and resume in the setting
-    // thread
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_not_ready_err<type>(te).get();
-    }
+    test_await_ready_result<type, result_status::value>()().get();
+    test_await_ready_result<type, result_status::exception>()().get();
+    test_await_not_ready_result<type, result_status::value>()(manual_executor, thread_executor).get();
+    test_await_not_ready_result<type, result_status::exception>()(manual_executor, thread_executor).get();
 }
 
 void concurrencpp::tests::test_result_await() {
@@ -193,268 +217,497 @@ void concurrencpp::tests::test_result_await() {
     test_result_await_impl<std::string&>();
 }
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_val(std::shared_ptr<test_executor> executor) {
-    auto result = result_factory<type>::make_ready();
+/*
+ *  In this test suit, we need to check all the possible scenarios that "await_via" can have.
+ *  Our tests are split into 2 branches: when the result is already ready at the moment of resolving and
+ *  when it's not.
+ *
+ *  If the result is already ready, the test matrix looks like this:
+ *  status[value, exception] x force_rescheduling[true, false] x executor throws[true, false]
+ *  Overall 8 scenarios
+ *
+ * If the result is not ready, the test matrix looks like this:
+ * status[value, exception] x executor throws [true, false]
+ * Overall 4 scenarios
+ */
 
-    const auto thread_id_0 = std::this_thread::get_id();
+namespace concurrencpp::tests {
+    template<class type, result_status status, bool force_rescheduling, bool executor_throws>
+    struct test_await_via_ready_result {
+        result<void> operator()(std::shared_ptr<thread_executor> executor);
+    };
 
-    proxy_coro coro(std::move(result), executor, false);
-    auto done_result = co_await coro().resolve();
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::value, false, false> {
 
-    const auto thread_id_1 = std::this_thread::get_id();
+       private:
+        uintptr_t m_thread_id_0 = 0;
 
-    assert_false(static_cast<bool>(result));
-    assert_equal(thread_id_0, thread_id_1);
-    assert_false(executor->scheduled_async());
-    test_ready_result_result(std::move(done_result));
-}
+        result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
+            auto result = result_factory<type>::make_ready();
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_err(std::shared_ptr<test_executor> executor) {
-    random randomizer;
-    const auto id = randomizer();
-    auto result = make_exceptional_result<type>(costume_exception(id));
+            m_thread_id_0 = thread::get_current_virtual_id();
 
-    const auto thread_id_0 = std::this_thread::get_id();
+            co_return co_await result.await_via(executor, false);
+        }
 
-    proxy_coro coro(std::move(result), executor, false);
-    auto done_result = co_await coro().resolve();
+       public:
+        result<void> operator()(std::shared_ptr<thread_executor> executor) {
+            // result is ready + force_rescheduling = false + executor doesn't throw
+            // = inline execution, result is returned
 
-    const auto thread_id_1 = std::this_thread::get_id();
+            auto done_result = co_await proxy_task(executor).resolve();
 
-    assert_false(static_cast<bool>(result));
-    assert_equal(thread_id_0, thread_id_1);
-    assert_false(executor->scheduled_async());
-    test_ready_result_costume_exception(std::move(done_result), id);
-}
+            const auto thread_id_1 = thread::get_current_virtual_id();
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_val_force_rescheduling(std::shared_ptr<test_executor> executor) {
-    auto result = result_factory<type>::make_ready();
+            assert_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_result(std::move(done_result));
+        }
+    };
 
-    proxy_coro coro(std::move(result), executor, true);
-    auto done_result = co_await coro().resolve();
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::value, true, false> {
 
-    assert_false(executor->scheduled_inline());
-    assert_true(executor->scheduled_async());
-    test_ready_result_result(std::move(done_result));
-}
+       private:
+        uintptr_t m_thread_0_id = 0;
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_err_force_rescheduling(std::shared_ptr<test_executor> executor) {
-    random randomizer;
-    auto id = static_cast<size_t>(randomizer());
-    auto result = make_exceptional_result<type>(costume_exception(id));
+        result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
+            auto result = result_factory<type>::make_ready();
 
-    proxy_coro coro(std::move(result), executor, true);
-    auto done_result = co_await coro().resolve();
+            m_thread_0_id = thread::get_current_virtual_id();
 
-    assert_false(static_cast<bool>(result));
-    assert_false(executor->scheduled_inline());
-    assert_true(executor->scheduled_async());
-    test_ready_result_costume_exception(std::move(done_result), id);
-}
+            co_return co_await result.await_via(executor, true);
+        }
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_val_force_rescheduling_executor_threw() {
-    auto result = result_factory<type>::make_ready();
-    auto te = std::make_shared<throwing_executor>();
+       public:
+        result<void> operator()(std::shared_ptr<thread_executor> executor) {
+            // result is ready + force_rescheduling = true + executor doesn't throw
+            // = rescheduling, result is returned
 
-    auto thread_id_before = std::this_thread::get_id();
+            auto done_result = co_await proxy_task(executor).resolve();
 
-    try {
-        proxy_coro coro(std::move(result), te, true);
-        auto done_result = co_await coro().resolve();
-        co_await done_result;
-    } catch (const executor_enqueue_exception&) {
-        // do nothing
-    } catch (...) {
-        assert_false(true);
-    }
+            const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
 
-    auto thread_id_after = std::this_thread::get_id();
+            assert_not_equal(m_thread_0_id, thread_id_1);
+            test_ready_result_result(std::move(done_result));
+        }
+    };
 
-    assert_equal(thread_id_before, thread_id_after);
-    assert_false(static_cast<bool>(result));
-}
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::value, false, true> {
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_ready_err_force_rescheduling_executor_threw() {
-    auto result = result_factory<type>::make_exceptional();
-    auto te = std::make_shared<throwing_executor>();
+       private:
+        uintptr_t m_thread_0_id = 0;
 
-    auto thread_id_before = std::this_thread::get_id();
+        result<type> proxy_task(std::shared_ptr<throwing_executor> executor) {
+            auto result = result_factory<type>::make_ready();
 
-    try {
-        proxy_coro coro(std::move(result), te, true);
-        auto done_result = co_await coro().resolve();
-        assert_true(static_cast<bool>(done_result));
+            m_thread_0_id = concurrencpp::details::thread::get_current_virtual_id();
 
-        co_await done_result;
-    } catch (const executor_enqueue_exception&) {
-        // do nothing
-    } catch (...) {
-        assert_false(true);
-    }
+            co_return co_await result.await_via(executor, false);
+        }
 
-    auto thread_id_after = std::this_thread::get_id();
+       public:
+        result<void> operator()(std::shared_ptr<throwing_executor> executor) {
+            // result is ready + force_rescheduling = false + executor throws
+            // = inline execution, result is returned (executor doesn't have the chance to throw)
+            auto done_result = co_await proxy_task(executor).resolve();
 
-    assert_equal(thread_id_before, thread_id_after);
-    assert_false(static_cast<bool>(result));
-}
+            const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_not_ready_val(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
+            assert_equal(m_thread_0_id, thread_id_1);
+            test_ready_result_result(std::move(done_result));
+        }
+    };
 
-    executor->set_rp_value(std::move(rp));
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::value, true, true> {
+        result<void> operator()(std::shared_ptr<throwing_executor> executor) {
+            // result is ready + force_rescheduling = true + executor throws
+            // = inline execution, executor raw exception is thrown
+            auto result = result_factory<type>::make_ready();
 
-    proxy_coro coro(std::move(result), executor, true);
-    auto done_result = co_await coro().resolve();
+            const auto thread_id_0 = thread::get_current_virtual_id();
 
-    assert_false(static_cast<bool>(result));
-    assert_false(executor->scheduled_inline());
-    assert_true(executor->scheduled_async());
-    test_ready_result_result(std::move(done_result));
-}
+            try {
+                co_await result.await_via(executor, true);
+            } catch (const executor_enqueue_exception&) {
+                const auto thread_id_1 = thread::get_current_virtual_id();
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_not_ready_err(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
+                assert_false(static_cast<bool>(result));
+                assert_equal(thread_id_0, thread_id_1);
+                co_return;
+            } catch (...) {
+            }
 
-    const auto id = executor->set_rp_err(std::move(rp));
+            assert_false(true);
+        }
+    };
 
-    proxy_coro coro(std::move(result), executor, true);
-    auto done_result = co_await coro().resolve();
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::exception, false, false> {
 
-    assert_false(static_cast<bool>(result));
-    assert_true(executor->scheduled_async());
-    assert_false(executor->scheduled_inline());
-    test_ready_result_costume_exception(std::move(done_result), id);
-}
+       private:
+        uintptr_t m_thread_id_0 = 0;
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_not_ready_val_executor_threw(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
-    auto te = std::make_shared<throwing_executor>();
+        result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
+            auto result = make_exceptional_result<type>(costume_exception(id));
 
-    executor->set_rp_value(std::move(rp));
+            m_thread_id_0 = thread::get_current_virtual_id();
 
-    proxy_coro coro(std::move(result), te, true);
-    auto done_result = co_await coro().resolve();
+            co_return co_await result.await_via(executor, false);
+        }
 
-    assert_false(static_cast<bool>(result));
-    assert_true(executor->scheduled_inline());  // since te threw, execution is
-                                                // resumed in ex::m_setting_thread
-    test_executor_error_thrown(std::move(done_result), te);
-}
+       public:
+        result<void> operator()(std::shared_ptr<thread_executor> executor) {
+            // result is ready (exception) + force_rescheduling = false + executor doesn't throw
+            // = inline execution, asynchronous exception is thrown
+            const auto id = 1234567;
 
-template<class type>
-result<void> concurrencpp::tests::test_result_await_via_not_ready_err_executor_threw(std::shared_ptr<test_executor> executor) {
-    result_promise<type> rp;
-    auto result = rp.get_result();
+            auto done_result = co_await proxy_task(executor, id).resolve();
 
-    auto te = std::make_shared<throwing_executor>();
+            const auto thread_id_1 = thread::get_current_virtual_id();
 
-    const auto id = executor->set_rp_err(std::move(rp));
-    (void)id;
+            assert_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
+    };
 
-    proxy_coro coro(std::move(result), te, true);
-    auto done_result = co_await coro().resolve();
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::exception, true, false> {
 
-    assert_false(static_cast<bool>(result));
-    assert_true(executor->scheduled_inline());  // since te threw, execution is
-                                                // resumed in ex::m_setting_thread
-    test_executor_error_thrown(std::move(done_result), te);
-}
+       private:
+        uintptr_t m_thread_id_0 = 0;
+
+        result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
+            auto result = make_exceptional_result<type>(costume_exception(id));
+
+            m_thread_id_0 = thread::get_current_virtual_id();
+
+            co_return co_await result.await_via(executor, true);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<thread_executor> executor) {
+            // result is ready (exception) + force_rescheduling = true + executor doesn't throw
+            // = rescheduling, asynchronous exception is thrown
+            const auto id = 1234567;
+            auto done_result = co_await proxy_task(executor, id).resolve();
+
+            const auto thread_id_1 = thread::get_current_virtual_id();
+
+            assert_not_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
+    };
+
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::exception, false, true> {
+
+       private:
+        uintptr_t m_thread_id_0 = 0;
+
+        result<type> proxy_task(std::shared_ptr<throwing_executor> executor, const size_t id) {
+            auto result = make_exceptional_result<type>(costume_exception(id));
+
+            m_thread_id_0 = thread::get_current_virtual_id();
+
+            co_return co_await result.await_via(executor, false);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<throwing_executor> executor) {
+            // result is ready (exception) + force_rescheduling = false + executor throws
+            // = inline execution, asynchronous exception is thrown (executor doesn't have the chance to throw itself)
+
+            const auto id = 1234567;
+            auto done_result = co_await proxy_task(executor, id).resolve();
+
+            const auto thread_id_1 = thread::get_current_virtual_id();
+
+            assert_equal(m_thread_id_0, thread_id_1);
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
+    };
+
+    template<class type>
+    struct test_await_via_ready_result<type, result_status::exception, true, true> {
+        result<void> operator()(std::shared_ptr<throwing_executor> executor) {
+            // result is ready (exception) + force_rescheduling = true + executor throws
+            // = inline execution, executor raw exception is thrown
+            auto result = result_factory<type>::make_exceptional();
+
+            const auto thread_id_0 = thread::get_current_virtual_id();
+
+            try {
+                co_await result.await_via(executor, true);
+            } catch (const executor_enqueue_exception&) {
+                const auto thread_id_1 = thread::get_current_virtual_id();
+
+                assert_equal(thread_id_0, thread_id_1);
+                assert_false(static_cast<bool>(result));
+                co_return;
+            } catch (...) {
+            }
+
+            assert_false(true);
+        }
+    };
+
+    template<class type, result_status status, bool executor_throws>
+    struct test_await_via_not_ready_result {
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor);
+    };
+
+    template<class type>
+    struct test_await_via_not_ready_result<type, result_status::value, false> {
+        // result is not ready (completes with a value) + executor doesn't throw
+        // = rescheduling, result is returned
+
+       private:
+        uintptr_t m_launcher_thread_id = 0;
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<type> proxy_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            m_launcher_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+
+            auto result = manual_executor->submit([]() -> decltype(auto) {
+                return result_factory<type>::get();
+            });
+
+            co_return co_await result.await_via(thread_executor, true);
+        }
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            auto done_result = co_await proxy_task(manual_executor, thread_executor).resolve();
+
+            m_resuming_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+            test_ready_result_result(std::move(done_result));
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor, thread_executor);
+
+            co_await thread_executor->submit([this, manual_executor]() mutable {
+                m_setting_thread_id = thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_not_equal(m_launcher_thread_id, m_setting_thread_id);
+            assert_not_equal(m_launcher_thread_id, m_resuming_thread_id);
+            assert_not_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+    template<class type>
+    struct test_await_via_not_ready_result<type, result_status::value, true> {
+        // result is not ready (completes with a value) + executor throws
+        // = resumed inline in the setting thread, errors::executor_exception is thrown.
+
+       private:
+        uintptr_t m_launcher_thread_id = 0;
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<throwing_executor> throwing_executor) {
+            m_launcher_thread_id = thread::get_current_virtual_id();
+
+            auto result = manual_executor->submit([]() -> decltype(auto) {
+                return result_factory<type>::get();
+            });
+
+            try {
+                co_await result.await_via(throwing_executor, true);
+            } catch (const errors::executor_exception& ex) {
+                m_resuming_thread_id = thread::get_current_virtual_id();
+
+                assert_equal(ex.throwing_executor.get(), throwing_executor.get());
+
+                try {
+                    std::rethrow_exception(ex.thrown_exception);
+                } catch (const executor_enqueue_exception&) {
+                    co_return;
+                } catch (...) {
+                }
+            } catch (...) {
+            }
+
+            assert_false(true);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor,
+                                std::shared_ptr<throwing_executor> throwing_executor,
+                                std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor, throwing_executor);
+
+            co_await thread_executor->submit([this, manual_executor]() mutable {
+                m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_not_equal(m_launcher_thread_id, m_setting_thread_id);
+            assert_not_equal(m_launcher_thread_id, m_resuming_thread_id);
+            assert_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+    template<class type>
+    struct test_await_via_not_ready_result<type, result_status::exception, false> {
+        // result is not ready (completes with an exception) + executor doesn't throw
+        // = rescheduling, asynchronous exception is thrown
+
+       private:
+        uintptr_t m_launcher_thread_id = 0;
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<type> proxy_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor, const size_t id) {
+
+            m_launcher_thread_id = thread::get_current_virtual_id();
+
+            auto result = manual_executor->submit([id]() -> decltype(auto) {
+                throw costume_exception(id);
+                return result_factory<type>::get();
+            });
+
+            co_return co_await result.await_via(thread_executor, true);
+        }
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            const size_t id = 1234567;
+            auto done_result = co_await proxy_task(manual_executor, thread_executor, id).resolve();
+
+            m_resuming_thread_id = thread::get_current_virtual_id();
+            test_ready_result_costume_exception(std::move(done_result), id);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor, thread_executor);
+
+            co_await thread_executor->submit([this, manual_executor]() mutable {
+                m_setting_thread_id = thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_not_equal(m_launcher_thread_id, m_setting_thread_id);
+            assert_not_equal(m_launcher_thread_id, m_resuming_thread_id);
+            assert_not_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+    template<class type>
+    struct test_await_via_not_ready_result<type, result_status::exception, true> {
+        // result is not ready (completes with an exception) + executor throws
+        // = resumed inline in the setting thread, errors::executor_exception is thrown.
+
+       private:
+        uintptr_t m_launcher_thread_id = 0;
+        uintptr_t m_setting_thread_id = 0;
+        uintptr_t m_resuming_thread_id = 0;
+
+        result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<throwing_executor> throwing_executor) {
+            m_launcher_thread_id = thread::get_current_virtual_id();
+
+            auto result = manual_executor->submit([]() -> decltype(auto) {
+                return result_factory<type>::throw_ex();
+            });
+
+            try {
+                co_await result.await_via(throwing_executor, true);
+            } catch (const errors::executor_exception& ex) {
+                m_resuming_thread_id = thread::get_current_virtual_id();
+
+                assert_equal(ex.throwing_executor.get(), throwing_executor.get());
+
+                try {
+                    std::rethrow_exception(ex.thrown_exception);
+                } catch (const executor_enqueue_exception&) {
+                    co_return;
+                } catch (...) {
+                }
+            } catch (...) {
+            }
+
+            assert_false(true);
+        }
+
+       public:
+        result<void> operator()(std::shared_ptr<manual_executor> manual_executor,
+                                std::shared_ptr<throwing_executor> throwing_executor,
+                                std::shared_ptr<thread_executor> thread_executor) {
+            assert_true(manual_executor->empty());
+
+            auto result = inner_task(manual_executor, throwing_executor);
+
+            co_await thread_executor->submit([this, manual_executor]() mutable {
+                m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
+                assert_true(manual_executor->loop_once());
+            });
+
+            co_await result;
+
+            assert_not_equal(m_launcher_thread_id, m_setting_thread_id);
+            assert_not_equal(m_launcher_thread_id, m_resuming_thread_id);
+            assert_equal(m_setting_thread_id, m_resuming_thread_id);
+        }
+    };
+
+}  // namespace concurrencpp::tests
 
 template<class type>
 void concurrencpp::tests::test_result_await_via_impl() {
     // empty result throws
     assert_throws<concurrencpp::errors::empty_result>([] {
         result<type> result;
-        auto executor = make_test_executor();
-        result.await_via(executor);
+        auto executor = std::make_shared<inline_executor>();
+        result.resolve_via(executor);
     });
 
+    // null executor throws
     assert_throws_with_error_message<std::invalid_argument>(
         [] {
             auto result = result_factory<type>::make_ready();
-            result.await_via({}, true);
+            result.resolve_via({}, true);
         },
-        concurrencpp::details::consts::k_result_await_via_executor_null_error_msg);
+        concurrencpp::details::consts::k_result_resolve_via_executor_null_error_msg);
 
-    // if the result is ready by value, and force_rescheduling = false, resume in
-    // the calling thread
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_ready_val<type>(te).get();
-    }
+    auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
+    auto throwing_executor = std::make_shared<struct throwing_executor>();
+    auto manual_executor = std::make_shared<concurrencpp::manual_executor>();
 
-    // if the result is ready by exception, and force_rescheduling = false, resume
-    // in the calling thread
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_ready_err<type>(te).get();
-    }
+    executor_shutdowner es0(thread_executor), es1(throwing_executor), es2(manual_executor);
 
-    // if the result is ready by value, and force_rescheduling = true, forcefully
-    // resume execution through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_ready_val_force_rescheduling<type>(te).get();
-    }
+    test_await_via_ready_result<type, result_status::value, false, false>()(thread_executor).get();
+    test_await_via_ready_result<type, result_status::value, false, true>()(throwing_executor).get();
+    test_await_via_ready_result<type, result_status::value, true, false>()(thread_executor).get();
+    test_await_via_ready_result<type, result_status::value, true, true>()(throwing_executor).get();
 
-    // if the result is ready by exception, and force_rescheduling = true,
-    // forcefully resume execution through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_ready_err_force_rescheduling<type>(te).get();
-    }
+    test_await_via_ready_result<type, result_status::exception, false, false>()(thread_executor).get();
+    test_await_via_ready_result<type, result_status::exception, false, true>()(throwing_executor).get();
+    test_await_via_ready_result<type, result_status::exception, true, false>()(thread_executor).get();
+    test_await_via_ready_result<type, result_status::exception, true, true>()(throwing_executor).get();
 
-    // if execution is rescheduled by a throwing executor, reschdule inline and
-    // throw executor_exception
-    test_result_await_via_ready_val_force_rescheduling_executor_threw<type>().get();
+    test_await_via_not_ready_result<type, result_status::value, false>()(manual_executor, thread_executor).get();
+    test_await_via_not_ready_result<type, result_status::value, true>()(manual_executor, throwing_executor, thread_executor).get();
 
-    // if execution is rescheduled by a throwing executor, reschdule inline and
-    // throw executor_exception
-    test_result_await_via_ready_err_force_rescheduling_executor_threw<type>().get();
-
-    // if result is not ready - the execution resumes through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_not_ready_val<type>(te).get();
-    }
-
-    // if result is not ready - the execution resumes through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_not_ready_err<type>(te).get();
-    }
-
-    // if result is not ready - the execution resumes through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_not_ready_val_executor_threw<type>(te).get();
-    }
-
-    // if result is not ready - the execution resumes through the executor
-    {
-        auto te = make_test_executor();
-        executor_shutdowner es(te);
-        test_result_await_via_not_ready_err_executor_threw<type>(te).get();
-    }
+    test_await_via_not_ready_result<type, result_status::exception, false>()(manual_executor, thread_executor).get();
+    test_await_via_not_ready_result<type, result_status::exception, true>()(manual_executor, throwing_executor, thread_executor).get();
 }
 
 void concurrencpp::tests::test_result_await_via() {

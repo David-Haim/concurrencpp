@@ -39,6 +39,7 @@
 
 # Others
 .vs
+CMakeSettings.json
 
 # Specific directories
 build/
