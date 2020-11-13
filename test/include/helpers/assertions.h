@@ -59,7 +59,7 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
+        details::assert_not_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>

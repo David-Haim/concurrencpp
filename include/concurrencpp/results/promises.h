@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
-#include "concurrencpp/results/result_core.h"
+#include "concurrencpp/results/impl/result_state.h"
 
 #include "concurrencpp/errors.h"
 
@@ -141,10 +141,10 @@ namespace concurrencpp::details {
     struct result_coro_promise : public return_value_struct<result_coro_promise<type>, type> {
 
        private:
-        std::shared_ptr<result_core<type>> m_result_ptr;
+        std::shared_ptr<result_state<type>> m_result_ptr;
 
        public:
-        result_coro_promise() : m_result_ptr(std::make_shared<result_core<type>>()) {}
+        result_coro_promise() : m_result_ptr(std::make_shared<result_state<type>>()) {}
 
         ~result_coro_promise() noexcept {
             if (!static_cast<bool>(this->m_result_ptr)) {

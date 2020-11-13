@@ -43,8 +43,8 @@ namespace concurrencpp {
 
         void ensure_worker_thread(std::unique_lock<std::mutex>& lock);
 
-        void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept;
-        void remove_timer(timer_ptr existing_timer) noexcept;
+        void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer);
+        void remove_timer(timer_ptr existing_timer);
 
         template<class callable_type>
         timer_ptr make_timer_impl(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, bool is_oneshot, callable_type&& callable) {
@@ -53,12 +53,12 @@ namespace concurrencpp {
 
             using decayed_type = typename std::decay_t<callable_type>;
 
-            auto timer_core = std::make_shared<details::timer_state<decayed_type>>(due_time,
-                                                                                   frequency,
-                                                                                   std::move(executor),
-                                                                                   weak_from_this(),
-                                                                                   is_oneshot,
-                                                                                   std::forward<callable_type>(callable));
+            auto timer_state = std::make_shared<details::timer_state<decayed_type>>(due_time,
+                                                                                    frequency,
+                                                                                    std::move(executor),
+                                                                                    weak_from_this(),
+                                                                                    is_oneshot,
+                                                                                    std::forward<callable_type>(callable));
 
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
@@ -66,8 +66,8 @@ namespace concurrencpp {
             }
 
             ensure_worker_thread(lock);
-            add_timer(lock, timer_core);
-            return timer_core;
+            add_timer(lock, timer_state);
+            return timer_state;
         }
 
         void work_loop() noexcept;

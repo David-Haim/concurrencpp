@@ -144,7 +144,7 @@ timer_queue::~timer_queue() noexcept {
     assert(!m_worker.joinable());
 }
 
-void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept {
+void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
     assert(lock.owns_lock());
     m_request_queue.emplace_back(std::move(new_timer), timer_request::add);
     lock.unlock();
@@ -152,7 +152,7 @@ void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_ti
     m_condition.notify_one();
 }
 
-void timer_queue::remove_timer(timer_ptr existing_timer) noexcept {
+void timer_queue::remove_timer(timer_ptr existing_timer) {
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         m_request_queue.emplace_back(std::move(existing_timer), timer_request::remove);

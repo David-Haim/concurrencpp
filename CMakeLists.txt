@@ -22,8 +22,9 @@ set(concurrencpp_sources
         source/executors/thread_executor.cpp
         source/executors/thread_pool_executor.cpp
         source/executors/worker_thread_executor.cpp
+        source/results/impl/consumer_context.cpp
+        source/results/impl/result_state.cpp
         source/results/promises.cpp
-        source/results/result_core.cpp
         source/runtime/runtime.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
@@ -43,13 +44,15 @@ set(concurrencpp_headers
         include/concurrencpp/executors/thread_executor.h
         include/concurrencpp/executors/thread_pool_executor.h
         include/concurrencpp/executors/worker_thread_executor.h
+        include/concurrencpp/results/impl/consumer_context.h
+        include/concurrencpp/results/impl/producer_context.h
+        include/concurrencpp/results/impl/result_state.h
         include/concurrencpp/results/constants.h
         include/concurrencpp/results/executor_exception.h
         include/concurrencpp/results/make_result.h
         include/concurrencpp/results/promises.h
         include/concurrencpp/results/result.h
         include/concurrencpp/results/result_awaitable.h
-        include/concurrencpp/results/result_core.h
         include/concurrencpp/results/result_fwd_declerations.h
         include/concurrencpp/results/when_result.h
         include/concurrencpp/runtime/constants.h

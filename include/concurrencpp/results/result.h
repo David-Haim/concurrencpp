@@ -2,6 +2,7 @@
 #define CONCURRENCPP_RESULT_H
 
 #include "concurrencpp/results/constants.h"
+#include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/result_awaitable.h"
 
@@ -23,7 +24,7 @@ namespace concurrencpp {
         friend class details::when_result_helper;
 
        private:
-        std::shared_ptr<details::result_core<type>> m_state;
+        std::shared_ptr<details::result_state<type>> m_state;
 
         void throw_if_empty(const char* message) const {
             if (m_state.get() != nullptr) {
@@ -38,7 +39,7 @@ namespace concurrencpp {
         ~result() noexcept = default;
         result(result&& rhs) noexcept = default;
 
-        result(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
+        result(std::shared_ptr<details::result_state<type>> state) noexcept : m_state(std::move(state)) {}
 
         result& operator=(result&& rhs) noexcept {
             if (this != &rhs) {
@@ -121,7 +122,7 @@ namespace concurrencpp {
     class result_promise {
 
        private:
-        std::shared_ptr<details::result_core<type>> m_state;
+        std::shared_ptr<details::result_state<type>> m_state;
         bool m_result_retrieved;
 
         void throw_if_empty(const char* message) const {
@@ -147,7 +148,7 @@ namespace concurrencpp {
         }
 
        public:
-        result_promise() : m_state(std::make_shared<details::result_core<type>>()), m_result_retrieved(false) {}
+        result_promise() : m_state(std::make_shared<details::result_state<type>>()), m_result_retrieved(false) {}
 
         result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
 
@@ -194,7 +195,7 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class... argument_types>
-        void set_from_function(callable_type&& callable, argument_types&&... args) {
+        void set_from_function(callable_type&& callable, argument_types&&... args) noexcept {
             constexpr auto is_invokable = std::is_invocable_r_v<type, callable_type, argument_types...>;
 
             static_assert(is_invokable,
