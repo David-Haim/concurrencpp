@@ -276,7 +276,7 @@ namespace concurrencpp::tests {
 
             try {
                 co_await result.resolve_via(executor, true);
-            } catch (executor_enqueue_exception) {
+            } catch (const executor_enqueue_exception&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
                 assert_false(static_cast<bool>(result));
@@ -360,7 +360,7 @@ namespace concurrencpp::tests {
 
             try {
                 auto done_result = co_await result.resolve_via(executor, true);
-            } catch (executor_enqueue_exception) {
+            } catch (const executor_enqueue_exception&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
                 assert_equal(thread_id_0, thread_id_1);
@@ -439,12 +439,12 @@ namespace concurrencpp::tests {
 
             try {
                 auto done_result = co_await result.resolve_via(throwing_executor, true);
-            } catch (errors::executor_exception ex) {
+            } catch (const errors::executor_exception& ex) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
                 assert_equal(ex.throwing_executor.get(), throwing_executor.get());
                 try {
                     std::rethrow_exception(ex.thrown_exception);
-                } catch (executor_enqueue_exception) {
+                } catch (const executor_enqueue_exception&) {
                     co_return;
                 } catch (...) {
                 }
@@ -538,12 +538,12 @@ namespace concurrencpp::tests {
 
             try {
                 auto done_result = co_await result.resolve_via(throwing_executor, true);
-            } catch (errors::executor_exception ex) {
+            } catch (const errors::executor_exception& ex) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
                 assert_equal(ex.throwing_executor.get(), throwing_executor.get());
                 try {
                     std::rethrow_exception(ex.thrown_exception);
-                } catch (executor_enqueue_exception) {
+                } catch (const executor_enqueue_exception&) {
                     co_return;
                 } catch (...) {
                 }

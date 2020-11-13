@@ -573,7 +573,6 @@ namespace concurrencpp::tests {
         uintptr_t m_resuming_thread_id = 0;
 
         result<type> proxy_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor, const size_t id) {
-
             m_launcher_thread_id = thread::get_current_virtual_id();
 
             auto result = manual_executor->submit([id]() -> decltype(auto) {
