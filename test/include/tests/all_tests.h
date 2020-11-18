@@ -2,6 +2,8 @@
 #define CONCURRENCPP_ALL_TESTS_H
 
 namespace concurrencpp::tests {
+    void test_task();
+
     void test_inline_executor();
     void test_thread_pool_executor();
     void test_thread_executor();

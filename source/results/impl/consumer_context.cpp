@@ -1,46 +1,99 @@
 #include "concurrencpp/results/impl/consumer_context.h"
 
-#include "concurrencpp/results/executor_exception.h"
 #include "concurrencpp/executors/executor.h"
 
 using concurrencpp::details::await_context;
+using concurrencpp::details::await_via_context;
 using concurrencpp::details::wait_context;
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
+
+namespace concurrencpp::details {
+    class await_context_wrapper {
+
+       private:
+        await_context* m_await_context;
+
+       public:
+        await_context_wrapper(await_context* await_context) noexcept : m_await_context(await_context) {}
+
+        await_context_wrapper(await_context_wrapper&& rhs) noexcept : m_await_context(rhs.m_await_context) {
+            rhs.m_await_context = nullptr;
+        }
+
+        ~await_context_wrapper() noexcept {
+            if (m_await_context == nullptr) {
+                return;
+            }
+
+            m_await_context->set_interrupt(std::make_exception_ptr(errors::broken_task(consts::k_broken_task_exception_error_msg)));
+            (*m_await_context)();
+        }
+
+        void operator()() noexcept {
+            assert(m_await_context != nullptr);
+            auto await_context = std::exchange(m_await_context, nullptr);
+            (*await_context)();
+        }
+    };
+}  // namespace concurrencpp::details
 
 /*
  * await_context
  */
 
-await_context::await_context(std::shared_ptr<executor> executor) noexcept : m_executor(std::move(executor)) {}
-
 void await_context::set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept {
+    assert(!static_cast<bool>(m_handle));
+    assert(static_cast<bool>(coro_handle));
+    assert(!coro_handle.done());
     m_handle = coro_handle;
 }
 
-void await_context::operator()(bool capture_executor_exception) {
-    assert(static_cast<bool>(m_executor));
-    assert(static_cast<bool>(m_handle));
-    assert(static_cast<bool>(!m_handle.done()));
-
-    try {
-        m_executor->enqueue(m_handle);
-    } catch (...) {
-        if (!capture_executor_exception) {
-            throw;
-        }
-
-        m_executor_exception = std::current_exception();
-        m_handle();
-    }
+void await_context::set_interrupt(const std::exception_ptr& interrupt) {
+    assert(m_interrupt_exception == nullptr);
+    assert(static_cast<bool>(interrupt));
+    m_interrupt_exception = interrupt;
 }
 
-void await_context::throw_if_executor_threw() const {
-    if (!static_cast<bool>(m_executor_exception)) {
+void await_context::operator()() const noexcept {
+    assert(static_cast<bool>(m_handle));
+    assert(!m_handle.done());
+    m_handle();
+}
+
+void await_context::throw_if_interrupted() const {
+    if (m_interrupt_exception == nullptr) {
         return;
     }
 
-    throw concurrencpp::errors::executor_exception(m_executor_exception, m_executor);
+    std::rethrow_exception(m_interrupt_exception);
+}
+
+concurrencpp::task await_context::to_task() noexcept {
+    return concurrencpp::task {await_context_wrapper {this}};
+}
+
+/*
+ * await_via_context
+ */
+
+await_via_context::await_via_context(std::shared_ptr<executor> executor) noexcept : m_executor(std::move(executor)) {}
+
+void await_via_context::set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept {
+    m_await_context.set_coro_handle(coro_handle);
+}
+
+void await_via_context::operator()() noexcept {
+    try {
+        m_executor->enqueue(m_await_context.to_task());
+    } catch (...) {
+        // If an exception is thrown, the task destructor sets an interrupt exception
+        // on the await_context and resumes the coroutine, causing a broken_task exception to be thrown.
+        // this is why we don't let this exception propagate, as it wil cause the coroutine to be resumed twice (UB)
+    }
+}
+void await_via_context::throw_if_interrupted() const {
+    m_await_context.throw_if_interrupted();
 }
 
 /*
@@ -101,12 +154,12 @@ void consumer_context::clear() noexcept {
         }
 
         case consumer_status::await: {
-            storage::destroy(m_storage.coro_handle);
+            storage::destroy(m_storage.await_context);
             return;
         }
 
         case consumer_status::await_via: {
-            storage::destroy(m_storage.await_ctx);
+            storage::destroy(m_storage.await_via_ctx);
             return;
         }
 
@@ -129,16 +182,16 @@ void consumer_context::clear() noexcept {
     assert(false);
 }
 
-void consumer_context::set_await_context(std::experimental::coroutine_handle<> coro_handle) noexcept {
+void consumer_context::set_await_context(await_context* await_context) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::await;
-    storage::build(m_storage.coro_handle, coro_handle);
+    storage::build(m_storage.await_context, await_context);
 }
 
-void consumer_context::set_await_via_context(await_context* await_ctx) noexcept {
+void consumer_context::set_await_via_context(await_via_context* await_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::await_via;
-    storage::build(m_storage.await_ctx, await_ctx);
+    storage::build(m_storage.await_via_ctx, await_ctx);
 }
 
 void consumer_context::set_wait_context(std::shared_ptr<wait_context> wait_ctx) noexcept {
@@ -166,11 +219,11 @@ void consumer_context::operator()() noexcept {
         }
 
         case consumer_status::await: {
-            return m_storage.coro_handle();
+            return (*m_storage.await_context)();
         }
 
         case consumer_status::await_via: {
-            return (*m_storage.await_ctx)();
+            return (*m_storage.await_via_ctx)();
         }
 
         case consumer_status::wait: {

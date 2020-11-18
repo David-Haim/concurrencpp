@@ -10,13 +10,13 @@ thread_worker::~thread_worker() noexcept {
     m_thread.join();
 }
 
-void thread_worker::execute_and_retire(std::experimental::coroutine_handle<> task, typename std::list<thread_worker>::iterator self_it) {
+void thread_worker::execute_and_retire(task& task, std::list<thread_worker>::iterator self_it) {
     task();
     m_parent_pool.retire_worker(self_it);
 }
 
-void thread_worker::start(std::string worker_name, std::experimental::coroutine_handle<> task, std::list<thread_worker>::iterator self_it) {
-    m_thread = thread(std::move(worker_name), [this, task, self_it] {
+void thread_worker::start(std::string worker_name, task& task, std::list<thread_worker>::iterator self_it) {
+    m_thread = thread(std::move(worker_name), [this, self_it, task = std::move(task)]() mutable {
         execute_and_retire(task, self_it);
     });
 }
@@ -29,12 +29,12 @@ thread_executor::~thread_executor() noexcept {
     assert(m_last_retired.empty());
 }
 
-void thread_executor::enqueue_impl(std::experimental::coroutine_handle<> task) {
+void thread_executor::enqueue_impl(concurrencpp::task& task) {
     m_workers.emplace_front(*this);
     m_workers.front().start(details::make_executor_worker_name(name), task, m_workers.begin());
 }
 
-void thread_executor::enqueue(std::experimental::coroutine_handle<> task) {
+void thread_executor::enqueue(concurrencpp::task task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
@@ -43,13 +43,13 @@ void thread_executor::enqueue(std::experimental::coroutine_handle<> task) {
     enqueue_impl(task);
 }
 
-void thread_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
+void thread_executor::enqueue(std::span<concurrencpp::task> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
     }
 
-    for (auto task : tasks) {
+    for (auto& task : tasks) {
         enqueue_impl(task);
     }
 }
@@ -73,6 +73,7 @@ void thread_executor::shutdown() noexcept {
     m_condition.wait(lock, [this] {
         return m_workers.empty();
     });
+
     m_last_retired.clear();
 }
 

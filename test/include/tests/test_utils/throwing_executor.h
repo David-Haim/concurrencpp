@@ -9,11 +9,11 @@ namespace concurrencpp::tests {
     struct throwing_executor : public concurrencpp::executor {
         throwing_executor() : executor("throwing_executor") {}
 
-        void enqueue(std::experimental::coroutine_handle<>) override {
+        void enqueue(concurrencpp::task) override {
             throw executor_enqueue_exception();
         }
 
-        void enqueue(std::span<std::experimental::coroutine_handle<>>) override {
+        void enqueue(std::span<concurrencpp::task>) override {
             throw executor_enqueue_exception();
         }
 

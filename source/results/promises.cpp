@@ -9,5 +9,5 @@ void concurrencpp::details::initial_accumulating_awaiter::await_suspend(std::exp
     auto accumulator = std::exchange(per_thread_data.accumulator, nullptr);
 
     assert(accumulator != nullptr);
-    accumulator->push_back(handle);
+    accumulator->emplace_back(handle);
 }

@@ -142,7 +142,7 @@ namespace concurrencpp {
                 return;
             }
 
-            auto exception_ptr = std::make_exception_ptr(errors::broken_task("result_promise - broken task."));
+            auto exception_ptr = std::make_exception_ptr(errors::broken_task(details::consts::k_broken_task_exception_error_msg));
             m_state->set_exception(exception_ptr);
             m_state->publish_result();
         }

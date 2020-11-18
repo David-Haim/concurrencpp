@@ -269,14 +269,15 @@ namespace concurrencpp::tests {
     struct test_resolve_via_ready_result<type, result_status::value, true, true> {
         result<void> operator()(std::shared_ptr<throwing_executor> executor) {
             // result is ready + force_rescheduling = true + executor throws
-            // = inline execution, executor raw exception is thrown
+            // = inline execution, broken_task is thrown
             auto result = result_factory<type>::make_ready();
 
             const auto thread_id_0 = thread::get_current_virtual_id();
 
             try {
-                co_await result.resolve_via(executor, true);
-            } catch (const executor_enqueue_exception&) {
+                auto aw = result.resolve_via(executor, true);
+                co_await aw;
+            } catch (const errors::broken_task&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
                 assert_false(static_cast<bool>(result));
@@ -353,14 +354,14 @@ namespace concurrencpp::tests {
     struct test_resolve_via_ready_result<type, result_status::exception, true, true> {
         result<void> operator()(std::shared_ptr<throwing_executor> executor) {
             // result is ready (exception) + force_rescheduling = true + executor throws
-            // = inline execution, executor raw exception is thrown
+            // = inline execution, broken_task exception is thrown
             auto result = result_factory<type>::make_exceptional();
 
             const auto thread_id_0 = thread::get_current_virtual_id();
 
             try {
                 auto done_result = co_await result.resolve_via(executor, true);
-            } catch (const executor_enqueue_exception&) {
+            } catch (const errors::broken_task&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
                 assert_equal(thread_id_0, thread_id_1);
@@ -423,7 +424,7 @@ namespace concurrencpp::tests {
     template<class type>
     struct test_resolve_via_not_ready_result<type, result_status::value, true> {
         // result is not ready (completes with a value) + executor throws
-        // = resumed inline in the setting thread, errors::executor_exception is thrown.
+        // = resumed inline in the setting thread, errors::broken_task is thrown.
 
        private:
         uintptr_t m_launcher_thread_id = 0;
@@ -439,15 +440,9 @@ namespace concurrencpp::tests {
 
             try {
                 auto done_result = co_await result.resolve_via(throwing_executor, true);
-            } catch (const errors::executor_exception& ex) {
+            } catch (const errors::broken_task&) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
-                assert_equal(ex.throwing_executor.get(), throwing_executor.get());
-                try {
-                    std::rethrow_exception(ex.thrown_exception);
-                } catch (const executor_enqueue_exception&) {
-                    co_return;
-                } catch (...) {
-                }
+                co_return;
             } catch (...) {
             }
 
@@ -522,7 +517,7 @@ namespace concurrencpp::tests {
     template<class type>
     struct test_resolve_via_not_ready_result<type, result_status::exception, true> {
         // result is not ready (completes with an exception) + executor throws
-        // = resumed inline in the setting thread, errors::executor_exception is thrown.
+        // = resumed inline in the setting thread, errors::broken_task is thrown.
 
        private:
         uintptr_t m_launcher_thread_id = 0;
@@ -537,16 +532,10 @@ namespace concurrencpp::tests {
             });
 
             try {
-                auto done_result = co_await result.resolve_via(throwing_executor, true);
-            } catch (const errors::executor_exception& ex) {
+                co_await result.resolve_via(throwing_executor, true);
+            } catch (const errors::broken_task&) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
-                assert_equal(ex.throwing_executor.get(), throwing_executor.get());
-                try {
-                    std::rethrow_exception(ex.thrown_exception);
-                } catch (const executor_enqueue_exception&) {
-                    co_return;
-                } catch (...) {
-                }
+                co_return;
             } catch (...) {
             }
 

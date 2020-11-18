@@ -3,38 +3,27 @@
 
 using concurrencpp::manual_executor;
 
-void manual_executor::destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept {
-    assert(lock.owns_lock());
-    (void)lock;
-
-    for (auto task : m_tasks) {
-        task.destroy();
-    }
-
-    m_tasks.clear();
-}
-
 manual_executor::manual_executor() :
     derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {}
 
-void manual_executor::enqueue(std::experimental::coroutine_handle<> task) {
+void manual_executor::enqueue(concurrencpp::task task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
     }
 
-    m_tasks.emplace_back(task);
+    m_tasks.emplace_back(std::move(task));
     lock.unlock();
     m_condition.notify_all();
 }
 
-void manual_executor::enqueue(std::span<std::experimental::coroutine_handle<>> tasks) {
+void manual_executor::enqueue(std::span<concurrencpp::task> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
     }
 
-    m_tasks.insert(m_tasks.end(), tasks.begin(), tasks.end());
+    m_tasks.insert(m_tasks.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
     lock.unlock();
 
     m_condition.notify_all();
@@ -63,7 +52,7 @@ bool manual_executor::loop_once() {
         return false;
     }
 
-    auto task = m_tasks.front();
+    auto task = std::move(m_tasks.front());
     m_tasks.pop_front();
     lock.unlock();
 
@@ -85,7 +74,7 @@ bool manual_executor::loop_once(std::chrono::milliseconds max_waiting_time) {
         return false;
     }
 
-    auto task = m_tasks.front();
+    auto task = std::move(m_tasks.front());
     m_tasks.pop_front();
     lock.unlock();
 
@@ -108,11 +97,6 @@ size_t manual_executor::clear() noexcept {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     auto tasks = std::move(m_tasks);
     lock.unlock();
-
-    for (auto task : tasks) {
-        task.destroy();
-    }
-
     return tasks.size();
 }
 
@@ -152,11 +136,12 @@ void manual_executor::shutdown() noexcept {
         return;  // shutdown had been called before.
     }
 
+    decltype(m_tasks) tasks;
+
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         m_abort = true;
-
-        destroy_tasks(lock);
+        tasks = std::move(m_tasks);
     }
 
     m_condition.notify_all();

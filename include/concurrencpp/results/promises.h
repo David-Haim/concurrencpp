@@ -10,7 +10,7 @@
 namespace concurrencpp::details {
     struct coroutine_per_thread_data {
         executor* executor = nullptr;
-        std::vector<std::experimental::coroutine_handle<>>* accumulator = nullptr;
+        std::vector<task>* accumulator = nullptr;
 
         static thread_local coroutine_per_thread_data s_tl_per_thread_data;
     };
@@ -85,7 +85,7 @@ namespace concurrencpp::details {
         }
 
         template<class... argument_types>
-        static void* operator new(size_t size, executor_bulk_tag, std::vector<std::experimental::coroutine_handle<>>* accumulator, argument_types&&...) {
+        static void* operator new(size_t size, executor_bulk_tag, std::vector<concurrencpp::task>* accumulator, argument_types&&...) {
 
             assert(accumulator != nullptr);
             assert(coroutine_per_thread_data::s_tl_per_thread_data.accumulator == nullptr);
@@ -243,19 +243,13 @@ namespace std::experimental {
 
     // Bulk + no result
     template<class... arguments>
-    struct coroutine_traits<::concurrencpp::null_result,
-                            concurrencpp::details::executor_bulk_tag,
-                            std::vector<std::experimental::coroutine_handle<>>*,
-                            arguments...> {
+    struct coroutine_traits<::concurrencpp::null_result, concurrencpp::details::executor_bulk_tag, std::vector<concurrencpp::task>*, arguments...> {
         using promise_type = concurrencpp::details::bulk_null_result_promise;
     };
 
     // Bulk + result
     template<class type, class... arguments>
-    struct coroutine_traits<::concurrencpp::result<type>,
-                            concurrencpp::details::executor_bulk_tag,
-                            std::vector<std::experimental::coroutine_handle<>>*,
-                            arguments...> {
+    struct coroutine_traits<::concurrencpp::result<type>, concurrencpp::details::executor_bulk_tag, std::vector<concurrencpp::task>*, arguments...> {
         using promise_type = concurrencpp::details::bulk_result_promise<type>;
     };
 }  // namespace std::experimental

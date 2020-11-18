@@ -45,6 +45,9 @@ namespace concurrencpp::details::consts {
     inline const char* k_when_any_empty_result_error_msg = "concurrencpp::when_any() - one of the result objects is empty.";
 
     inline const char* k_when_any_empty_range_error_msg = "concurrencpp::when_any() - given range contains no elements.";
+
+    inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - Associated task was interrupted abnormally";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

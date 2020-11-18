@@ -1,31 +1,46 @@
 #ifndef CONCURRENCPP_CONSUMER_CONTEXT_H
 #define CONCURRENCPP_CONSUMER_CONTEXT_H
 
+#include "concurrencpp/task.h"
+#include "concurrencpp/forward_declerations.h"
+
 #include <mutex>
 #include <condition_variable>
 #include <experimental/coroutine>
-
-#include "concurrencpp/errors.h"
-
-#include "concurrencpp/results/executor_exception.h"
 
 namespace concurrencpp::details {
     class await_context {
 
        private:
-        std::shared_ptr<executor> m_executor;
         std::experimental::coroutine_handle<> m_handle;
-        std::exception_ptr m_executor_exception;
+        std::exception_ptr m_interrupt_exception;
 
        public:
-        await_context() noexcept = default;
-        await_context(std::shared_ptr<executor> executor) noexcept;
+        void set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept;
+        void set_interrupt(const std::exception_ptr& interrupt);
+
+        void operator()() const noexcept;
+
+        void throw_if_interrupted() const;
+
+        concurrencpp::task to_task() noexcept;
+    };
+
+    class await_via_context {
+
+       private:
+        await_context m_await_context;
+        std::shared_ptr<executor> m_executor;
+
+       public:
+        await_via_context() noexcept = default;
+        await_via_context(std::shared_ptr<executor> executor) noexcept;
 
         void set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept;
 
-        void operator()(bool capture_executor_exception = true);
+        void operator()() noexcept;
 
-        void throw_if_executor_threw() const;
+        void throw_if_interrupted() const;
     };
 
     class wait_context {
@@ -82,8 +97,8 @@ namespace concurrencpp::details {
 
         union storage {
             int idle;
-            std::experimental::coroutine_handle<> coro_handle;
-            await_context* await_ctx;
+            await_context* await_context;
+            await_via_context* await_via_ctx;
             std::shared_ptr<wait_context> wait_ctx;
             std::shared_ptr<when_all_state_base> when_all_state;
             when_any_context when_any_ctx;
@@ -112,9 +127,9 @@ namespace concurrencpp::details {
 
         void clear() noexcept;
 
-        void set_await_context(std::experimental::coroutine_handle<> coro_handle) noexcept;
+        void set_await_context(await_context* await_context) noexcept;
 
-        void set_await_via_context(await_context* await_ctx) noexcept;
+        void set_await_via_context(await_via_context* await_ctx) noexcept;
 
         void set_wait_context(std::shared_ptr<wait_context> wait_ctx) noexcept;
 

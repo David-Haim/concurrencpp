@@ -42,7 +42,12 @@ void worker_thread_task(std::shared_ptr<worker_thread_executor> (&executors)[16]
 
     const auto worker_pos = ::rand() % std::size(executors);
     auto& executor = executors[worker_pos];
-    executor->post(worker_thread_task, std::ref(executors), std::ref(counter), wc);
+
+    try {
+        executor->post(worker_thread_task, std::ref(executors), std::ref(counter), wc);
+    } catch (const concurrencpp::errors::executor_shutdown&) {
+        return;
+    }
 }
 
 void test_worker_thread_executor() {
@@ -75,7 +80,11 @@ void thread_pool_task(std::shared_ptr<thread_pool_executor> tpe, std::atomic_siz
         return;
     }
 
-    tpe->post(thread_pool_task, tpe, std::ref(counter), wc);
+    try {
+        tpe->post(thread_pool_task, tpe, std::ref(counter), wc);
+    } catch (const concurrencpp::errors::executor_shutdown&) {
+        return;
+    }
 }
 
 void test_thread_pool_executor() {
@@ -102,7 +111,11 @@ void thread_task(std::shared_ptr<thread_executor> tp, std::atomic_size_t& counte
         return;
     }
 
-    tp->post(thread_task, tp, std::ref(counter), wc);
+    try {
+        tp->post(thread_task, tp, std::ref(counter), wc);
+    } catch (const concurrencpp::errors::executor_shutdown&) {
+        return;
+    }
 }
 
 void test_thread_executor() {
@@ -119,20 +132,23 @@ void test_thread_executor() {
 }
 
 void manual_executor_work_loop(std::shared_ptr<manual_executor> (&executors)[16], std::atomic_size_t& counter, const size_t worker_index) {
+    try {
+        while (true) {
+            const auto c = counter.fetch_add(1, std::memory_order_relaxed);
 
-    while (true) {
-        const auto c = counter.fetch_add(1, std::memory_order_relaxed);
+            if (c >= 10'000'000) {
+                return;
+            }
 
-        if (c >= 10'000'000) {
-            return;
+            const auto worker_pos = ::rand() % std::size(executors);
+            auto& executor = executors[worker_pos];
+            executor->post([] {
+            });
+
+            executors[worker_index]->loop(16);
         }
-
-        const auto worker_pos = ::rand() % std::size(executors);
-        auto& executor = executors[worker_pos];
-        executor->post([] {
-        });
-
-        executors[worker_index]->loop(16);
+    } catch (const concurrencpp::errors::executor_shutdown&) {
+        return;
     }
 }
 

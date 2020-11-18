@@ -17,6 +17,7 @@ endif()
 # ---- Declare library ----
 
 set(concurrencpp_sources
+        source/task.cpp
         source/executors/executor.cpp
         source/executors/manual_executor.cpp
         source/executors/thread_executor.cpp
@@ -33,6 +34,7 @@ set(concurrencpp_sources
 set(concurrencpp_headers
         include/concurrencpp/concurrencpp.h
         include/concurrencpp/errors.h
+        include/concurrencpp/task.h
         include/concurrencpp/forward_declerations.h
         include/concurrencpp/platform_defs.h
         include/concurrencpp/executors/constants.h
@@ -48,7 +50,6 @@ set(concurrencpp_headers
         include/concurrencpp/results/impl/producer_context.h
         include/concurrencpp/results/impl/result_state.h
         include/concurrencpp/results/constants.h
-        include/concurrencpp/results/executor_exception.h
         include/concurrencpp/results/make_result.h
         include/concurrencpp/results/promises.h
         include/concurrencpp/results/result.h

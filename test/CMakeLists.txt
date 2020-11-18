@@ -50,9 +50,11 @@ set(test_sources
         source/tests/result_tests/result_tests.cpp
         source/tests/result_tests/when_all_tests.cpp
         source/tests/result_tests/when_any_tests.cpp
-        source/tests/runtime_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
-        source/tests/timer_tests/timer_tests.cpp)
+        source/tests/timer_tests/timer_tests.cpp
+        source/tests/runtime_tests.cpp
+        source/tests/task_tests.cpp
+        )
 
 set(test_headers
         include/helpers/assertions.h
