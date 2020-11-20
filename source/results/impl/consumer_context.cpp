@@ -55,7 +55,7 @@ void await_context::set_interrupt(const std::exception_ptr& interrupt) {
     m_interrupt_exception = interrupt;
 }
 
-void await_context::operator()() const noexcept {
+void await_context::operator()() noexcept {
     assert(static_cast<bool>(m_handle));
     assert(!m_handle.done());
     m_handle();

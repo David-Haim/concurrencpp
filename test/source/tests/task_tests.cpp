@@ -238,7 +238,7 @@ void concurrencpp::tests::test_task_constructor() {
     assert_false(move_only_functor.contains<test_functor<128>>());
     assert_false(move_only_functor.contains<decltype(big_lambda)>());
     assert_false(move_only_functor.contains<coroutine_handle>());
-    assert_false(move_only_functor.contains<functor_with_unique_ptr>());
+    assert_true(move_only_functor.contains<functor_with_unique_ptr>());
 }
 
 void concurrencpp::tests::test_task_move_constructor() {
@@ -353,7 +353,7 @@ void concurrencpp::tests::test_task_move_constructor() {
     assert_false(move_only_functor.contains<test_functor<128>>());
     assert_false(move_only_functor.contains<decltype(big_lambda)>());
     assert_false(move_only_functor.contains<coroutine_handle>());
-    assert_false(move_only_functor.contains<functor_with_unique_ptr>());
+    assert_true(move_only_functor.contains<functor_with_unique_ptr>());
 }
 
 void concurrencpp::tests::test_task_destructor() {

@@ -19,7 +19,7 @@ namespace concurrencpp::details {
         void set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept;
         void set_interrupt(const std::exception_ptr& interrupt);
 
-        void operator()() const noexcept;
+        void operator()() noexcept;
 
         void throw_if_interrupted() const;
 

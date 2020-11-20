@@ -15,7 +15,6 @@ namespace concurrencpp::tests {
 
     void test_worker_thread_executor_shutdown_method_access();
     void test_worker_thread_executor_shutdown_thread_join();
-    void test_worker_thread_executor_shutdown_coro_raii();
     void test_worker_thread_executor_shutdown_coro_more_than_once();
     void test_worker_thread_executor_shutdown();
 
@@ -76,37 +75,6 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_thread_join() {
     assert_true(executor->shutdown_requested());
 }
 
-void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_raii() {
-    object_observer observer;
-    const size_t task_count = 1'024;
-    auto executor = std::make_shared<worker_thread_executor>();
-
-    std::vector<value_testing_stub> stubs;
-    stubs.reserve(task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        stubs.emplace_back(observer.get_testing_stub(i));
-    }
-
-    executor->post([] {
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    });
-
-    auto results = executor->bulk_submit<value_testing_stub>(stubs);
-
-    executor->shutdown();
-    assert_true(executor->shutdown_requested());
-
-    assert_equal(observer.get_execution_count(), size_t(0));
-    assert_equal(observer.get_destruction_count(), task_count);
-
-    for (auto& result : results) {
-        assert_throws<concurrencpp::errors::broken_task>([&result] {
-            result.get();
-        });
-    }
-}
-
 void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_more_than_once() {
     const size_t task_count = 64;
     auto executor = std::make_shared<worker_thread_executor>();
@@ -124,7 +92,6 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_more_than_on
 
 void concurrencpp::tests::test_worker_thread_executor_shutdown() {
     test_worker_thread_executor_shutdown_method_access();
-    test_worker_thread_executor_shutdown_coro_raii();
     test_worker_thread_executor_shutdown_thread_join();
     test_worker_thread_executor_shutdown_coro_more_than_once();
 }
