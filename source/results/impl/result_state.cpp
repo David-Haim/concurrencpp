@@ -1,6 +1,6 @@
 #include "concurrencpp/results/impl/result_state.h"
 
-using concurrencpp::details::await_context;
+using concurrencpp::details::await_via_context;
 using concurrencpp::details::result_state_base;
 
 void result_state_base::assert_done() const noexcept {
@@ -28,13 +28,13 @@ void result_state_base::wait() {
     assert_done();
 }
 
-bool result_state_base::await(std::experimental::coroutine_handle<> caller_handle) noexcept {
+bool result_state_base::await(await_context& await_ctx) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer) {
         return false;  // don't suspend
     }
 
-    m_consumer.set_await_context(caller_handle);
+    m_consumer.set_await_context(&await_ctx);
 
     auto expected_state = pc_state::idle;
     const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer, std::memory_order_acq_rel);
@@ -46,21 +46,21 @@ bool result_state_base::await(std::experimental::coroutine_handle<> caller_handl
     return idle;  // if idle = true, suspend
 }
 
-bool result_state_base::await_via(await_context& await_ctx, bool force_rescheduling) {
-    auto handle_done_state = [this](await_context& await_ctx, bool force_rescheduling) -> bool {
-        assert_done();
+bool result_state_base::await_via_ready(await_via_context& await_ctx, bool force_rescheduling) noexcept {
+    assert_done();
 
-        if (!force_rescheduling) {
-            return false;  // resume caller.
-        }
+    if (!force_rescheduling) {
+        return false;  // resume caller.
+    }
 
-        await_ctx(false);
-        return true;
-    };
+    await_ctx();
+    return true;
+}
 
+bool result_state_base::await_via(await_via_context& await_ctx, bool force_rescheduling) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer) {
-        return handle_done_state(await_ctx, force_rescheduling);
+        return await_via_ready(await_ctx, force_rescheduling);
     }
 
     m_consumer.set_await_via_context(&await_ctx);
@@ -73,7 +73,7 @@ bool result_state_base::await_via(await_context& await_ctx, bool force_reschedul
     }
 
     // the result is available
-    return handle_done_state(await_ctx, force_rescheduling);
+    return await_via_ready(await_ctx, force_rescheduling);
 }
 
 void result_state_base::when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept {

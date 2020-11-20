@@ -2,7 +2,6 @@
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
 #include "concurrencpp/executors/derivable_executor.h"
-#include "concurrencpp/executors/constants.h"
 
 #include <deque>
 
@@ -11,18 +10,16 @@ namespace concurrencpp {
 
        private:
         mutable std::mutex m_lock;
-        std::deque<std::experimental::coroutine_handle<>> m_tasks;
+        std::deque<task> m_tasks;
         std::condition_variable m_condition;
         bool m_abort;
         std::atomic_bool m_atomic_abort;
 
-        void destroy_tasks(std::unique_lock<std::mutex>& lock) noexcept;
-
        public:
         manual_executor();
 
-        void enqueue(std::experimental::coroutine_handle<> task) override;
-        void enqueue(std::span<std::experimental::coroutine_handle<>> tasks) override;
+        void enqueue(task task) override;
+        void enqueue(std::span<task> tasks) override;
 
         int max_concurrency_level() const noexcept override;
 

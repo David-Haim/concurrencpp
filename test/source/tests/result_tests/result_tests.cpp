@@ -210,7 +210,7 @@ void concurrencpp::tests::test_result_wait_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(250);
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
@@ -233,7 +233,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         result_promise<type> rp;
         auto result = rp.get_result();
         const auto id = randomizer();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(250);
 
         std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
@@ -244,7 +244,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         const auto now = high_resolution_clock::now();
 
         assert_bigger_equal(now, unblocking_time);
-        assert_smaller(now, unblocking_time + seconds(2));
+        assert_smaller(now, unblocking_time + milliseconds(500));
 
         test_ready_result_costume_exception(std::move(result), id);
         thread.join();
@@ -287,7 +287,7 @@ void concurrencpp::tests::test_result_wait_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(100);
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
@@ -360,19 +360,19 @@ void concurrencpp::tests::test_result_wait_for_impl() {
         auto result = rp.get_result();
 
         const auto before = high_resolution_clock::now();
-        const auto status = result.wait_for(milliseconds(500));
+        const auto status = result.wait_for(milliseconds(75));
         const auto after = high_resolution_clock::now();
         const auto time = duration_cast<milliseconds>(after - before);
 
         assert_equal(status, result_status::idle);
-        assert_bigger_equal(time, milliseconds(500));
+        assert_bigger_equal(time, milliseconds(75));
     }
 
     // if result is set before timeout, unblock, and return status::value
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(250);
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
@@ -394,7 +394,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
         result_promise<type> rp;
         auto result = rp.get_result();
         const auto id = randomizer();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(250);
 
         std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable {
             std::this_thread::sleep_until(unblocking_time);
@@ -415,7 +415,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        const auto unblocking_time = high_resolution_clock::now() + seconds(1);
+        const auto unblocking_time = high_resolution_clock::now() + milliseconds(100);
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);

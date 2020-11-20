@@ -53,12 +53,12 @@ void concurrencpp::tests::test_inline_executor_shutdown() {
     executor->shutdown();
 
     assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
-        executor->enqueue(std::experimental::coroutine_handle {});
+        executor->enqueue(concurrencpp::task {});
     });
 
     assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
-        std::experimental::coroutine_handle<> array[4];
-        std::span<std::experimental::coroutine_handle<>> span = array;
+        concurrencpp::task array[4];
+        std::span<concurrencpp::task> span = array;
         executor->enqueue(span);
     });
 }
@@ -189,7 +189,8 @@ void concurrencpp::tests::test_inline_executor_bulk_post_foreign() {
         stubs.emplace_back(observer.get_testing_stub());
     }
 
-    executor->bulk_post<testing_stub>(stubs);
+    std::span<testing_stub> span = stubs;
+    executor->bulk_post<testing_stub>(span);
 
     assert_equal(observer.get_execution_count(), task_count);
     assert_equal(observer.get_destruction_count(), task_count);

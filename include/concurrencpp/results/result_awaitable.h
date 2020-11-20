@@ -8,6 +8,7 @@ namespace concurrencpp {
     class awaitable : public std::experimental::suspend_always {
 
        private:
+        details::await_context m_await_ctx;
         std::shared_ptr<details::result_state<type>> m_state;
 
        public:
@@ -18,11 +19,13 @@ namespace concurrencpp {
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) noexcept {
             assert(static_cast<bool>(m_state));
-            return m_state->await(caller_handle);
+            m_await_ctx.set_coro_handle(caller_handle);
+            return m_state->await(m_await_ctx);
         }
 
         type await_resume() {
             auto state = std::move(m_state);
+            m_await_ctx.throw_if_interrupted();
             return state->get();
         }
     };
@@ -31,7 +34,7 @@ namespace concurrencpp {
     class via_awaitable : public std::experimental::suspend_always {
 
        private:
-        details::await_context m_await_context;
+        details::await_via_context m_await_context;
         std::shared_ptr<details::result_state<type>> m_state;
         const bool m_force_rescheduling;
 
@@ -51,7 +54,7 @@ namespace concurrencpp {
 
         type await_resume() {
             auto state = std::move(m_state);
-            m_await_context.throw_if_executor_threw();
+            m_await_context.throw_if_interrupted();
             return state->get();
         }
     };
@@ -60,6 +63,7 @@ namespace concurrencpp {
     class resolve_awaitable final : public std::experimental::suspend_always {
 
        private:
+        details::await_context m_await_ctx;
         std::shared_ptr<details::result_state<type>> m_state;
 
        public:
@@ -70,11 +74,14 @@ namespace concurrencpp {
 
         bool await_suspend(std::experimental::coroutine_handle<> caller_handle) noexcept {
             assert(static_cast<bool>(m_state));
-            return m_state->await(caller_handle);
+            m_await_ctx.set_coro_handle(caller_handle);
+            return m_state->await(m_await_ctx);
         }
 
         result<type> await_resume() {
-            return result<type>(std::move(m_state));
+            auto state = std::move(m_state);
+            m_await_ctx.throw_if_interrupted();
+            return result<type>(std::move(state));
         }
     };
 
@@ -82,7 +89,7 @@ namespace concurrencpp {
     class resolve_via_awaitable final : public std::experimental::suspend_always {
 
        private:
-        details::await_context m_await_context;
+        details::await_via_context m_await_context;
         std::shared_ptr<details::result_state<type>> m_state;
         const bool m_force_rescheduling;
 
@@ -104,7 +111,7 @@ namespace concurrencpp {
 
         result<type> await_resume() {
             auto state = std::move(m_state);
-            m_await_context.throw_if_executor_threw();
+            m_await_context.throw_if_interrupted();
             return result<type>(std::move(state));
         }
     };

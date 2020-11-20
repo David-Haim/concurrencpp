@@ -63,12 +63,12 @@ namespace concurrencpp::tests {
        public:
         counter_executor() : executor("timer_counter_executor"), m_invocation_count(0) {}
 
-        void enqueue(std::experimental::coroutine_handle<> task) override {
+        void enqueue(concurrencpp::task task) override {
             ++m_invocation_count;
             task();
         }
 
-        void enqueue(std::span<std::experimental::coroutine_handle<>>) override {
+        void enqueue(std::span<concurrencpp::task>) override {
             // do nothing
         }
 
@@ -101,7 +101,7 @@ namespace concurrencpp::tests {
             m_time_points.reserve(64);
         };
 
-        virtual void enqueue(std::experimental::coroutine_handle<> task) override {
+        virtual void enqueue(concurrencpp::task task) override {
             {
                 std::unique_lock<std::mutex> lock(m_lock);
                 m_time_points.emplace_back(std::chrono::high_resolution_clock::now());
@@ -110,7 +110,7 @@ namespace concurrencpp::tests {
             task();
         }
 
-        virtual void enqueue(std::span<std::experimental::coroutine_handle<>>) override {
+        virtual void enqueue(std::span<concurrencpp::task>) override {
             // do nothing
         }
 

@@ -15,6 +15,9 @@ namespace concurrencpp::details {
        public:
         enum class pc_state { idle, producer, consumer };
 
+       private:
+        bool await_via_ready(await_via_context& await_ctx, bool force_rescheduling) noexcept;
+
        protected:
         std::atomic<pc_state> m_pc_state;
         consumer_context m_consumer;
@@ -24,9 +27,9 @@ namespace concurrencpp::details {
        public:
         void wait();
 
-        bool await(std::experimental::coroutine_handle<> caller_handle) noexcept;
+        bool await(await_context& await_ctx) noexcept;
 
-        bool await_via(await_context& await_ctx, bool force_rescheduling);
+        bool await_via(await_via_context& await_ctx, bool force_rescheduling) noexcept;
 
         void when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept;
 

@@ -3,12 +3,9 @@
 
 #include "concurrencpp/executors/derivable_executor.h"
 
-#include <mutex>
-#include <atomic>
-#include <vector>
 #include <deque>
+#include <mutex>
 #include <condition_variable>
-#include <experimental/coroutine>
 
 #include "../threads/thread.h"
 
@@ -51,7 +48,7 @@ namespace concurrencpp::details {
         enum class status { working, waiting, idle };
 
        private:
-        std::deque<std::experimental::coroutine_handle<>> m_private_queue;
+        std::deque<concurrencpp::task> m_private_queue;
         std::vector<size_t> m_idle_worker_list;
         std::atomic_bool m_atomic_abort;
         thread_pool_executor& m_parent_pool;
@@ -62,7 +59,7 @@ namespace concurrencpp::details {
         const char m_padding[64] = {};
         std::mutex m_lock;
         status m_status;
-        std::deque<std::experimental::coroutine_handle<>> m_public_queue;
+        std::deque<concurrencpp::task> m_public_queue;
         thread m_thread;
         std::condition_variable m_condition;
         bool m_abort;
@@ -75,7 +72,6 @@ namespace concurrencpp::details {
 
         void work_loop() noexcept;
 
-        void destroy_tasks() noexcept;
         void ensure_worker_active(std::unique_lock<std::mutex>& lock);
 
        public:
@@ -84,14 +80,13 @@ namespace concurrencpp::details {
         thread_pool_worker(thread_pool_worker&& rhs) noexcept;
         ~thread_pool_worker() noexcept;
 
-        void enqueue_foreign(std::experimental::coroutine_handle<> task);
-        void enqueue_foreign(std::span<std::experimental::coroutine_handle<>> tasks);
+        void enqueue_foreign(concurrencpp::task& task);
+        void enqueue_foreign(std::span<concurrencpp::task> tasks);
 
-        void enqueue_local(std::experimental::coroutine_handle<> task);
-        void enqueue_local(std::span<std::experimental::coroutine_handle<>> tasks);
+        void enqueue_local(concurrencpp::task& task);
+        void enqueue_local(std::span<concurrencpp::task> tasks);
 
-        void abort() noexcept;
-        void join() noexcept;
+        void shutdown() noexcept;
     };
 }  // namespace concurrencpp::details
 
@@ -114,16 +109,13 @@ namespace concurrencpp {
 
         void find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept;
 
-        details::thread_pool_worker& worker_at(size_t index) noexcept {
-            return m_workers[index];
-        }
+        details::thread_pool_worker& worker_at(size_t index) noexcept;
 
        public:
         thread_pool_executor(std::string_view name, size_t size, std::chrono::seconds max_idle_time);
-        ~thread_pool_executor() noexcept;
 
-        void enqueue(std::experimental::coroutine_handle<> task) override;
-        void enqueue(std::span<std::experimental::coroutine_handle<>> tasks) override;
+        void enqueue(task task) override;
+        void enqueue(std::span<task> tasks) override;
 
         int max_concurrency_level() const noexcept override;
 

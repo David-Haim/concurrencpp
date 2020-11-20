@@ -50,15 +50,16 @@ set(test_sources
         source/tests/result_tests/result_tests.cpp
         source/tests/result_tests/when_all_tests.cpp
         source/tests/result_tests/when_any_tests.cpp
-        source/tests/runtime_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
-        source/tests/timer_tests/timer_tests.cpp)
+        source/tests/timer_tests/timer_tests.cpp
+        source/tests/runtime_tests.cpp
+        source/tests/task_tests.cpp
+        )
 
 set(test_headers
         include/helpers/assertions.h
         include/helpers/object_observer.h
         include/helpers/random.h
-        include/helpers/thread_helpers.h
         include/tester/tester.h
         include/tests/all_tests.h
         include/tests/executor_tests/executor_test_helpers.h

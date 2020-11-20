@@ -18,7 +18,7 @@ namespace concurrencpp::details {
 
         template<class callable_type>
         thread(std::string name, callable_type&& callable) {
-            m_thread = std::thread([name = std::move(name), callable = std::forward<callable_type>(callable)] {
+            m_thread = std::thread([name = std::move(name), callable = std::forward<callable_type>(callable)]() mutable {
                 set_name(name);
                 callable();
             });
