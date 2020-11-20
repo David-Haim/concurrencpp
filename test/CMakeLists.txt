@@ -60,7 +60,6 @@ set(test_headers
         include/helpers/assertions.h
         include/helpers/object_observer.h
         include/helpers/random.h
-        include/helpers/thread_helpers.h
         include/tester/tester.h
         include/tests/all_tests.h
         include/tests/executor_tests/executor_test_helpers.h
