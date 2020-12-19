@@ -9,39 +9,19 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace concurrencpp::details {
-    class thread_worker {
-
-       private:
-        thread m_thread;
-        thread_executor& m_parent_pool;
-
-        void execute_and_retire(task& task, std::list<thread_worker>::iterator self_it);
-
-       public:
-        thread_worker(thread_executor& parent_pool) noexcept;
-        ~thread_worker() noexcept;
-
-        void start(const std::string worker_name, task& task, std::list<thread_worker>::iterator self_it);
-    };
-}  // namespace concurrencpp::details
-
 namespace concurrencpp {
     class alignas(64) thread_executor final : public derivable_executor<thread_executor> {
 
-        friend class ::concurrencpp::details::thread_worker;
-
        private:
         std::mutex m_lock;
-        std::list<details::thread_worker> m_workers;
+        std::list<details::thread> m_workers;
         std::condition_variable m_condition;
-        std::list<details::thread_worker> m_last_retired;
+        std::list<details::thread> m_last_retired;
         bool m_abort;
         std::atomic_bool m_atomic_abort;
 
-        void enqueue_impl(task& task);
-
-        void retire_worker(std::list<details::thread_worker>::iterator it);
+        void enqueue_impl(std::unique_lock<std::mutex>& lock, task& task);
+        void retire_worker(std::list<details::thread>::iterator it);
 
        public:
         thread_executor();

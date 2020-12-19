@@ -1,11 +1,11 @@
 #ifndef CONCURRENCPP_TIMER_H
 #define CONCURRENCPP_TIMER_H
 
+#include "concurrencpp/forward_declerations.h"
+
 #include <atomic>
 #include <memory>
 #include <chrono>
-
-#include "concurrencpp/forward_declerations.h"
 
 namespace concurrencpp::details {
     class timer_state_base : public std::enable_shared_from_this<timer_state_base> {
@@ -21,6 +21,7 @@ namespace concurrencpp::details {
         const size_t m_due_time;
         std::atomic_size_t m_frequency;
         time_point m_deadline;  // set by the c.tor, changed only by the timer_queue thread.
+        std::atomic_bool m_cancelled;
         const bool m_is_oneshot;
 
         static time_point make_deadline(milliseconds diff) noexcept {
@@ -71,6 +72,14 @@ namespace concurrencpp::details {
         void set_new_frequency(size_t new_frequency) noexcept {
             m_frequency.store(new_frequency, std::memory_order_relaxed);
         }
+
+        void cancel() noexcept {
+            m_cancelled.store(true, std::memory_order_relaxed);
+        }
+
+        bool cancelled() const noexcept {
+            return m_cancelled.load(std::memory_order_relaxed);
+        }
     };
 
     template<class callable_type>
@@ -91,6 +100,10 @@ namespace concurrencpp::details {
             m_callable(std::forward<given_callable_type>(callable)) {}
 
         void execute() override {
+            if (cancelled()) {
+                return;
+            }
+
             m_callable();
         }
     };

@@ -3,20 +3,20 @@
 
 #include "concurrencpp/task.h"
 #include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/coroutines/coroutine.h"
 
 #include <mutex>
 #include <condition_variable>
-#include <experimental/coroutine>
 
 namespace concurrencpp::details {
     class await_context {
 
        private:
-        std::experimental::coroutine_handle<> m_handle;
+        details::coroutine_handle<void> m_handle;
         std::exception_ptr m_interrupt_exception;
 
        public:
-        void set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept;
+        void set_coro_handle(details::coroutine_handle<void> coro_handle) noexcept;
         void set_interrupt(const std::exception_ptr& interrupt);
 
         void operator()() noexcept;
@@ -36,7 +36,7 @@ namespace concurrencpp::details {
         await_via_context() noexcept = default;
         await_via_context(std::shared_ptr<executor> executor) noexcept;
 
-        void set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept;
+        void set_coro_handle(details::coroutine_handle<void> coro_handle) noexcept;
 
         void operator()() noexcept;
 

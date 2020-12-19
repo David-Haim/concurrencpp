@@ -1,21 +1,17 @@
 #include "concurrencpp/concurrencpp.h"
-
 #include "tests/all_tests.h"
-
-#include "tests/test_utils/executor_shutdowner.h"
 
 #include "tester/tester.h"
 #include "helpers/assertions.h"
 #include "helpers/object_observer.h"
-
-#include "concurrencpp/executors/constants.h"
+#include "tests/test_utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
     void test_worker_thread_executor_name();
 
     void test_worker_thread_executor_shutdown_method_access();
     void test_worker_thread_executor_shutdown_thread_join();
-    void test_worker_thread_executor_shutdown_coro_more_than_once();
+    void test_worker_thread_executor_shutdown_more_than_once();
     void test_worker_thread_executor_shutdown();
 
     void test_worker_thread_executor_max_concurrency_level();
@@ -35,6 +31,11 @@ namespace concurrencpp::tests {
     void test_worker_thread_executor_bulk_submit_foreign();
     void test_worker_thread_executor_bulk_submit_inline();
     void test_worker_thread_executor_bulk_submit();
+
+    void assert_unique_execution_thread(const std::unordered_map<size_t, size_t>& execution_map) {
+        assert_equal(execution_map.size(), 1);
+        assert_not_equal(execution_map.begin()->first, concurrencpp::details::thread::get_current_virtual_id());
+    }
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;
@@ -65,26 +66,24 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_method_access() {
 }
 
 void concurrencpp::tests::test_worker_thread_executor_shutdown_thread_join() {
+    object_observer observer;
     auto executor = std::make_shared<worker_thread_executor>();
 
-    executor->post([] {
+    executor->post([stub = observer.get_testing_stub()]() mutable {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stub();
     });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
     executor->shutdown();
     assert_true(executor->shutdown_requested());
+    assert_equal(observer.get_execution_count(), static_cast<size_t>(1));
+    assert_equal(observer.get_destruction_count(), static_cast<size_t>(1));
 }
 
-void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_more_than_once() {
-    const size_t task_count = 64;
+void concurrencpp::tests::test_worker_thread_executor_shutdown_more_than_once() {
     auto executor = std::make_shared<worker_thread_executor>();
-
-    for (size_t i = 0; i < task_count; i++) {
-        executor->post([] {
-            std::this_thread::sleep_for(std::chrono::milliseconds(18));
-        });
-    }
-
     for (size_t i = 0; i < 4; i++) {
         executor->shutdown();
     }
@@ -93,7 +92,7 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_coro_more_than_on
 void concurrencpp::tests::test_worker_thread_executor_shutdown() {
     test_worker_thread_executor_shutdown_method_access();
     test_worker_thread_executor_shutdown_thread_join();
-    test_worker_thread_executor_shutdown_coro_more_than_once();
+    test_worker_thread_executor_shutdown_more_than_once();
 }
 
 void concurrencpp::tests::test_worker_thread_executor_max_concurrency_level() {
@@ -115,11 +114,7 @@ void concurrencpp::tests::test_worker_thread_executor_post_foreign() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 }
 
 void concurrencpp::tests::test_worker_thread_executor_post_inline() {
@@ -136,11 +131,7 @@ void concurrencpp::tests::test_worker_thread_executor_post_inline() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 }
 
 void concurrencpp::tests::test_worker_thread_executor_post() {
@@ -163,11 +154,7 @@ void concurrencpp::tests::test_worker_thread_executor_submit_foreign() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
@@ -192,15 +179,11 @@ void concurrencpp::tests::test_worker_thread_executor_submit_inline() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 
     auto results = results_res.get();
     for (size_t i = 0; i < task_count; i++) {
-        assert_equal(results[i].get(), size_t(i));
+        assert_equal(results[i].get(), i);
     }
 }
 
@@ -226,11 +209,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_post_foreign() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_post_inline() {
@@ -252,11 +231,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_post_inline() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_post() {
@@ -281,11 +256,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit_foreign() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
@@ -311,11 +282,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit_inline() {
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    const auto& execution_map = observer.get_execution_map();
-
-    assert_equal(execution_map.size(), size_t(1));
-    assert_not_equal(execution_map.begin()->first, thread::get_current_virtual_id());
+    assert_unique_execution_thread(observer.get_execution_map());
 
     auto results = results_res.get();
     for (size_t i = 0; i < task_count; i++) {

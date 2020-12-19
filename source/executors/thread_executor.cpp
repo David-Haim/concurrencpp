@@ -2,24 +2,6 @@
 #include "concurrencpp/executors/constants.h"
 
 using concurrencpp::thread_executor;
-using concurrencpp::details::thread_worker;
-
-thread_worker::thread_worker(thread_executor& parent_pool) noexcept : m_parent_pool(parent_pool) {}
-
-thread_worker::~thread_worker() noexcept {
-    m_thread.join();
-}
-
-void thread_worker::execute_and_retire(task& task, std::list<thread_worker>::iterator self_it) {
-    task();
-    m_parent_pool.retire_worker(self_it);
-}
-
-void thread_worker::start(std::string worker_name, task& task, std::list<thread_worker>::iterator self_it) {
-    m_thread = thread(std::move(worker_name), [this, self_it, task = std::move(task)]() mutable {
-        execute_and_retire(task, self_it);
-    });
-}
 
 thread_executor::thread_executor() :
     derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name), m_abort(false), m_atomic_abort(false) {}
@@ -29,9 +11,13 @@ thread_executor::~thread_executor() noexcept {
     assert(m_last_retired.empty());
 }
 
-void thread_executor::enqueue_impl(concurrencpp::task& task) {
-    m_workers.emplace_front(*this);
-    m_workers.front().start(details::make_executor_worker_name(name), task, m_workers.begin());
+void thread_executor::enqueue_impl(std::unique_lock<std::mutex>& lock, concurrencpp::task& task) {
+    assert(lock.owns_lock());
+    auto& new_thread = m_workers.emplace_front();
+    new_thread = details::thread(details::make_executor_worker_name(name), [this, self_it = m_workers.begin(), task = std::move(task)]() mutable {
+        task();
+        retire_worker(self_it);
+    });
 }
 
 void thread_executor::enqueue(concurrencpp::task task) {
@@ -40,7 +26,7 @@ void thread_executor::enqueue(concurrencpp::task task) {
         details::throw_executor_shutdown_exception(name);
     }
 
-    enqueue_impl(task);
+    enqueue_impl(lock, task);
 }
 
 void thread_executor::enqueue(std::span<concurrencpp::task> tasks) {
@@ -50,7 +36,7 @@ void thread_executor::enqueue(std::span<concurrencpp::task> tasks) {
     }
 
     for (auto& task : tasks) {
-        enqueue_impl(task);
+        enqueue_impl(lock, task);
     }
 }
 
@@ -74,10 +60,16 @@ void thread_executor::shutdown() noexcept {
         return m_workers.empty();
     });
 
+    if (m_last_retired.empty()) {
+        return;
+    }
+
+    assert(m_last_retired.size() == 1);
+    m_last_retired.front().join();
     m_last_retired.clear();
 }
 
-void thread_executor::retire_worker(std::list<thread_worker>::iterator it) {
+void thread_executor::retire_worker(std::list<details::thread>::iterator it) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     auto last_retired = std::move(m_last_retired);
     m_last_retired.splice(m_last_retired.begin(), m_workers, it);
@@ -85,5 +77,10 @@ void thread_executor::retire_worker(std::list<thread_worker>::iterator it) {
     lock.unlock();
     m_condition.notify_one();
 
-    last_retired.clear();
+    if (last_retired.empty()) {
+        return;
+    }
+
+    assert(last_retired.size() == 1);
+    last_retired.front().join();
 }

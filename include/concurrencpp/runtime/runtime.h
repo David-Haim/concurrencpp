@@ -1,8 +1,7 @@
 #ifndef CONCURRENCPP_RUNTIME_H
 #define CONCURRENCPP_RUNTIME_H
 
-#include "constants.h"
-
+#include "concurrencpp/runtime/constants.h"
 #include "concurrencpp/forward_declerations.h"
 
 #include <memory>
@@ -26,10 +25,10 @@ namespace concurrencpp::details {
 namespace concurrencpp {
     struct runtime_options {
         size_t max_cpu_threads;
-        std::chrono::seconds max_cpu_thread_waiting_time;
+        std::chrono::milliseconds max_cpu_thread_waiting_time;
 
         size_t max_background_threads;
-        std::chrono::seconds max_background_thread_waiting_time;
+        std::chrono::milliseconds max_background_thread_waiting_time;
 
         runtime_options() noexcept;
 
@@ -40,14 +39,14 @@ namespace concurrencpp {
     class runtime {
 
        private:
-        std::shared_ptr<timer_queue> m_timer_queue;
-
         std::shared_ptr<inline_executor> m_inline_executor;
         std::shared_ptr<thread_pool_executor> m_thread_pool_executor;
         std::shared_ptr<thread_pool_executor> m_background_executor;
         std::shared_ptr<thread_executor> m_thread_executor;
 
         details::executor_collection m_registered_executors;
+
+        std::shared_ptr<timer_queue> m_timer_queue;
 
        public:
         runtime();

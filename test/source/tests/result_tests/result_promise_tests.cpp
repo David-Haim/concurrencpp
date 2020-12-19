@@ -1,14 +1,12 @@
 #include "concurrencpp/concurrencpp.h"
 #include "tests/all_tests.h"
 
-#include "tests/test_utils/test_ready_result.h"
-
 #include "tester/tester.h"
 #include "helpers/assertions.h"
-#include "helpers/random.h"
 #include "helpers/object_observer.h"
+#include "tests/test_utils/test_ready_result.h"
 
-#include <string>
+//#include <string>
 
 namespace concurrencpp::tests {
     template<class type>
@@ -94,25 +92,20 @@ void concurrencpp::tests::test_result_promise_destructor_impl() {
 
 void concurrencpp::tests::test_result_promise_RAII_impl() {
     object_observer observer;
-    std::vector<result_promise<testing_stub>> rps;
-    std::vector<result<testing_stub>> results;
 
-    rps.resize(500'000);
-    results.reserve(500'000);
+    {
+        result<testing_stub> result;
 
-    for (auto& rp : rps) {
-        results.emplace_back(rp.get_result());
+        {
+            result_promise<testing_stub> rp;
+            result = rp.get_result();
+            rp.set_result(observer.get_testing_stub());
+        }
+
+        assert_equal(observer.get_destruction_count(), static_cast<size_t>(0));
     }
 
-    for (auto& rp : rps) {
-        rp.set_result(observer.get_testing_stub());
-    }
-
-    rps.clear();
-    assert_equal(observer.get_destruction_count(), size_t(0));
-
-    results.clear();
-    assert_equal(observer.get_destruction_count(), size_t(500'000));
+    assert_equal(observer.get_destruction_count(), static_cast<size_t>(1));
 }
 
 void concurrencpp::tests::test_result_promise_destructor() {
@@ -127,20 +120,22 @@ void concurrencpp::tests::test_result_promise_destructor() {
 
 template<class type>
 void concurrencpp::tests::test_result_promise_get_result_impl() {
-    // trying to get the future more than once throws
+    // empty result_promise should throw
+    assert_throws<concurrencpp::errors::empty_result_promise>([] {
+        ::concurrencpp::result_promise<type> rp;
+        auto dummy = std::move(rp);
+        rp.get_result();
+    });
+
+    // valid result_promise returns a valid result
     ::concurrencpp::result_promise<type> rp;
     auto result = rp.get_result();
 
     assert_true(static_cast<bool>(result));
     assert_equal(result.status(), concurrencpp::result_status::idle);
 
+    // trying to get the future more than once throws
     assert_throws<concurrencpp::errors::result_already_retrieved>([&] {
-        rp.get_result();
-    });
-
-    // empty rp should throw
-    auto dummy = std::move(rp);
-    assert_throws<concurrencpp::errors::empty_result_promise>([&] {
         rp.get_result();
     });
 }
@@ -155,42 +150,7 @@ void concurrencpp::tests::test_result_promise_get_result() {
 
 template<class type, class arguments_tuple_type>
 void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args) {
-    auto set_rp = [](auto rp, auto tuple) {
-        auto setter = [rp = std::move(rp)](auto&&... args) mutable {
-            rp.set_result(args...);
-        };
-
-        std::apply(setter, tuple);
-    };
-
-    // basic test:
-    {
-        concurrencpp::result_promise<type> rp;
-        auto result = rp.get_result();
-        set_rp(std::move(rp), tuple_args);
-
-        assert_false(static_cast<bool>(rp));
-        test_ready_result_result(std::move(result));
-    }
-
-    // async test
-    {
-        concurrencpp::result_promise<type> rp;
-        auto result = rp.get_result();
-
-        std::thread thread([result = std::move(result)]() mutable {
-            result.wait();
-            test_ready_result_result(std::move(result));
-        });
-
-        set_rp(std::move(rp), tuple_args);
-        assert_false(static_cast<bool>(rp));
-
-        thread.join();
-    }
-
-    // if an exception is thrown inside set_value
-    //(by building an object in place) the future is un-ready
+    // if an exception is thrown inside set_value (by building an object in place) the future is un-ready
     {
         struct throws_on_construction {
             throws_on_construction(int, int) {
@@ -210,13 +170,37 @@ void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tup
         assert_equal(result.status(), result_status::idle);
     }
 
+    auto set_rp = [](auto& rp, auto tuple) {
+        auto setter = [rp = std::move(rp)](auto&&... args) mutable {
+            rp.set_result(args...);
+        };
+
+        std::apply(setter, tuple);
+    };
+
     // setting result to an empty rp throws
     {
         concurrencpp::result_promise<type> rp;
         auto dummy = std::move(rp);
-        assert_throws<concurrencpp::errors::empty_result_promise>([rp = std::move(rp), set_rp, tuple_args]() mutable {
-            set_rp(std::move(rp), tuple_args);
+        assert_throws<concurrencpp::errors::empty_result_promise>([&rp, set_rp, tuple_args]() mutable {
+            set_rp(rp, tuple_args);
         });
+    }
+
+    // setting a result marshals it to the associated result object and empties the result_promise
+    {
+        concurrencpp::result_promise<type> rp;
+        auto result = rp.get_result();
+
+        std::thread thread([result = std::move(result)]() mutable {
+            result.wait();
+            test_ready_result(std::move(result));
+        });
+
+        set_rp(rp, tuple_args);
+        assert_false(static_cast<bool>(rp));
+
+        thread.join();
     }
 }
 
@@ -244,25 +228,29 @@ void concurrencpp::tests::test_result_promise_set_value() {
 
 template<class type>
 void concurrencpp::tests::test_result_promise_set_exception_impl() {
-    random randomizer;
+    // can't set result to an empty rp
+    {
+        result_promise<type> rp;
+        auto dummy = std::move(rp);
+        assert_throws<concurrencpp::errors::empty_result_promise>([&rp] {
+            const auto exception = std::make_exception_ptr(std::exception());
+            rp.set_exception(exception);
+        });
+    }
+
+    // null exception_ptr throws std::invalid_argument
+    {
+        assert_throws<std::invalid_argument>([] {
+            result_promise<type> rp;
+            rp.set_exception(std::exception_ptr {});
+        });
+    }
 
     // basic test:
     {
         concurrencpp::result_promise<type> rp;
         auto result = rp.get_result();
-        const auto id = randomizer();
-
-        rp.set_exception(std::make_exception_ptr<costume_exception>(id));
-
-        assert_false(static_cast<bool>(rp));
-        test_ready_result_costume_exception(std::move(result), id);
-    }
-
-    // async test:
-    {
-        concurrencpp::result_promise<type> rp;
-        auto result = rp.get_result();
-        const auto id = randomizer();
+        const auto id = 123456789;
 
         std::thread thread([result = std::move(result), id]() mutable {
             result.wait();
@@ -273,29 +261,6 @@ void concurrencpp::tests::test_result_promise_set_exception_impl() {
         assert_false(static_cast<bool>(rp));
 
         thread.join();
-    }
-
-    {  // can't set result to an empty rp
-        result_promise<type> rp;
-        auto dummy = std::move(rp);
-
-        auto setter = [&rp] {
-            rp.set_exception(std::make_exception_ptr(std::exception()));
-        };
-
-        assert_throws<concurrencpp::errors::empty_result_promise>(setter);
-    }
-
-    // null exception-ptr throws std::invalid_argument
-    {
-        result_promise<type> rp;
-
-        auto setter = [&rp]() mutable {
-            std::exception_ptr exception_ptr;
-            rp.set_exception(exception_ptr);
-        };
-
-        assert_throws<std::invalid_argument>(setter);
     }
 }
 
@@ -312,15 +277,14 @@ void concurrencpp::tests::test_result_promise_set_from_function_value_impl() {
     result_promise<type> rp;
     auto result = rp.get_result();
     rp.set_from_function(result_factory<type>::get);
-    test_ready_result_result(std::move(result));
+    test_ready_result(std::move(result));
 }
 
 template<class type>
 void concurrencpp::tests::test_result_promise_set_from_function_exception_impl() {
-    random randomizer;
     result_promise<type> rp;
     auto result = rp.get_result();
-    const auto id = randomizer();
+    const auto id = 123456789;
 
     rp.set_from_function([id]() -> decltype(auto) {
         throw costume_exception(id);

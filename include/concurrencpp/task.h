@@ -1,8 +1,10 @@
 #ifndef CONCURRENCPP_TASK_H
 #define CONCURRENCPP_TASK_H
 
+#include "concurrencpp/coroutines/coroutine.h"
+
 #include <type_traits>
-#include <experimental/coroutine>
+#include <utility>
 
 #include <cstddef>
 #include <cassert>
@@ -165,7 +167,7 @@ namespace concurrencpp::details {
             return allocated_ptr(src);
         }
 
-        static const inline vtable s_vtable = make_vtable();
+        static constexpr inline vtable s_vtable = make_vtable();
     };
 }  // namespace concurrencpp::details
 
@@ -177,6 +179,7 @@ namespace concurrencpp {
         const details::vtable* m_vtable;
 
         void build(task&& rhs) noexcept;
+        void build(details::coroutine_handle<void> coro_handle) noexcept;
 
         template<class callable_type>
         void build(callable_type&& callable) {
@@ -199,14 +202,15 @@ namespace concurrencpp {
         task() noexcept;
         task(task&& rhs) noexcept;
 
-        task(std::experimental::coroutine_handle<> coro_handle) noexcept;
-
         template<class callable_type>
         task(callable_type&& callable) {
             build(std::forward<callable_type>(callable));
         }
 
         ~task() noexcept;
+
+        task(const task& rhs) = delete;
+        task& operator=(const task&& rhs) = delete;
 
         void operator()();
 
@@ -220,7 +224,7 @@ namespace concurrencpp {
         bool contains() const noexcept {
             using decayed_type = typename std::decay_t<callable_type>;
 
-            if constexpr (std::is_same_v<decayed_type, std::experimental::coroutine_handle<>>) {
+            if constexpr (std::is_same_v<decayed_type, details::coroutine_handle<void>>) {
                 return contains_coro_handle();
             }
 

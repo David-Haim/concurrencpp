@@ -31,6 +31,8 @@ using concurrencpp::details::executor_collection;
 */
 
 void executor_collection::register_executor(std::shared_ptr<executor> executor) {
+    assert(static_cast<bool>(executor));
+
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     assert(std::find(m_executors.begin(), m_executors.end(), executor) == m_executors.end());
     m_executors.emplace_back(std::move(executor));

@@ -2,9 +2,9 @@
 #define CONCURRENCPP_RESULT_H
 
 #include "concurrencpp/results/constants.h"
-#include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/result_awaitable.h"
+#include "concurrencpp/results/impl/result_state.h"
 
 #include "concurrencpp/errors.h"
 #include "concurrencpp/forward_declerations.h"
@@ -66,14 +66,14 @@ namespace concurrencpp {
             m_state->wait();
         }
 
-        template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
+        template<class duration_type, class ratio_type>
+        result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) {
             throw_if_empty(details::consts::k_result_wait_for_error_msg);
             return m_state->wait_for(duration);
         }
 
-        template<class clock, class duration>
-        result_status wait_until(std::chrono::time_point<clock, duration> timeout_time) {
+        template<class clock_type, class duration_type>
+        result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
             throw_if_empty(details::consts::k_result_wait_until_error_msg);
             return m_state->wait_until(timeout_time);
         }

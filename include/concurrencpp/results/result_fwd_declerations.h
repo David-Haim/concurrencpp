@@ -2,10 +2,10 @@
 #define CONCURRENCPP_RESULT_FWD_DECLERATIONS_H
 
 #include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/coroutines/coroutine.h"
 
 #include <memory>
 #include <utility>
-#include <experimental/coroutine>
 
 namespace concurrencpp {
     template<class type>

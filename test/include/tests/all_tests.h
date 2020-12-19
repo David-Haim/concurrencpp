@@ -4,6 +4,7 @@
 namespace concurrencpp::tests {
     void test_task();
 
+    void test_derivable_executor();
     void test_inline_executor();
     void test_thread_pool_executor();
     void test_thread_executor();

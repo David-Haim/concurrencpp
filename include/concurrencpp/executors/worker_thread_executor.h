@@ -1,11 +1,12 @@
 #ifndef CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 #define CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 
+#include "concurrencpp/threads/thread.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
-#include "concurrencpp/threads/thread.h"
-
 #include <deque>
+#include <mutex>
+#include <semaphore>
 
 namespace concurrencpp {
     class alignas(64) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
@@ -14,15 +15,15 @@ namespace concurrencpp {
         std::deque<task> m_private_queue;
         std::atomic_bool m_private_atomic_abort;
         details::thread m_thread;
-        const char m_padding[64] = {};
-        std::mutex m_lock;
+        alignas(64) std::mutex m_lock;
         std::deque<task> m_public_queue;
-        std::condition_variable m_condition;
-        bool m_abort;
+        std::binary_semaphore m_semaphore;
         std::atomic_bool m_atomic_abort;
+        bool m_abort;
 
         bool drain_queue_impl();
         bool drain_queue();
+        void wait_for_task(std::unique_lock<std::mutex>& lock);
         void work_loop() noexcept;
 
         void enqueue_local(concurrencpp::task& task);

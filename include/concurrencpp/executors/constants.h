@@ -1,6 +1,8 @@
 #ifndef CONCURRENCPP_EXECUTORS_CONSTS_H
 #define CONCURRENCPP_EXECUTORS_CONSTS_H
 
+#include <numeric>
+
 namespace concurrencpp::details::consts {
     inline const char* k_inline_executor_name = "concurrencpp::inline_executor";
     constexpr int k_inline_executor_max_concurrency_level = 0;

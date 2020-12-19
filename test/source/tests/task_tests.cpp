@@ -28,6 +28,7 @@ namespace concurrencpp::tests {
     void test_task_assignment_operator_empty_to_non_empty();
     void test_task_assignment_operator_non_empty_to_empty();
     void test_task_assignment_operator_non_empty_to_non_empty();
+    void test_task_assignment_operator_to_self();
     void test_task_assignment_operator();
 
 }  // namespace concurrencpp::tests
@@ -47,7 +48,7 @@ namespace concurrencpp::tests {
         };
 
         struct noexcept_movable_big {
-            const char buffer[1024 * 4] = {};
+            const char buffer[concurrencpp::details::task_constants::buffer_size + 1] = {};
 
             noexcept_movable_big(noexcept_movable_big&&) noexcept {}
 
@@ -76,6 +77,11 @@ namespace concurrencpp::tests {
     };
 }  // namespace concurrencpp::tests
 
+template<class promise_type>
+using coroutine_handle = concurrencpp::details::coroutine_handle<promise_type>;
+using suspend_always = concurrencpp::details::suspend_always;
+using suspend_never = concurrencpp::details::suspend_never;
+
 namespace concurrencpp::tests::functions {
     template<size_t N>
     class test_functor {
@@ -95,25 +101,37 @@ namespace concurrencpp::tests::functions {
 
     class functor_with_unique_ptr {
        private:
-        std::unique_ptr<int> m_up;
+        std::unique_ptr<int> up;
 
        public:
-        functor_with_unique_ptr() : m_up(std::make_unique<int>()) {}
+        functor_with_unique_ptr() : up(std::make_unique<int>(12345)) {}
         functor_with_unique_ptr(functor_with_unique_ptr&& rhs) noexcept = default;
 
-        void operator()() {}
+        int operator()() noexcept {
+            assert(static_cast<bool>(up));
+            return *up;
+        }
     };
 
+    struct trivially_copiable_destructable {
+        int operator()() const {
+            return 123456789;
+        }
+    };
+
+    static_assert(std::is_trivially_copy_constructible_v<trivially_copiable_destructable>);
+    static_assert(std::is_trivially_destructible_v<trivially_copiable_destructable>);
+
     struct test_promise {
-        std::experimental::coroutine_handle<> get_return_object() noexcept {
-            return std::experimental::coroutine_handle<test_promise>::from_promise(*this);
+        coroutine_handle<void> get_return_object() noexcept {
+            return coroutine_handle<test_promise>::from_promise(*this);
         }
 
-        std::experimental::suspend_always initial_suspend() const noexcept {
+        suspend_always initial_suspend() const noexcept {
             return {};
         }
 
-        std::experimental::suspend_never final_suspend() const noexcept {
+        suspend_never final_suspend() const noexcept {
             return {};
         }
 
@@ -128,239 +146,278 @@ namespace concurrencpp::tests::functions {
 
 namespace std::experimental {
     template<class... arguments>
-    struct coroutine_traits<std::experimental::coroutine_handle<>, functions::dummy_test_tag, arguments...> {
+    struct coroutine_traits<coroutine_handle<>, functions::dummy_test_tag, arguments...> {
         using promise_type = functions::test_promise;
     };
 
 }  // namespace std::experimental
 
 namespace concurrencpp::tests::functions {
-    std::experimental::coroutine_handle<> coro_function(dummy_test_tag) {
+    coroutine_handle<void> coro_function(dummy_test_tag) {
         co_return;
     }
 
-    std::experimental::coroutine_handle<> coro_function(dummy_test_tag, testing_stub stub) {
+    coroutine_handle<void> coro_function(dummy_test_tag, testing_stub stub) {
         stub();
         co_return;
     }
 }  // namespace concurrencpp::tests::functions
 
-using concurrencpp::task;
 using namespace concurrencpp::tests::functions;
-
-using coroutine_handle = std::experimental::coroutine_handle<>;
+using concurrencpp::task;
 
 void concurrencpp::tests::test_task_constructor() {
     // Default constructor:
-    task empty_task;
-    assert_false(static_cast<bool>(empty_task));
+    {
+        task task;
+        assert_false(static_cast<bool>(task));
+    }
 
     // Function pointer
-    int (*function_ptr)() = &g_test_function;
-    task task_from_function_pointer(function_ptr);
-    assert_true(static_cast<bool>(task_from_function_pointer));
-    assert_true(task_from_function_pointer.contains<int (*)()>());
-    assert_false(task_from_function_pointer.contains<test_functor<1>>());
-    assert_false(task_from_function_pointer.contains<test_functor<100>>());
-    assert_false(task_from_function_pointer.contains<coroutine_handle>());
+    {
+        int (*function_ptr)() = &g_test_function;
+        task task(function_ptr);
+        assert_true(static_cast<bool>(task));
+        assert_true(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<100>>());
+        assert_false(task.contains<::coroutine_handle<void>>());
+    }
 
     // Function reference
-    int (&function_reference)() = g_test_function;
-    task task_from_function_reference(function_reference);
-    assert_true(static_cast<bool>(task_from_function_reference));
-    assert_true(task_from_function_reference.contains<int (*)()>());
-    assert_false(task_from_function_reference.contains<test_functor<1>>());
-    assert_false(task_from_function_reference.contains<test_functor<100>>());
-    assert_false(task_from_function_reference.contains<coroutine_handle>());
+    {
+        int (&function_reference)() = g_test_function;
+        task task(function_reference);
+        assert_true(static_cast<bool>(task));
+        assert_true(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<100>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // small functor
-    test_functor<8> small_functor;
-    task task_from_small_functor(small_functor);
-    assert_true(static_cast<bool>(task_from_small_functor));
-    assert_false(task_from_small_functor.contains<int (*)()>());
-    assert_true(task_from_small_functor.contains<test_functor<8>>());
-    assert_false(task_from_small_functor.contains<test_functor<100>>());
-    assert_false(task_from_small_functor.contains<coroutine_handle>());
+    {
+        test_functor<8> small_functor;
+        task task(small_functor);
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_true(task.contains<test_functor<8>>());
+        assert_false(task.contains<test_functor<100>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // small lambda
-    std::array<char, 8> padding_s;
-    auto lambda = [padding_s]() mutable {
-        padding_s.fill(0);
-    };
+    {
+        std::array<char, 8> padding_s;
+        auto lambda = [padding_s]() mutable {
+            padding_s.fill(0);
+        };
 
-    task task_from_small_lambda(lambda);
-    assert_true(static_cast<bool>(task_from_small_lambda));
-    assert_false(task_from_small_lambda.contains<int (*)()>());
-    assert_false(task_from_small_lambda.contains<test_functor<8>>());
-    assert_false(task_from_small_lambda.contains<test_functor<100>>());
-    assert_true(task_from_small_lambda.contains<decltype(lambda)>());
-    assert_false(task_from_small_lambda.contains<coroutine_handle>());
+        task task(lambda);
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<8>>());
+        assert_false(task.contains<test_functor<100>>());
+        assert_true(task.contains<decltype(lambda)>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // big functor
-    test_functor<128> big_functor;
-    task task_from_big_functor(big_functor);
-    assert_true(static_cast<bool>(task_from_big_functor));
-    assert_false(task_from_big_functor.contains<int (*)()>());
-    assert_false(task_from_big_functor.contains<test_functor<1>>());
-    assert_true(task_from_big_functor.contains<test_functor<128>>());
-    assert_false(task_from_big_functor.contains<coroutine_handle>());
+    {
+        test_functor<128> big_functor;
+        task task(big_functor);
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_true(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // big lambda
-    std::array<char, 128> padding_b;
-    auto big_lambda = [padding_b]() mutable {
-        padding_b.fill(0);
-    };
+    {
 
-    task task_from_big_lambda(big_lambda);
-    assert_true(static_cast<bool>(task_from_big_lambda));
-    assert_false(task_from_big_lambda.contains<int (*)()>());
-    assert_false(task_from_big_lambda.contains<test_functor<1>>());
-    assert_false(task_from_big_lambda.contains<test_functor<128>>());
-    assert_true(task_from_big_lambda.contains<decltype(big_lambda)>());
-    assert_false(task_from_big_lambda.contains<coroutine_handle>());
+        std::array<char, 128> padding_b;
+        auto big_lambda = [padding_b]() mutable {
+            padding_b.fill(0);
+        };
+
+        task task(big_lambda);
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_true(task.contains<decltype(big_lambda)>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // Coroutine handle
-    auto handle = coro_function({});
-    task task_from_coroutine_handle(handle);
-    assert_true(static_cast<bool>(task_from_coroutine_handle));
-    assert_false(task_from_coroutine_handle.contains<int (*)()>());
-    assert_false(task_from_coroutine_handle.contains<test_functor<1>>());
-    assert_false(task_from_coroutine_handle.contains<test_functor<128>>());
-    assert_false(task_from_coroutine_handle.contains<decltype(big_lambda)>());
-    assert_true(task_from_coroutine_handle.contains<coroutine_handle>());
+    {
+        auto handle = coro_function({});
+        task task_from_coroutine_handle(handle);
+        assert_true(static_cast<bool>(task_from_coroutine_handle));
+        assert_false(task_from_coroutine_handle.contains<int (*)()>());
+        assert_false(task_from_coroutine_handle.contains<test_functor<1>>());
+        assert_false(task_from_coroutine_handle.contains<test_functor<128>>());
+        assert_true(task_from_coroutine_handle.contains<coroutine_handle<void>>());
+    }
 
     // A move only type
-    functor_with_unique_ptr fwup;
-    task move_only_functor(std::move(fwup));
-    assert_true(static_cast<bool>(move_only_functor));
-    assert_false(move_only_functor.contains<int (*)()>());
-    assert_false(move_only_functor.contains<test_functor<1>>());
-    assert_false(move_only_functor.contains<test_functor<128>>());
-    assert_false(move_only_functor.contains<decltype(big_lambda)>());
-    assert_false(move_only_functor.contains<coroutine_handle>());
-    assert_true(move_only_functor.contains<functor_with_unique_ptr>());
+    {
+        functor_with_unique_ptr fwup;
+        task task(std::move(fwup));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+        assert_true(task.contains<functor_with_unique_ptr>());
+    }
 }
 
 void concurrencpp::tests::test_task_move_constructor() {
     // Default constructor:
-    task base_task_0;
-    task empty_task(std::move(base_task_0));
-    assert_false(static_cast<bool>(base_task_0));
-    assert_false(static_cast<bool>(empty_task));
+    {
+        task base_task;
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_false(static_cast<bool>(task));
+    }
 
     // Function pointer
-    int (*task_pointer)() = &g_test_function;
-    task base_task_2(task_pointer);
-    task task_from_function_pointer(std::move(base_task_2));
+    {
+        int (*function_pointer)() = &g_test_function;
+        task base_task(function_pointer);
+        task task(std::move(base_task));
 
-    assert_false(static_cast<bool>(base_task_2));
-    assert_true(static_cast<bool>(task_from_function_pointer));
-    assert_true(task_from_function_pointer.contains<int (*)()>());
-    assert_false(task_from_function_pointer.contains<test_functor<1>>());
-    assert_false(task_from_function_pointer.contains<test_functor<128>>());
-    assert_false(task_from_function_pointer.contains<coroutine_handle>());
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_true(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // Function reference
-    int (&function_reference)() = g_test_function;
-    task base_task_3(function_reference);
-    task task_from_function_reference(std::move(base_task_3));
-
-    assert_false(static_cast<bool>(base_task_3));
-    assert_true(static_cast<bool>(task_from_function_reference));
-    assert_true(task_from_function_reference.contains<int (&)()>());
-    assert_false(task_from_function_reference.contains<test_functor<1>>());
-    assert_false(task_from_function_reference.contains<test_functor<128>>());
-    assert_false(task_from_function_reference.contains<coroutine_handle>());
+    {
+        int (&function_reference)() = g_test_function;
+        task base_task(function_reference);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_true(task.contains<int (&)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // small functor
-    test_functor<8> small_functor;
-    task base_task_4(small_functor);
-    task task_from_small_functor(std::move(base_task_4));
-
-    assert_false(static_cast<bool>(base_task_4));
-    assert_true(static_cast<bool>(task_from_small_functor));
-    assert_false(task_from_small_functor.contains<int (*)()>());
-    assert_true(task_from_small_functor.contains<test_functor<8>>());
-    assert_false(task_from_small_functor.contains<test_functor<128>>());
-    assert_false(task_from_small_functor.contains<coroutine_handle>());
+    {
+        test_functor<8> small_functor;
+        task base_task(small_functor);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_true(task.contains<test_functor<8>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // small lambda
-    std::array<char, 8> padding_s;
-    auto small_lambda = [padding_s]() mutable {
-        padding_s.fill(0);
-    };
+    {
+        std::array<char, 8> padding_s;
+        auto small_lambda = [padding_s]() mutable {
+            padding_s.fill(0);
+        };
 
-    task base_task_5(small_lambda);
-    task task_from_small_lambda(std::move(base_task_5));
-
-    assert_false(static_cast<bool>(base_task_5));
-    assert_true(static_cast<bool>(task_from_small_lambda));
-    assert_false(task_from_small_lambda.contains<int (*)()>());
-    assert_false(task_from_small_lambda.contains<test_functor<8>>());
-    assert_false(task_from_small_lambda.contains<test_functor<128>>());
-    assert_true(task_from_small_lambda.contains<decltype(small_lambda)>());
-    assert_false(task_from_small_lambda.contains<coroutine_handle>());
+        task base_task(small_lambda);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<8>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_true(task.contains<decltype(small_lambda)>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // Big functor
-    test_functor<128> big_functor;
-    task base_task_6(big_functor);
-    task task_from_big_functor(std::move(base_task_6));
-
-    assert_false(static_cast<bool>(base_task_6));
-    assert_true(static_cast<bool>(task_from_big_functor));
-    assert_false(task_from_big_functor.contains<int (*)()>());
-    assert_false(task_from_big_functor.contains<test_functor<8>>());
-    assert_true(task_from_big_functor.contains<test_functor<128>>());
-    assert_false(task_from_big_functor.contains<coroutine_handle>());
+    {
+        test_functor<128> big_functor;
+        task base_task(big_functor);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<8>>());
+        assert_true(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // Big lambda
-    std::array<char, 128> padding_b;
-    auto big_lambda = [padding_b]() mutable {
-        padding_b.fill(0);
-    };
+    {
+        std::array<char, 128> padding_b;
+        auto big_lambda = [padding_b]() mutable {
+            padding_b.fill(0);
+        };
 
-    task base_task_7(big_lambda);
-    task task_from_big_lambda(std::move(base_task_7));
-
-    assert_false(static_cast<bool>(base_task_7));
-    assert_true(static_cast<bool>(task_from_big_lambda));
-    assert_false(task_from_big_lambda.contains<int (*)()>());
-    assert_false(task_from_big_lambda.contains<test_functor<8>>());
-    assert_false(task_from_big_lambda.contains<test_functor<128>>());
-    assert_true(task_from_big_lambda.contains<decltype(big_lambda)>());
-    assert_false(task_from_big_lambda.contains<coroutine_handle>());
+        task base_task(big_lambda);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<8>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_true(task.contains<decltype(big_lambda)>());
+        assert_false(task.contains<coroutine_handle<void>>());
+    }
 
     // Coroutine handle
-    auto handle = coro_function({});
-    task base_task_8(handle);
-    task task_from_coroutine_handle(std::move(base_task_8));
-
-    assert_false(static_cast<bool>(base_task_8));
-    assert_true(static_cast<bool>(task_from_coroutine_handle));
-    assert_false(task_from_coroutine_handle.contains<int (*)()>());
-    assert_false(task_from_coroutine_handle.contains<test_functor<1>>());
-    assert_false(task_from_coroutine_handle.contains<test_functor<128>>());
-    assert_false(task_from_coroutine_handle.contains<decltype(big_lambda)>());
-    assert_true(task_from_coroutine_handle.contains<coroutine_handle>());
+    {
+        auto handle = coro_function({});
+        task base_task(handle);
+        task task(std::move(base_task));
+        assert_false(static_cast<bool>(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_true(task.contains<coroutine_handle<void>>());
+    }
 
     // A move only type
-    functor_with_unique_ptr fwup;
-    task base_task_9(std::move(fwup));
-    task move_only_functor(std::move(fwup));
-    assert_true(static_cast<bool>(move_only_functor));
-    assert_false(move_only_functor.contains<int (*)()>());
-    assert_false(move_only_functor.contains<test_functor<1>>());
-    assert_false(move_only_functor.contains<test_functor<128>>());
-    assert_false(move_only_functor.contains<decltype(big_lambda)>());
-    assert_false(move_only_functor.contains<coroutine_handle>());
-    assert_true(move_only_functor.contains<functor_with_unique_ptr>());
+    {
+        functor_with_unique_ptr fwup;
+        task base_task(std::move(fwup));
+        task task(std::move(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+        assert_true(task.contains<functor_with_unique_ptr>());
+    }
+
+    // trivially copiable (uses memcpy)
+    {
+        trivially_copiable_destructable tcd;
+        task base_task(tcd);
+        task task(std::move(base_task));
+        assert_true(static_cast<bool>(task));
+        assert_false(task.contains<int (*)()>());
+        assert_false(task.contains<test_functor<1>>());
+        assert_false(task.contains<test_functor<128>>());
+        assert_false(task.contains<coroutine_handle<void>>());
+        assert_false(task.contains<functor_with_unique_ptr>());
+        assert_true(task.contains<trivially_copiable_destructable>());
+    }
 }
 
 void concurrencpp::tests::test_task_destructor() {
-    // empty function
+    // empty task
     { task empty; }
 
-    // small function
+    // small functor
     {
         object_observer observer;
 
@@ -369,7 +426,7 @@ void concurrencpp::tests::test_task_destructor() {
         assert_equal(observer.get_destruction_count(), 1);
     }
 
-    // big function
+    // big functor
     {
         struct functor {
             testing_stub stub;
@@ -387,6 +444,7 @@ void concurrencpp::tests::test_task_destructor() {
         assert_equal(observer.get_destruction_count(), 1);
     }
 
+    // coroutine
     {
         object_observer observer;
         const auto handle = coro_function({}, observer.get_testing_stub());
@@ -394,6 +452,12 @@ void concurrencpp::tests::test_task_destructor() {
         { task t(handle); }
 
         assert_equal(observer.get_destruction_count(), 1);
+    }
+
+    // trivially destructible (does nothing)
+    {
+        trivially_copiable_destructable tcd;
+        task task(tcd);
     }
 }
 
@@ -432,12 +496,22 @@ void concurrencpp::tests::test_task_clear() {
         assert_equal(observer.get_destruction_count(), 1);
     }
 
+    // coroutine
     {
         object_observer observer;
         const auto handle = functions::coro_function({}, observer.get_testing_stub());
         task t(handle);
         t.clear();
+        assert_false(static_cast<bool>(t));
         assert_equal(observer.get_destruction_count(), 1);
+    }
+
+    // trivially destructible (does nothing)
+    {
+        trivially_copiable_destructable tcd;
+        task t(tcd);
+        t.clear();
+        assert_false(static_cast<bool>(t));
     }
 }
 
@@ -480,13 +554,19 @@ void concurrencpp::tests::test_task_call_operator_test_3() {
 }
 
 void concurrencpp::tests::test_task_call_operator_test_4() {
+    // empty task
     task t;
     t();
 }
 
 void concurrencpp::tests::test_task_call_operator_test_5() {
+    // a croutine
     object_observer observer;
     const auto handle = coro_function({}, observer.get_testing_stub());
+
+    assert_equal(observer.get_execution_count(), 0);
+    assert_equal(observer.get_destruction_count(), 0);
+
     task t(handle);
     t();
 
@@ -503,32 +583,32 @@ void concurrencpp::tests::test_task_call_operator() {
 }
 
 void concurrencpp::tests::test_task_assignment_operator_empty_to_empty() {
-    task f1, f2;
-    f1 = std::move(f2);
+    task t1, t2;
+    t1 = std::move(t2);
 
-    assert_false(static_cast<bool>(f1));
-    assert_false(static_cast<bool>(f2));
+    assert_false(static_cast<bool>(t1));
+    assert_false(static_cast<bool>(t2));
 }
 
 void concurrencpp::tests::test_task_assignment_operator_empty_to_non_empty() {
     object_observer observer;
-    task f1(observer.get_testing_stub()), f2;
-    f1 = std::move(f2);
+    task t1(observer.get_testing_stub()), t2;
+    t1 = std::move(t2);
 
-    assert_false(static_cast<bool>(f1));
-    assert_false(static_cast<bool>(f2));
+    assert_false(static_cast<bool>(t1));
+    assert_false(static_cast<bool>(t2));
     assert_equal(observer.get_destruction_count(), 1);
 }
 
 void concurrencpp::tests::test_task_assignment_operator_non_empty_to_empty() {
     object_observer observer;
-    task f1, f2(observer.get_testing_stub());
-    f1 = std::move(f2);
+    task t1, t2(observer.get_testing_stub());
+    t1 = std::move(t2);
 
-    assert_true(static_cast<bool>(f1));
-    assert_false(static_cast<bool>(f2));
+    assert_true(static_cast<bool>(t1));
+    assert_false(static_cast<bool>(t2));
 
-    f1();
+    t1();
 
     assert_equal(observer.get_destruction_count(), 1);
     assert_equal(observer.get_execution_count(), 1);
@@ -537,13 +617,13 @@ void concurrencpp::tests::test_task_assignment_operator_non_empty_to_empty() {
 void concurrencpp::tests::test_task_assignment_operator_non_empty_to_non_empty() {
     object_observer observer_1, observer_2;
 
-    task f1(observer_1.get_testing_stub()), f2(observer_2.get_testing_stub());
-    f1 = std::move(f2);
+    task t1(observer_1.get_testing_stub()), t2(observer_2.get_testing_stub());
+    t1 = std::move(t2);
 
-    assert_true(static_cast<bool>(f1));
-    assert_false(static_cast<bool>(f2));
+    assert_true(static_cast<bool>(t1));
+    assert_false(static_cast<bool>(t2));
 
-    f1();
+    t1();
 
     assert_equal(observer_1.get_destruction_count(), 1);
     assert_equal(observer_1.get_execution_count(), 0);
@@ -552,22 +632,36 @@ void concurrencpp::tests::test_task_assignment_operator_non_empty_to_non_empty()
     assert_equal(observer_2.get_execution_count(), 1);
 }
 
+void concurrencpp::tests::test_task_assignment_operator_to_self() {
+    object_observer observer;
+    task task;
+
+    task = std::move(task);
+    assert_false(static_cast<bool>(task));
+
+    task = concurrencpp::task {observer.get_testing_stub()};
+    task = std::move(task);
+    assert_true(static_cast<bool>(task));
+    assert_true(task.contains<testing_stub>());
+}
+
 void concurrencpp::tests::test_task_assignment_operator() {
     test_task_assignment_operator_empty_to_empty();
     test_task_assignment_operator_empty_to_non_empty();
     test_task_assignment_operator_non_empty_to_empty();
     test_task_assignment_operator_non_empty_to_non_empty();
+    test_task_assignment_operator_to_self();
 }
 
 void concurrencpp::tests::test_task() {
     tester tester("task test");
 
-    tester.add_step("task constructor", test_task_constructor);
-    tester.add_step("task move constructor", test_task_move_constructor);
-    tester.add_step("task destructor", test_task_destructor);
-    tester.add_step("task operator()", test_task_call_operator);
-    tester.add_step("task clear", test_task_clear);
-    tester.add_step("task operator =", test_task_assignment_operator);
+    tester.add_step("constructor", test_task_constructor);
+    tester.add_step("move constructor", test_task_move_constructor);
+    tester.add_step("destructor", test_task_destructor);
+    tester.add_step("operator()", test_task_call_operator);
+    tester.add_step("clear", test_task_clear);
+    tester.add_step("operator =", test_task_assignment_operator);
 
     tester.launch_test();
 }

@@ -23,9 +23,6 @@ namespace concurrencpp::tests {
         const char* m_test_name;
         std::deque<test_step> m_steps;
 
-        void start_test();
-        void end_test();
-
        public:
         tester(const char* test_name) noexcept;
 

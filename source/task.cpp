@@ -1,5 +1,7 @@
 #include "concurrencpp/task.h"
 
+#include <cstring>
+
 using concurrencpp::task;
 using concurrencpp::details::vtable;
 
@@ -9,10 +11,10 @@ namespace concurrencpp::details {
     class coroutine_handle_wrapper {
 
        private:
-        std::experimental::coroutine_handle<> m_coro_handle;
+        coroutine_handle<void> m_coro_handle;
 
        public:
-        coroutine_handle_wrapper(std::experimental::coroutine_handle<> coro_handle) noexcept : m_coro_handle(coro_handle) {}
+        coroutine_handle_wrapper(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
 
         coroutine_handle_wrapper(coroutine_handle_wrapper&& rhs) noexcept : m_coro_handle(rhs.m_coro_handle) {
             rhs.m_coro_handle = {};
@@ -60,13 +62,15 @@ void task::build(task&& rhs) noexcept {
     rhs.clear();
 }
 
+void task::build(details::coroutine_handle<void> coro_handle) noexcept {
+    build(details::coroutine_handle_wrapper {coro_handle});
+}
+
 task::task() noexcept : m_buffer(), m_vtable(nullptr) {}
 
 task::task(task&& rhs) noexcept {
     build(std::move(rhs));
 }
-
-task::task(std::experimental::coroutine_handle<> coro_handle) noexcept : task(details::coroutine_handle_wrapper {coro_handle}) {}
 
 task::~task() noexcept {
     clear();
@@ -86,6 +90,10 @@ void task::operator()() {
 }
 
 task& task::operator=(task&& rhs) noexcept {
+    if (this == &rhs) {
+        return *this;
+    }
+
     clear();
     build(std::move(rhs));
     return *this;

@@ -2,7 +2,7 @@
 #define CONCURRENCPP_PROMISES_H
 
 #include "concurrencpp/results/impl/result_state.h"
-
+#include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/errors.h"
 
 #include <vector>
@@ -16,8 +16,8 @@ namespace concurrencpp::details {
     };
 
     template<class executor_type>
-    struct initial_scheduling_awaiter : public std::experimental::suspend_always {
-        void await_suspend(std::experimental::coroutine_handle<> handle) const {
+    struct initial_scheduling_awaiter : public details::suspend_always {
+        void await_suspend(details::coroutine_handle<void> handle) const {
             auto& per_thread_data = coroutine_per_thread_data::s_tl_per_thread_data;
             auto executor_base_ptr = std::exchange(per_thread_data.executor, nullptr);
 
@@ -30,10 +30,10 @@ namespace concurrencpp::details {
     };
 
     template<>
-    struct initial_scheduling_awaiter<concurrencpp::inline_executor> : public std::experimental::suspend_never {};
+    struct initial_scheduling_awaiter<concurrencpp::inline_executor> : public details::suspend_never {};
 
-    struct initial_accumulating_awaiter : public std::experimental::suspend_always {
-        void await_suspend(std::experimental::coroutine_handle<> handle) const noexcept;
+    struct initial_accumulating_awaiter : public details::suspend_always {
+        void await_suspend(details::coroutine_handle<void> handle) const noexcept;
     };
 
     template<class executor_type>
@@ -63,7 +63,6 @@ namespace concurrencpp::details {
 
         template<class... argument_types>
         static void* operator new(size_t size, executor_tag, executor_type& executor, argument_types&&... args) {
-
             return operator new (size, executor_tag {}, std::addressof(executor), std::forward<argument_types>(args)...);
         }
 
@@ -73,7 +72,7 @@ namespace concurrencpp::details {
     };
 
     struct initialy_resumed_promise {
-        std::experimental::suspend_never initial_suspend() const noexcept {
+        details::suspend_never initial_suspend() const noexcept {
             return {};
         }
     };
@@ -86,7 +85,6 @@ namespace concurrencpp::details {
 
         template<class... argument_types>
         static void* operator new(size_t size, executor_bulk_tag, std::vector<concurrencpp::task>* accumulator, argument_types&&...) {
-
             assert(accumulator != nullptr);
             assert(coroutine_per_thread_data::s_tl_per_thread_data.accumulator == nullptr);
             coroutine_per_thread_data::s_tl_per_thread_data.accumulator = accumulator;
@@ -104,7 +102,7 @@ namespace concurrencpp::details {
             return {};
         }
 
-        std::experimental::suspend_never final_suspend() const noexcept {
+        details::suspend_never final_suspend() const noexcept {
             return {};
         }
 
@@ -129,9 +127,9 @@ namespace concurrencpp::details {
         }
     };
 
-    struct result_publisher : public std::experimental::suspend_always {
+    struct result_publisher : public details::suspend_always {
         template<class promise_type>
-        bool await_suspend(std::experimental::coroutine_handle<promise_type> handle) const noexcept {
+        bool await_suspend(details::coroutine_handle<promise_type> handle) const noexcept {
             handle.promise().publish_result();
             return false;  // don't suspend, resume and destroy this
         }

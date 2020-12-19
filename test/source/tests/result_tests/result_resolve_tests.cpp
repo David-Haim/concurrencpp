@@ -56,7 +56,7 @@ namespace concurrencpp::tests {
 
             assert_false(static_cast<bool>(result));
             assert_equal(thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -99,7 +99,7 @@ namespace concurrencpp::tests {
 
             m_resuming_thread_id = thread::get_current_virtual_id();
 
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
 
        public:
@@ -223,7 +223,7 @@ namespace concurrencpp::tests {
 
             assert_false(static_cast<bool>(result));
             assert_equal(thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -242,7 +242,7 @@ namespace concurrencpp::tests {
 
             assert_false(static_cast<bool>(result));
             assert_not_equal(thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -261,7 +261,7 @@ namespace concurrencpp::tests {
 
             assert_false(static_cast<bool>(result));
             assert_equal(thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -399,7 +399,7 @@ namespace concurrencpp::tests {
             auto done_result = co_await result.resolve_via(thread_executor, true);
 
             m_resuming_thread_id = thread::get_current_virtual_id();
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
 
        public:

@@ -2,8 +2,7 @@
 #define CONCURRENCPP_ASSERTIONS_H
 
 #include <string>
-#include <cstdio>
-#include <thread>
+#include <string_view>
 
 namespace concurrencpp::tests::details {
     std::string to_string(bool value);
@@ -19,8 +18,6 @@ namespace concurrencpp::tests::details {
     const std::string& to_string(const std::string& str);
     std::string to_string(const char* str);
     std::string to_string(const std::string_view str);
-    std::string to_string(std::thread::id);
-    std::string to_string(std::chrono::time_point<std::chrono::high_resolution_clock> time_point);
 
     template<class type>
     std::string to_string(type* value) {
@@ -32,8 +29,8 @@ namespace concurrencpp::tests::details {
         return "{object}";
     }
 
-    void assert_same_failed_impl(const std::string& a, const std::string& b);
-    void assert_not_same_failed_impl(const std::string& a, const std::string& b);
+    void assert_equal_failed_impl(const std::string& a, const std::string& b);
+    void assert_not_equal_failed_impl(const std::string& a, const std::string& b);
     void assert_bigger_failed_impl(const std::string& a, const std::string& b);
     void assert_smaller_failed_impl(const std::string& a, const std::string& b);
     void assert_bigger_equal_failed_impl(const std::string& a, const std::string& b);
@@ -50,7 +47,7 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
+        details::assert_equal_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>
@@ -59,7 +56,7 @@ namespace concurrencpp::tests {
             return;
         }
 
-        details::assert_not_same_failed_impl(details::to_string(given_value), details::to_string(expected_value));
+        details::assert_not_equal_failed_impl(details::to_string(given_value), details::to_string(expected_value));
     }
 
     template<class a_type, class b_type>

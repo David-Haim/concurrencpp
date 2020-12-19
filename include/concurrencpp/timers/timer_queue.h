@@ -10,11 +10,10 @@
 #include "concurrencpp/threads/thread.h"
 
 #include <mutex>
-#include <condition_variable>
-
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <condition_variable>
 
 #include <cassert>
 
@@ -48,7 +47,6 @@ namespace concurrencpp {
 
         template<class callable_type>
         timer_ptr make_timer_impl(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, bool is_oneshot, callable_type&& callable) {
-
             assert(static_cast<bool>(executor));
 
             using decayed_type = typename std::decay_t<callable_type>;
@@ -85,7 +83,6 @@ namespace concurrencpp {
                          std::shared_ptr<concurrencpp::executor> executor,
                          callable_type&& callable,
                          argumet_types&&... arguments) {
-
             if (!static_cast<bool>(executor)) {
                 throw std::invalid_argument(details::consts::k_timer_queue_make_timer_executor_null_err_msg);
             }
@@ -102,7 +99,6 @@ namespace concurrencpp {
                                   std::shared_ptr<concurrencpp::executor> executor,
                                   callable_type&& callable,
                                   argumet_types&&... arguments) {
-
             if (!static_cast<bool>(executor)) {
                 throw std::invalid_argument(details::consts::k_timer_queue_make_oneshot_timer_executor_null_err_msg);
             }

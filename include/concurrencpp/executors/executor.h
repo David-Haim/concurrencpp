@@ -35,7 +35,7 @@ namespace concurrencpp {
                           "concurrencpp::executor::post - <<callable_type>> is not invokable with <<argument_types...>>");
 
             assert(executor_ptr != nullptr);
-            executor_ptr->enqueue(details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...));
+            executor_ptr->enqueue(details::bind_with_try_catch(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...));
         }
 
         template<class executor_type, class callable_type, class... argument_types>
@@ -56,7 +56,7 @@ namespace concurrencpp {
             tasks.reserve(callable_list.size());
 
             for (auto& callable : callable_list) {
-                tasks.emplace_back(std::move(callable));
+                tasks.emplace_back(details::bind_with_try_catch(std::move(callable)));
             }
 
             std::span<task> span = tasks;

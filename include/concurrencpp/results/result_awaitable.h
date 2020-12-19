@@ -1,11 +1,12 @@
 #ifndef CONCURRENCPP_RESULT_AWAITABLE_H
 #define CONCURRENCPP_RESULT_AWAITABLE_H
 
+#include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/results/result_fwd_declerations.h"
 
 namespace concurrencpp {
     template<class type>
-    class awaitable : public std::experimental::suspend_always {
+    class awaitable : public details::suspend_always {
 
        private:
         details::await_context m_await_ctx;
@@ -17,7 +18,7 @@ namespace concurrencpp {
         awaitable(const awaitable& rhs) noexcept = delete;
         awaitable(awaitable&& rhs) noexcept = delete;
 
-        bool await_suspend(std::experimental::coroutine_handle<> caller_handle) noexcept {
+        bool await_suspend(details::coroutine_handle<void> caller_handle) noexcept {
             assert(static_cast<bool>(m_state));
             m_await_ctx.set_coro_handle(caller_handle);
             return m_state->await(m_await_ctx);
@@ -31,7 +32,7 @@ namespace concurrencpp {
     };
 
     template<class type>
-    class via_awaitable : public std::experimental::suspend_always {
+    class via_awaitable : public details::suspend_always {
 
        private:
         details::await_via_context m_await_context;
@@ -45,7 +46,7 @@ namespace concurrencpp {
         via_awaitable(const via_awaitable& rhs) noexcept = delete;
         via_awaitable(via_awaitable&& rhs) noexcept = delete;
 
-        bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
+        bool await_suspend(details::coroutine_handle<void> caller_handle) {
             assert(static_cast<bool>(m_state));
 
             m_await_context.set_coro_handle(caller_handle);
@@ -60,7 +61,7 @@ namespace concurrencpp {
     };
 
     template<class type>
-    class resolve_awaitable final : public std::experimental::suspend_always {
+    class resolve_awaitable : public details::suspend_always {
 
        private:
         details::await_context m_await_ctx;
@@ -72,7 +73,7 @@ namespace concurrencpp {
         resolve_awaitable(resolve_awaitable&&) noexcept = delete;
         resolve_awaitable(const resolve_awaitable&) noexcept = delete;
 
-        bool await_suspend(std::experimental::coroutine_handle<> caller_handle) noexcept {
+        bool await_suspend(details::coroutine_handle<void> caller_handle) noexcept {
             assert(static_cast<bool>(m_state));
             m_await_ctx.set_coro_handle(caller_handle);
             return m_state->await(m_await_ctx);
@@ -86,7 +87,7 @@ namespace concurrencpp {
     };
 
     template<class type>
-    class resolve_via_awaitable final : public std::experimental::suspend_always {
+    class resolve_via_awaitable : public details::suspend_always {
 
        private:
         details::await_via_context m_await_context;
@@ -102,7 +103,7 @@ namespace concurrencpp {
         resolve_via_awaitable(const resolve_via_awaitable&) noexcept = delete;
         resolve_via_awaitable(resolve_via_awaitable&&) noexcept = delete;
 
-        bool await_suspend(std::experimental::coroutine_handle<> caller_handle) {
+        bool await_suspend(details::coroutine_handle<void> caller_handle) {
             assert(static_cast<bool>(m_state));
 
             m_await_context.set_coro_handle(caller_handle);

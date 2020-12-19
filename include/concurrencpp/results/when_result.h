@@ -7,9 +7,8 @@
 #include <mutex>
 #include <vector>
 
-#include "concurrencpp/results/make_result.h"
-
 #include "concurrencpp/errors.h"
+#include "concurrencpp/results/make_result.h"
 
 namespace concurrencpp::details {
     class when_result_helper {
@@ -55,7 +54,6 @@ namespace concurrencpp::details {
 
     template<class... result_types>
     class when_all_tuple_state final : public when_all_state_base, public std::enable_shared_from_this<when_all_tuple_state<result_types...>> {
-
         using tuple_type = std::tuple<result_types...>;
 
        private:
@@ -316,7 +314,6 @@ namespace concurrencpp {
 
     template<class... result_types>
     result<std::tuple<typename std::decay<result_types>::type...>> when_all(result_types&&... results) {
-
         details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg, std::forward<result_types>(results)...);
 
         auto when_all_state = std::make_shared<details::when_all_tuple_state<typename std::decay<result_types>::type...>>(std::forward<result_types>(results)...);
@@ -327,7 +324,6 @@ namespace concurrencpp {
 
     template<class iterator_type>
     result<std::vector<typename std::iterator_traits<iterator_type>::value_type>> when_all(iterator_type begin, iterator_type end) {
-
         details::when_result_helper::throw_if_empty_range(details::consts::k_when_all_empty_result_error_msg, begin, end);
 
         using type = typename std::iterator_traits<iterator_type>::value_type;
@@ -343,8 +339,7 @@ namespace concurrencpp {
 
     template<class... result_types>
     result<when_any_result<std::tuple<result_types...>>> when_any(result_types&&... results) {
-        static_assert(sizeof...(result_types) != 0, "concurrencpp::when_any - the function must accept at least one result");
-
+        static_assert(sizeof...(result_types) != 0, "concurrencpp::when_any() - the function must accept at least one result object.");
         details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_any_empty_result_error_msg, std::forward<result_types>(results)...);
 
         auto state = std::make_shared<details::when_any_tuple_state<result_types...>>(std::forward<result_types>(results)...);

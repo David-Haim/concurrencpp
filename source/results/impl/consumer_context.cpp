@@ -42,7 +42,7 @@ namespace concurrencpp::details {
  * await_context
  */
 
-void await_context::set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept {
+void await_context::set_coro_handle(details::coroutine_handle<void> coro_handle) noexcept {
     assert(!static_cast<bool>(m_handle));
     assert(static_cast<bool>(coro_handle));
     assert(!coro_handle.done());
@@ -79,7 +79,7 @@ concurrencpp::task await_context::to_task() noexcept {
 
 await_via_context::await_via_context(std::shared_ptr<executor> executor) noexcept : m_executor(std::move(executor)) {}
 
-void await_via_context::set_coro_handle(std::experimental::coroutine_handle<> coro_handle) noexcept {
+void await_via_context::set_coro_handle(details::coroutine_handle<void> coro_handle) noexcept {
     m_await_context.set_coro_handle(coro_handle);
 }
 

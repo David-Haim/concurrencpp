@@ -70,7 +70,7 @@ namespace concurrencpp::tests {
             const auto thread_id_1 = thread::get_current_virtual_id();
 
             assert_equal(m_thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -125,7 +125,7 @@ namespace concurrencpp::tests {
 
             m_resuming_thread_id = thread::get_current_virtual_id();
 
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
 
        public:
@@ -232,6 +232,17 @@ void concurrencpp::tests::test_result_await() {
  */
 
 namespace concurrencpp::tests {
+    struct thread_id_setter {
+
+        std::uintptr_t& dest;
+
+        thread_id_setter(std::uintptr_t& dest) noexcept : dest(dest) {}
+
+        ~thread_id_setter() noexcept {
+            dest = thread::get_current_virtual_id();
+        }
+    };
+
     template<class type, result_status status, bool force_rescheduling, bool executor_throws>
     struct test_await_via_ready_result {
         result<void> operator()(std::shared_ptr<thread_executor> executor);
@@ -242,11 +253,14 @@ namespace concurrencpp::tests {
 
        private:
         uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
             auto result = result_factory<type>::make_ready();
 
             m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, false);
         }
@@ -258,10 +272,8 @@ namespace concurrencpp::tests {
 
             auto done_result = co_await proxy_task(executor).resolve();
 
-            const auto thread_id_1 = thread::get_current_virtual_id();
-
-            assert_equal(m_thread_id_0, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            assert_equal(m_thread_id_0, m_thread_id_1);
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -269,12 +281,15 @@ namespace concurrencpp::tests {
     struct test_await_via_ready_result<type, result_status::value, true, false> {
 
        private:
-        uintptr_t m_thread_0_id = 0;
+        uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
             auto result = result_factory<type>::make_ready();
 
-            m_thread_0_id = thread::get_current_virtual_id();
+            m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, true);
         }
@@ -286,10 +301,8 @@ namespace concurrencpp::tests {
 
             auto done_result = co_await proxy_task(executor).resolve();
 
-            const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
-
-            assert_not_equal(m_thread_0_id, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            assert_not_equal(m_thread_id_0, m_thread_id_1);
+            test_ready_result(std::move(done_result));
         }
     };
 
@@ -297,12 +310,15 @@ namespace concurrencpp::tests {
     struct test_await_via_ready_result<type, result_status::value, false, true> {
 
        private:
-        uintptr_t m_thread_0_id = 0;
+        uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<throwing_executor> executor) {
             auto result = result_factory<type>::make_ready();
 
-            m_thread_0_id = concurrencpp::details::thread::get_current_virtual_id();
+            m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, false);
         }
@@ -313,15 +329,14 @@ namespace concurrencpp::tests {
             // = inline execution, result is returned (executor doesn't have the chance to throw)
             auto done_result = co_await proxy_task(executor).resolve();
 
-            const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
-
-            assert_equal(m_thread_0_id, thread_id_1);
-            test_ready_result_result(std::move(done_result));
+            assert_equal(m_thread_id_0, m_thread_id_1);
+            test_ready_result(std::move(done_result));
         }
     };
 
     template<class type>
     struct test_await_via_ready_result<type, result_status::value, true, true> {
+
         result<void> operator()(std::shared_ptr<throwing_executor> executor) {
             // result is ready + force_rescheduling = true + executor throws
             // = inline execution, errors::broken_task exception is thrown
@@ -349,11 +364,14 @@ namespace concurrencpp::tests {
 
        private:
         uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
 
             m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, false);
         }
@@ -366,9 +384,7 @@ namespace concurrencpp::tests {
 
             auto done_result = co_await proxy_task(executor, id).resolve();
 
-            const auto thread_id_1 = thread::get_current_virtual_id();
-
-            assert_equal(m_thread_id_0, thread_id_1);
+            assert_equal(m_thread_id_0, m_thread_id_1);
             test_ready_result_costume_exception(std::move(done_result), id);
         }
     };
@@ -378,11 +394,14 @@ namespace concurrencpp::tests {
 
        private:
         uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
 
             m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, true);
         }
@@ -394,9 +413,7 @@ namespace concurrencpp::tests {
             const auto id = 1234567;
             auto done_result = co_await proxy_task(executor, id).resolve();
 
-            const auto thread_id_1 = thread::get_current_virtual_id();
-
-            assert_not_equal(m_thread_id_0, thread_id_1);
+            assert_not_equal(m_thread_id_0, m_thread_id_1);
             test_ready_result_costume_exception(std::move(done_result), id);
         }
     };
@@ -406,11 +423,14 @@ namespace concurrencpp::tests {
 
        private:
         uintptr_t m_thread_id_0 = 0;
+        uintptr_t m_thread_id_1 = 0;
 
         result<type> proxy_task(std::shared_ptr<throwing_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
 
             m_thread_id_0 = thread::get_current_virtual_id();
+
+            thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
             co_return co_await result.await_via(executor, false);
         }
@@ -423,9 +443,7 @@ namespace concurrencpp::tests {
             const auto id = 1234567;
             auto done_result = co_await proxy_task(executor, id).resolve();
 
-            const auto thread_id_1 = thread::get_current_virtual_id();
-
-            assert_equal(m_thread_id_0, thread_id_1);
+            assert_equal(m_thread_id_0, m_thread_id_1);
             test_ready_result_costume_exception(std::move(done_result), id);
         }
     };
@@ -483,7 +501,7 @@ namespace concurrencpp::tests {
             auto done_result = co_await proxy_task(manual_executor, thread_executor).resolve();
 
             m_resuming_thread_id = concurrencpp::details::thread::get_current_virtual_id();
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         }
 
        public:

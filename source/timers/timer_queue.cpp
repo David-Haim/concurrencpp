@@ -1,7 +1,6 @@
 #include "concurrencpp/timers/timer_queue.h"
-#include "concurrencpp/timers/timer.h"
-
 #include "concurrencpp/results/result.h"
+#include "concurrencpp/timers/timer.h"
 
 #include <set>
 #include <unordered_map>
@@ -44,8 +43,8 @@ namespace concurrencpp::details {
         void remove_timer_internal(timer_ptr existing_timer) {
             auto timer_it = m_iterator_mapper.find(existing_timer);
             if (timer_it == m_iterator_mapper.end()) {
-                assert(existing_timer->is_oneshot());  // the timer was already deleted by
-                                                       // the queue when it was fired.
+                assert(existing_timer->is_oneshot() || existing_timer->cancelled());  // the timer was already deleted by
+                                                                                      // the queue when it was fired.
                 return;
             }
 
@@ -110,9 +109,13 @@ namespace concurrencpp::details {
                 // be contained somewhere.
                 auto temp_it = temp_set.insert(std::move(timer_node));
 
-                (*temp_it)->fire();
+                // we fire it only if it's not cancelled
+                const auto cancelled = timer_ptr->cancelled();
+                if (!cancelled) {
+                    (*temp_it)->fire();
+                }
 
-                if (is_oneshot) {
+                if (is_oneshot || cancelled) {
                     m_iterator_mapper.erase(timer_ptr);
                     continue;  // let the timer die inside the temp_set
                 }

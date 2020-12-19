@@ -37,6 +37,7 @@ set(concurrencpp_headers
         include/concurrencpp/task.h
         include/concurrencpp/forward_declerations.h
         include/concurrencpp/platform_defs.h
+        include/concurrencpp/coroutines/coroutine.h
         include/concurrencpp/executors/constants.h
         include/concurrencpp/executors/derivable_executor.h
         include/concurrencpp/executors/executor.h
