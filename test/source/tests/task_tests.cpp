@@ -189,7 +189,7 @@ void concurrencpp::tests::test_task_constructor() {
         int (&function_reference)() = g_test_function;
         task task(function_reference);
         assert_true(static_cast<bool>(task));
-        assert_true(task.contains<int (*)()>());
+        assert_true(task.contains<int (&)()>());
         assert_false(task.contains<test_functor<1>>());
         assert_false(task.contains<test_functor<100>>());
         assert_false(task.contains<coroutine_handle<void>>());

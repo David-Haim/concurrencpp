@@ -99,7 +99,7 @@ void concurrencpp::tests::test_worker_thread_executor_max_concurrency_level() {
     auto executor = std::make_shared<worker_thread_executor>();
     executor_shutdowner shutdown(executor);
 
-    assert_equal(executor->max_concurrency_level(), 1);
+    assert_equal(executor->max_concurrency_level(), concurrencpp::details::consts::k_worker_thread_max_concurrency_level);
 }
 
 void concurrencpp::tests::test_worker_thread_executor_post_foreign() {

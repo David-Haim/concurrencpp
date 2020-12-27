@@ -9,15 +9,11 @@ namespace concurrencpp {
         static_assert(std::is_constructible_v<type, argument_types...> || std::is_same_v<type, void>,
                       "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
 
+        static_assert(std::is_same_v<type, void> ? (sizeof...(argument_types) == 0) : true,
+                      "concurrencpp::make_ready_result<void> - this overload does not accept any argument.");
+
         auto result_state_ptr = std::make_shared<details::result_state<type>>();
         result_state_ptr->set_result(std::forward<argument_types>(arguments)...);
-        result_state_ptr->publish_result();
-        return {std::move(result_state_ptr)};
-    }
-
-    inline result<void> make_ready_result() {
-        auto result_state_ptr = std::make_shared<details::result_state<void>>();
-        result_state_ptr->set_result();
         result_state_ptr->publish_result();
         return {std::move(result_state_ptr)};
     }

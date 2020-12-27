@@ -52,6 +52,7 @@ namespace concurrencpp::details {
         std::binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
+        std::atomic_bool m_event_found;
         thread m_thread;
 
         void balance_work();
@@ -72,9 +73,7 @@ namespace concurrencpp::details {
 
         void enqueue_foreign(concurrencpp::task& task);
         void enqueue_foreign(std::span<concurrencpp::task> tasks);
-        void enqueue_foreign(const std::deque<concurrencpp::task>& deque,
-                             std::deque<concurrencpp::task>::iterator begin,
-                             std::deque<concurrencpp::task>::iterator end);
+        void enqueue_foreign(std::deque<concurrencpp::task>::iterator begin, std::deque<concurrencpp::task>::iterator end);
 
         void enqueue_local(concurrencpp::task& task);
         void enqueue_local(std::span<concurrencpp::task> tasks);
@@ -82,6 +81,8 @@ namespace concurrencpp::details {
         void shutdown() noexcept;
 
         std::chrono::milliseconds max_worker_idle_time() const noexcept;
+
+        bool appears_empty() const noexcept;
     };
 }  // namespace concurrencpp::details
 

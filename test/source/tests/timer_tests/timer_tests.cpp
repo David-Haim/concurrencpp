@@ -46,9 +46,8 @@ namespace concurrencpp::tests {
     void test_timer_assignment_operator();
 }  // namespace concurrencpp::tests
 
-using concurrencpp::timer;
-
 using namespace std::chrono;
+using concurrencpp::timer;
 using time_point = std::chrono::time_point<high_resolution_clock>;
 
 namespace concurrencpp::tests {
@@ -61,7 +60,7 @@ namespace concurrencpp::tests {
         std::atomic_size_t m_invocation_count;
 
        public:
-        counting_executor() : executor("time_counter_executor"), m_invocation_count(0) {}
+        counting_executor() : executor("counting executor"), m_invocation_count(0) {}
 
         void enqueue(concurrencpp::task task) override {
             ++m_invocation_count;
@@ -97,13 +96,14 @@ namespace concurrencpp::tests {
         ::time_point m_start_time;
 
        public:
-        recording_executor() : executor("time_recording_executor") {
+        recording_executor() : executor("recording executor") {
             m_time_points.reserve(128);
         }
 
         void enqueue(concurrencpp::task task) override {
+            const auto now = high_resolution_clock::now();
+
             {
-                const auto now = std::chrono::high_resolution_clock::now();
                 std::unique_lock<std::mutex> lock(m_lock);
                 m_time_points.emplace_back(now);
             }
@@ -128,7 +128,7 @@ namespace concurrencpp::tests {
         }
 
         void start_test() {
-            const auto now = std::chrono::high_resolution_clock::now();
+            const auto now = high_resolution_clock::now();
             std::unique_lock<std::mutex> lock(m_lock);
             m_start_time = now;
         }
@@ -152,7 +152,7 @@ namespace concurrencpp::tests {
         void reset() {
             std::unique_lock<std::mutex> lock(m_lock);
             m_time_points.clear();
-            m_start_time = std::chrono::high_resolution_clock::now();
+            m_start_time = high_resolution_clock::now();
         }
     };
 
@@ -195,8 +195,8 @@ namespace concurrencpp::tests {
         }
 
         void assert_correct_time_points() {
-            const auto tested_due_time = calculate_due_time();
-            interval_ok(tested_due_time, m_due_time.count());
+            const auto recorded_due_time = calculate_due_time();
+            interval_ok(recorded_due_time, m_due_time.count());
 
             const auto intervals = calculate_frequencies();
             for (auto tested_frequency : intervals) {
@@ -225,16 +225,16 @@ namespace concurrencpp::tests {
             m_executor->start_test();
         }
 
-        void reset(std::chrono::milliseconds new_frequency) noexcept {
+        void set_new_frequency(std::chrono::milliseconds new_frequency) noexcept {
             m_timer.set_frequency(new_frequency);
             m_executor->reset();
             m_frequency = new_frequency;
         }
 
-        void test_frequencies(size_t frequency) {
+        void test_frequencies(size_t expected_frequency) {
             const auto frequencies = calculate_frequencies();
             for (auto tested_frequency : frequencies) {
-                interval_ok(tested_frequency, frequency);
+                interval_ok(tested_frequency, expected_frequency);
             }
         }
 
@@ -264,13 +264,13 @@ namespace concurrencpp::tests {
 
 void concurrencpp::tests::test_one_timer() {
     const auto due_time = 1250ms;
-    const auto frequency = 3250ms;
-    auto tq = std::make_shared<concurrencpp::timer_queue>();
+    const auto frequency = 250ms;
+    const auto tq = std::make_shared<concurrencpp::timer_queue>();
 
     timer_tester tester(due_time, frequency, tq);
     tester.start_timer_test();
 
-    std::this_thread::sleep_for(30s);
+    std::this_thread::sleep_for(20s);
 
     tester.test();
 }
@@ -425,7 +425,7 @@ void concurrencpp::tests::test_timer_cancel_after_due_time_before_beat() {
 
     assert_false(static_cast<bool>(timer));
     assert_equal(observer.get_execution_count(), static_cast<size_t>(1));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(1));
+    assert_true(observer.wait_destruction_count(1, 10s));
 }
 
 void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
@@ -453,7 +453,7 @@ void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
 
     assert_false(static_cast<bool>(timer));
     assert_equal(observer.get_execution_count(), static_cast<size_t>(4));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(1));  // one instance was invoked 4 times.
+    assert_true(observer.wait_destruction_count(1, 10s));  // one instance was invoked 4 times.
 }
 
 void concurrencpp::tests::test_timer_cancel_RAII() {
@@ -466,7 +466,7 @@ void concurrencpp::tests::test_timer_cancel_RAII() {
     timers.reserve(timer_count);
 
     for (size_t i = 0; i < timer_count; i++) {
-        timers.emplace_back(timer_queue->make_timer(2'000ms, 2'000ms, ex, observer.get_testing_stub()));
+        timers.emplace_back(timer_queue->make_timer(2s, 2s, ex, observer.get_testing_stub()));
     }
 
     for (auto& timer : timers) {
@@ -505,7 +505,7 @@ void concurrencpp::tests::test_timer_set_frequency_before_due_time() {
     const auto new_frequency = 100ms;
     timer_tester tester(250ms, 250ms);
     tester.start_timer_test();
-    tester.reset(new_frequency);
+    tester.set_new_frequency(new_frequency);
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
@@ -519,7 +519,7 @@ void concurrencpp::tests::test_timer_set_frequency_after_due_time() {
 
     std::this_thread::sleep_for(215ms);
 
-    tester.reset(new_frequency);
+    tester.set_new_frequency(new_frequency);
 
     std::this_thread::sleep_for(4s);
 

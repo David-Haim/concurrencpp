@@ -37,7 +37,6 @@ namespace concurrencpp::details {
                 tuple = std::make_tuple(std::forward<argument_types>(arguments)...)]() mutable noexcept(inti) -> decltype(auto) {
             try {
                 return std::apply(callable, tuple);
-
             } catch (...) {
                 // do nothing
             }

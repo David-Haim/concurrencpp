@@ -53,7 +53,6 @@ namespace concurrencpp::tests {
         assert_equal(execution_map.size(), static_cast<size_t>(1));  // only one thread executed the tasks
         assert_equal(execution_map.begin()->first, concurrencpp::details::thread::get_current_virtual_id());  // and it's this thread.
     }
-
 }  // namespace concurrencpp::tests
 
 using namespace std::chrono;

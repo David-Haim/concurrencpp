@@ -150,7 +150,7 @@ void concurrencpp::tests::test_result_promise_get_result() {
 
 template<class type, class arguments_tuple_type>
 void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args) {
-    // if an exception is thrown inside set_value (by building an object in place) the future is un-ready
+    // if an exception is thrown inside set_value (by building an object in place) the associated result object is un-ready
     {
         struct throws_on_construction {
             throws_on_construction(int, int) {

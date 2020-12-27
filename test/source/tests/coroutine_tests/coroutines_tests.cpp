@@ -89,6 +89,9 @@ result<void> concurrencpp::tests::test_combo_coroutine_impl(std::shared_ptr<thre
 
     assert_equal(string_result, std::to_string(result_factory<int>::get()));
 
+    co_await ex->submit([] {
+    });
+
     auto& int_ref_result = co_await ex->submit([]() -> int& {
         return result_factory<int&>::get();
     });

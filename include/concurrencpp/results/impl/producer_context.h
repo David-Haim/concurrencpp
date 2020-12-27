@@ -27,7 +27,7 @@ namespace concurrencpp::details {
             m_result.emplace(std::forward<argument_types>(arguments)...);
         }
 
-        void build_exception(std::exception_ptr exception) noexcept {
+        void build_exception(const std::exception_ptr& exception) noexcept {
             assert(!m_result.has_value());
             assert(!static_cast<bool>(m_exception));
             m_exception = exception;
@@ -77,7 +77,7 @@ namespace concurrencpp::details {
             m_ready = true;
         }
 
-        void build_exception(std::exception_ptr exception) noexcept {
+        void build_exception(const std::exception_ptr& exception) noexcept {
             assert(!m_ready);
             assert(!static_cast<bool>(m_exception));
             m_exception = exception;
@@ -127,7 +127,7 @@ namespace concurrencpp::details {
             m_pointer = std::addressof(reference);
         }
 
-        void build_exception(std::exception_ptr exception) noexcept {
+        void build_exception(const std::exception_ptr& exception) noexcept {
             assert(m_pointer == nullptr);
             assert(!static_cast<bool>(m_exception));
             m_exception = exception;
