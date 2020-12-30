@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.0.8
+        VERSION 0.0.9
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
