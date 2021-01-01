@@ -1,12 +1,16 @@
 #ifndef CONCURRENCPP_RESULT_FACTORY_H
 #define CONCURRENCPP_RESULT_FACTORY_H
 
-#include <numeric>
-#include <stdexcept>
 #include <string>
 #include <vector>
+#include <numeric>
+#include <stdexcept>
 
 namespace concurrencpp::tests {
+    struct test_exception : public std::runtime_error {
+        test_exception() : runtime_error("test exception.") {}
+    };
+
     template<class type>
     struct result_factory {
         static type get() {
@@ -14,7 +18,7 @@ namespace concurrencpp::tests {
         }
 
         static type throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
             return get();
         }
 
@@ -23,7 +27,7 @@ namespace concurrencpp::tests {
         }
 
         static result<type> make_exceptional() {
-            return make_exceptional_result<type>(std::underflow_error(""));
+            return make_exceptional_result<type>(test_exception {});
         }
     };
 
@@ -40,7 +44,7 @@ namespace concurrencpp::tests {
         }
 
         static int throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
             return get();
         }
 
@@ -49,7 +53,7 @@ namespace concurrencpp::tests {
         }
 
         static result<int> make_exceptional() {
-            return make_exceptional_result<int>(std::underflow_error(""));
+            return make_exceptional_result<int>(test_exception {});
         }
     };
 
@@ -71,7 +75,7 @@ namespace concurrencpp::tests {
         }
 
         static std::string throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
             return get();
         }
 
@@ -80,7 +84,7 @@ namespace concurrencpp::tests {
         }
 
         static result<std::string> make_exceptional() {
-            return make_exceptional_result<std::string>(std::underflow_error(""));
+            return make_exceptional_result<std::string>(test_exception {});
         }
     };
 
@@ -89,7 +93,7 @@ namespace concurrencpp::tests {
         static void get() {}
 
         static void throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
         }
 
         static std::vector<std::nullptr_t> get_many(size_t count) {
@@ -101,7 +105,7 @@ namespace concurrencpp::tests {
         }
 
         static result<void> make_exceptional() {
-            return make_exceptional_result<void>(std::underflow_error(""));
+            return make_exceptional_result<void>(test_exception {});
         }
     };
 
@@ -124,7 +128,7 @@ namespace concurrencpp::tests {
         }
 
         static int& throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
             return get();
         }
 
@@ -133,7 +137,7 @@ namespace concurrencpp::tests {
         }
 
         static result<int&> make_exceptional() {
-            return make_exceptional_result<int&>(std::underflow_error(""));
+            return make_exceptional_result<int&>(test_exception {});
         }
     };
 
@@ -156,7 +160,7 @@ namespace concurrencpp::tests {
         }
 
         static std::string& throw_ex() {
-            throw std::underflow_error("");
+            throw test_exception {};
             return get();
         }
 
@@ -165,7 +169,7 @@ namespace concurrencpp::tests {
         }
 
         static result<std::string&> make_exceptional() {
-            return make_exceptional_result<std::string&>(std::underflow_error(""));
+            return make_exceptional_result<std::string&>(test_exception {});
         }
     };
 }  // namespace concurrencpp::tests

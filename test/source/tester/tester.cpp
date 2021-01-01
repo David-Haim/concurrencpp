@@ -16,7 +16,7 @@ void test_step::launch_test_step() noexcept {
 
     m_step();
 
-    auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
+    const auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
     printf("\tTest-step ended (%lldms).\n", elapsed_time);
 }
 
@@ -38,6 +38,6 @@ void tester::launch_test() noexcept {
         }
     }
 
-    auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
+    const auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
     printf("Test ended (%lldms).\n____________________\n", elapsed_time);
 }

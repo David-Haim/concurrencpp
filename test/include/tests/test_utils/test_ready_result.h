@@ -4,10 +4,7 @@
 #include "concurrencpp/concurrencpp.h"
 
 #include "result_factory.h"
-
-#include "../../helpers/assertions.h"
-
-#include <cstdint>
+#include "helpers/assertions.h"
 
 namespace concurrencpp::tests {
     struct costume_exception : public std::exception {
@@ -19,7 +16,7 @@ namespace concurrencpp::tests {
 
 namespace concurrencpp::tests {
     template<class type>
-    void test_ready_result_result(::concurrencpp::result<type> result, const type& o) {
+    void test_ready_result(::concurrencpp::result<type> result, const type& o) {
         assert_true(static_cast<bool>(result));
         assert_equal(result.status(), concurrencpp::result_status::value);
 
@@ -31,7 +28,7 @@ namespace concurrencpp::tests {
     }
 
     template<class type>
-    void test_ready_result_result(::concurrencpp::result<type> result, std::reference_wrapper<typename std::remove_reference_t<type>> ref) {
+    void test_ready_result(::concurrencpp::result<type> result, std::reference_wrapper<typename std::remove_reference_t<type>> ref) {
         assert_true(static_cast<bool>(result));
         assert_equal(result.status(), concurrencpp::result_status::value);
 
@@ -43,14 +40,15 @@ namespace concurrencpp::tests {
     }
 
     template<class type>
-    void test_ready_result_result(::concurrencpp::result<type> result) {
-        test_ready_result_result<type>(std::move(result), result_factory<type>::get());
+    void test_ready_result(::concurrencpp::result<type> result) {
+        test_ready_result<type>(std::move(result), result_factory<type>::get());
     }
 
     template<>
-    inline void test_ready_result_result(::concurrencpp::result<void> result) {
+    inline void test_ready_result(::concurrencpp::result<void> result) {
         assert_true(static_cast<bool>(result));
         assert_equal(result.status(), concurrencpp::result_status::value);
+
         try {
             result.get();  // just make sure no exception is thrown.
         } catch (...) {

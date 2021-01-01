@@ -38,6 +38,7 @@ set(test_sources
         source/tests/all_tests.cpp
         source/tests/coroutine_tests/coroutine_promises_test.cpp
         source/tests/coroutine_tests/coroutines_tests.cpp
+        source/tests/executor_tests/derivable_executor_tests.cpp
         source/tests/executor_tests/inline_executor_tests.cpp
         source/tests/executor_tests/manual_executor_tests.cpp
         source/tests/executor_tests/thread_executor_tests.cpp
@@ -50,23 +51,21 @@ set(test_sources
         source/tests/result_tests/result_tests.cpp
         source/tests/result_tests/when_all_tests.cpp
         source/tests/result_tests/when_any_tests.cpp
-        source/tests/runtime_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
-        source/tests/timer_tests/timer_tests.cpp)
+        source/tests/timer_tests/timer_tests.cpp
+        source/tests/runtime_tests.cpp
+        source/tests/task_tests.cpp
+        )
 
 set(test_headers
         include/helpers/assertions.h
         include/helpers/object_observer.h
         include/helpers/random.h
-        include/helpers/result_generator.h
-        include/helpers/thread_helpers.h
         include/tester/tester.h
         include/tests/all_tests.h
-        include/tests/executor_tests/executor_test_helpers.h
         include/tests/test_utils/executor_shutdowner.h
-        include/tests/test_utils/proxy_coro.h
         include/tests/test_utils/result_factory.h
-        include/tests/test_utils/test_executors.h
+        include/tests/test_utils/throwing_executor.h
         include/tests/test_utils/test_ready_result.h)
 
 function(temp_test NAMESPACE NAME)

@@ -3,7 +3,7 @@
 #
 function(target_coroutine_options TARGET)
   if(MSVC)
-    target_compile_options(${TARGET} PUBLIC /await /permissive-)
+    target_compile_options(${TARGET} PUBLIC /std:c++latest /permissive-)
     return()
   endif()
 

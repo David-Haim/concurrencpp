@@ -9,17 +9,13 @@ namespace concurrencpp {
         static_assert(std::is_constructible_v<type, argument_types...> || std::is_same_v<type, void>,
                       "concurrencpp::make_ready_result - <<type>> is not constructible from <<argument_types...>");
 
-        auto result_core_ptr = std::make_shared<details::result_core<type>>();
-        result_core_ptr->set_result(std::forward<argument_types>(arguments)...);
-        result_core_ptr->publish_result();
-        return {std::move(result_core_ptr)};
-    }
+        static_assert(std::is_same_v<type, void> ? (sizeof...(argument_types) == 0) : true,
+                      "concurrencpp::make_ready_result<void> - this overload does not accept any argument.");
 
-    inline result<void> make_ready_result() {
-        auto result_core_ptr = std::make_shared<details::result_core<void>>();
-        result_core_ptr->set_result();
-        result_core_ptr->publish_result();
-        return {std::move(result_core_ptr)};
+        auto result_state_ptr = std::make_shared<details::result_state<type>>();
+        result_state_ptr->set_result(std::forward<argument_types>(arguments)...);
+        result_state_ptr->publish_result();
+        return {std::move(result_state_ptr)};
     }
 
     template<class type>
@@ -28,10 +24,10 @@ namespace concurrencpp {
             throw std::invalid_argument(details::consts::k_make_exceptional_result_exception_null_error_msg);
         }
 
-        auto result_core_ptr = std::make_shared<details::result_core<type>>();
-        result_core_ptr->set_exception(exception_ptr);
-        result_core_ptr->publish_result();
-        return {std::move(result_core_ptr)};
+        auto result_state_ptr = std::make_shared<details::result_state<type>>();
+        result_state_ptr->set_exception(exception_ptr);
+        result_state_ptr->publish_result();
+        return {std::move(result_state_ptr)};
     }
 
     template<class type, class exception_type>

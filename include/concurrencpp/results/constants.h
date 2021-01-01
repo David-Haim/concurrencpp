@@ -36,10 +36,6 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_result_resolve_via_executor_null_error_msg = "result::resolve_via() - given executor is null.";
 
-    inline const char* k_result_awaitable_error_msg = "concurrencpp::awaitable_type<type>::await_suspend() - awaitable is empty.";
-
-    inline const char* k_result_resolver_error_msg = "result_resolver<type>::await_suspend() - awaitable is empty.";
-
     inline const char* k_executor_exception_error_msg = "concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
 
     inline const char* k_make_exceptional_result_exception_null_error_msg = "make_exception_result() - given exception_ptr is null.";
@@ -49,6 +45,9 @@ namespace concurrencpp::details::consts {
     inline const char* k_when_any_empty_result_error_msg = "concurrencpp::when_any() - one of the result objects is empty.";
 
     inline const char* k_when_any_empty_range_error_msg = "concurrencpp::when_any() - given range contains no elements.";
+
+    inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - Associated task was interrupted abnormally";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

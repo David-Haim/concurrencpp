@@ -1,5 +1,5 @@
-#include "concurrencpp/concurrencpp.h"
 #include "helpers/object_observer.h"
+#include "concurrencpp/concurrencpp.h"
 
 namespace concurrencpp::tests::details {
     class object_observer_state {
@@ -85,10 +85,6 @@ testing_stub& testing_stub::operator=(testing_stub&& rhs) noexcept {
 
 void testing_stub::operator()() noexcept {
     if (static_cast<bool>(m_state)) {
-        if (m_dummy_work_time != std::chrono::milliseconds(0)) {
-            std::this_thread::sleep_for(m_dummy_work_time);
-        }
-
         m_state->on_execute();
     }
 }
@@ -100,21 +96,21 @@ value_testing_stub& value_testing_stub::operator=(value_testing_stub&& rhs) noex
 
 size_t value_testing_stub::operator()() noexcept {
     testing_stub::operator()();
-    return m_return_value;
+    return m_expected_return_value;
 }
 
 object_observer::object_observer() : m_state(std::make_shared<details::object_observer_state>()) {}
 
-testing_stub object_observer::get_testing_stub(std::chrono::milliseconds dummy_work_time) noexcept {
-    return {m_state, dummy_work_time};
+testing_stub object_observer::get_testing_stub() noexcept {
+    return {m_state};
 }
 
-value_testing_stub object_observer::get_testing_stub(int value, std::chrono::milliseconds dummy_work_time) noexcept {
-    return {m_state, dummy_work_time, value};
+value_testing_stub object_observer::get_testing_stub(int value) noexcept {
+    return {m_state, value};
 }
 
-value_testing_stub object_observer::get_testing_stub(size_t value, std::chrono::milliseconds dummy_work_time) noexcept {
-    return {m_state, dummy_work_time, static_cast<int>(value)};
+value_testing_stub object_observer::get_testing_stub(size_t value) noexcept {
+    return {m_state, value};
 }
 
 bool object_observer::wait_execution_count(size_t count, std::chrono::milliseconds timeout) {

@@ -1,7 +1,6 @@
 #include "concurrencpp/timers/timer_queue.h"
-#include "concurrencpp/timers/timer.h"
-
 #include "concurrencpp/results/result.h"
+#include "concurrencpp/timers/timer.h"
 
 #include <set>
 #include <unordered_map>
@@ -44,8 +43,8 @@ namespace concurrencpp::details {
         void remove_timer_internal(timer_ptr existing_timer) {
             auto timer_it = m_iterator_mapper.find(existing_timer);
             if (timer_it == m_iterator_mapper.end()) {
-                assert(existing_timer->is_oneshot());  // the timer was already deleted by
-                                                       // the queue when it was fired.
+                assert(existing_timer->is_oneshot() || existing_timer->cancelled());  // the timer was already deleted by
+                                                                                      // the queue when it was fired.
                 return;
             }
 
@@ -110,9 +109,13 @@ namespace concurrencpp::details {
                 // be contained somewhere.
                 auto temp_it = temp_set.insert(std::move(timer_node));
 
-                (*temp_it)->fire();
+                // we fire it only if it's not cancelled
+                const auto cancelled = timer_ptr->cancelled();
+                if (!cancelled) {
+                    (*temp_it)->fire();
+                }
 
-                if (is_oneshot) {
+                if (is_oneshot || cancelled) {
                     m_iterator_mapper.erase(timer_ptr);
                     continue;  // let the timer die inside the temp_set
                 }
@@ -144,7 +147,7 @@ timer_queue::~timer_queue() noexcept {
     assert(!m_worker.joinable());
 }
 
-void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) noexcept {
+void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
     assert(lock.owns_lock());
     m_request_queue.emplace_back(std::move(new_timer), timer_request::add);
     lock.unlock();
@@ -152,7 +155,7 @@ void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_ti
     m_condition.notify_one();
 }
 
-void timer_queue::remove_timer(timer_ptr existing_timer) noexcept {
+void timer_queue::remove_timer(timer_ptr existing_timer) {
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         m_request_queue.emplace_back(std::move(existing_timer), timer_request::remove);

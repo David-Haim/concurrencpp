@@ -6,8 +6,9 @@
 
 #include "tester/tester.h"
 #include "helpers/assertions.h"
-#include "helpers/random.h"
 #include "helpers/object_observer.h"
+
+#include <algorithm>
 
 namespace concurrencpp::tests {
     template<class type>
@@ -42,10 +43,11 @@ void concurrencpp::tests::test_when_all_vector_empty_result() {
         results.emplace_back(rp.get_result());
     }
 
+    // place an empty result in the end of the array
     results.emplace_back();
 
     assert_throws_with_error_message<errors::empty_result>(
-        [&] {
+        [&results] {
             concurrencpp::when_all(results.begin(), results.end());
         },
         concurrencpp::details::consts::k_when_all_empty_result_error_msg);
@@ -75,8 +77,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_valid(std::
     results.reserve(1'024);
 
     for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(ex->submit([&values, &counter, i]() -> type {
-            (void)values;
+        results.emplace_back(ex->submit([&, i]() -> type {
             counter.fetch_add(1, std::memory_order_relaxed);
 
             if (i % 4 == 0) {
@@ -112,9 +113,9 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_valid(std::
             test_ready_result_costume_exception(std::move(done_results[i]), i);
         } else {
             if constexpr (!std::is_same_v<void, type>) {
-                test_ready_result_result(std::move(done_results[i]), values[i]);
+                test_ready_result(std::move(done_results[i]), values[i]);
             } else {
-                test_ready_result_result(std::move(done_results[i]));
+                test_ready_result(std::move(done_results[i]));
             }
         }
     }
@@ -125,11 +126,9 @@ void concurrencpp::tests::test_when_all_vector_impl() {
     test_when_all_vector_empty_result<type>();
     test_when_all_vector_empty_range<type>();
 
-    {
-        auto ex = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner shutdown(ex);
-        test_when_all_vector_valid<type>(ex).get();
-    }
+    auto ex = std::make_shared<concurrencpp::thread_executor>();
+    executor_shutdowner shutdown(ex);
+    test_when_all_vector_valid<type>(ex).get();
 }
 
 void concurrencpp::tests::test_when_all_vector() {
@@ -144,8 +143,8 @@ void concurrencpp::tests::test_when_all_tuple_empty_result() {
     result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
-    result_promise<std::string> rp_s;
-    auto s_res = rp_s.get_result();
+    result_promise<std::string> rp_str;
+    auto str_res = rp_str.get_result();
 
     result_promise<void> rp_void;
     auto void_res = rp_void.get_result();
@@ -157,12 +156,12 @@ void concurrencpp::tests::test_when_all_tuple_empty_result() {
 
     assert_throws_with_error_message<errors::empty_result>(
         [&] {
-            when_all(std::move(int_res), std::move(s_res), std::move(void_res), std::move(int_ref_res), std::move(s_ref_res));
+            when_all(std::move(int_res), std::move(str_res), std::move(void_res), std::move(int_ref_res), std::move(s_ref_res));
         },
         concurrencpp::details::consts::k_when_all_empty_result_error_msg);
 
     assert_true(static_cast<bool>(int_res));
-    assert_true(static_cast<bool>(s_res));
+    assert_true(static_cast<bool>(str_res));
     assert_true(static_cast<bool>(void_res));
     assert_true(static_cast<bool>(int_res));
 }
@@ -218,12 +217,12 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::s
         return result_factory<int&>::get();
     });
 
-    auto s_ref_res_val = ex->submit([&]() -> std::string& {
+    auto str_ref_res_val = ex->submit([&]() -> std::string& {
         counter.fetch_add(1, std::memory_order_relaxed);
         return result_factory<std::string&>::get();
     });
 
-    auto s_ref_res_ex = ex->submit([&]() -> std::string& {
+    auto str_ref_res_ex = ex->submit([&]() -> std::string& {
         counter.fetch_add(1, std::memory_order_relaxed);
         throw costume_exception(4);
         return result_factory<std::string&>::get();
@@ -237,8 +236,8 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::s
                         std::move(void_res_ex),
                         std::move(int_ref_res_val),
                         std::move(int_ref_res_ex),
-                        std::move(s_ref_res_val),
-                        std::move(s_ref_res_ex));
+                        std::move(str_ref_res_val),
+                        std::move(str_ref_res_ex));
 
     assert_false(static_cast<bool>(int_res_val));
     assert_false(static_cast<bool>(int_res_ex));
@@ -248,18 +247,18 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::s
     assert_false(static_cast<bool>(void_res_ex));
     assert_false(static_cast<bool>(int_ref_res_val));
     assert_false(static_cast<bool>(int_ref_res_ex));
-    assert_false(static_cast<bool>(s_ref_res_val));
-    assert_false(static_cast<bool>(s_ref_res_ex));
+    assert_false(static_cast<bool>(str_ref_res_val));
+    assert_false(static_cast<bool>(str_ref_res_ex));
 
     auto done_results_tuple = co_await all;
 
-    assert_equal(counter.load(std::memory_order_relaxed), size_t(10));
+    assert_equal(counter.load(std::memory_order_relaxed), static_cast<size_t>(10));
 
-    test_ready_result_result(std::move(std::get<0>(done_results_tuple)), result_factory<int>::get());
-    test_ready_result_result(std::move(std::get<2>(done_results_tuple)), result_factory<std::string>::get());
-    test_ready_result_result(std::move(std::get<4>(done_results_tuple)));
-    test_ready_result_result(std::move(std::get<6>(done_results_tuple)), result_factory<int&>::get());
-    test_ready_result_result(std::move(std::get<8>(done_results_tuple)), result_factory<std::string&>::get());
+    test_ready_result(std::move(std::get<0>(done_results_tuple)));
+    test_ready_result(std::move(std::get<2>(done_results_tuple)));
+    test_ready_result(std::move(std::get<4>(done_results_tuple)));
+    test_ready_result(std::move(std::get<6>(done_results_tuple)));
+    test_ready_result(std::move(std::get<8>(done_results_tuple)));
 
     test_ready_result_costume_exception(std::move(std::get<1>(done_results_tuple)), 0);
     test_ready_result_costume_exception(std::move(std::get<3>(done_results_tuple)), 1);
@@ -272,11 +271,9 @@ void concurrencpp::tests::test_when_all_tuple() {
     test_when_all_tuple_empty_result();
     test_when_all_tuple_empty_range();
 
-    {
-        auto ex = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner shutdown(ex);
-        test_when_all_tuple_valid(ex);
-    }
+    auto ex = std::make_shared<concurrencpp::thread_executor>();
+    executor_shutdowner shutdown(ex);
+    test_when_all_tuple_valid(ex).get();
 }
 
 void concurrencpp::tests::test_when_all() {

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.0.8
+        VERSION 0.0.9
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -17,13 +17,15 @@ endif()
 # ---- Declare library ----
 
 set(concurrencpp_sources
+        source/task.cpp
         source/executors/executor.cpp
         source/executors/manual_executor.cpp
         source/executors/thread_executor.cpp
         source/executors/thread_pool_executor.cpp
         source/executors/worker_thread_executor.cpp
+        source/results/impl/consumer_context.cpp
+        source/results/impl/result_state.cpp
         source/results/promises.cpp
-        source/results/result_core.cpp
         source/runtime/runtime.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
@@ -32,8 +34,10 @@ set(concurrencpp_sources
 set(concurrencpp_headers
         include/concurrencpp/concurrencpp.h
         include/concurrencpp/errors.h
+        include/concurrencpp/task.h
         include/concurrencpp/forward_declerations.h
         include/concurrencpp/platform_defs.h
+        include/concurrencpp/coroutines/coroutine.h
         include/concurrencpp/executors/constants.h
         include/concurrencpp/executors/derivable_executor.h
         include/concurrencpp/executors/executor.h
@@ -43,13 +47,14 @@ set(concurrencpp_headers
         include/concurrencpp/executors/thread_executor.h
         include/concurrencpp/executors/thread_pool_executor.h
         include/concurrencpp/executors/worker_thread_executor.h
+        include/concurrencpp/results/impl/consumer_context.h
+        include/concurrencpp/results/impl/producer_context.h
+        include/concurrencpp/results/impl/result_state.h
         include/concurrencpp/results/constants.h
-        include/concurrencpp/results/executor_exception.h
         include/concurrencpp/results/make_result.h
         include/concurrencpp/results/promises.h
         include/concurrencpp/results/result.h
         include/concurrencpp/results/result_awaitable.h
-        include/concurrencpp/results/result_core.h
         include/concurrencpp/results/result_fwd_declerations.h
         include/concurrencpp/results/when_result.h
         include/concurrencpp/runtime/constants.h

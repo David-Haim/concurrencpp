@@ -2,10 +2,10 @@
 #define CONCURRENCPP_RESULT_FWD_DECLERATIONS_H
 
 #include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/coroutines/coroutine.h"
 
 #include <memory>
 #include <utility>
-#include <experimental/coroutine>
 
 namespace concurrencpp {
     template<class type>
@@ -31,9 +31,7 @@ namespace concurrencpp {
 
 namespace concurrencpp::details {
     template<class type>
-    class result_core;
-
-    using await_context = std::pair<std::shared_ptr<executor>, std::experimental::coroutine_handle<>>;
+    class result_state;
 
     struct executor_bulk_tag {};
 

@@ -41,6 +41,7 @@ void concurrencpp::tests::test_when_any_vector_empty_result() {
         results.emplace_back(rp.get_result());
     }
 
+    // place an empty result in the end of the array
     results.emplace_back();
 
     assert_throws_with_error_message<errors::empty_result>(
@@ -76,8 +77,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
 
     for (size_t i = 0; i < task_count; i++) {
         const auto time_to_sleep = randomizer(10, 100);
-        results.emplace_back(ex->submit([i, time_to_sleep, &values]() -> type {
-            (void)values;
+        results.emplace_back(ex->submit([&, i, time_to_sleep]() -> type {
             std::this_thread::sleep_for(std::chrono::milliseconds(time_to_sleep));
 
             if (i % 4 == 0) {
@@ -92,21 +92,21 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
 
     auto any_done = co_await when_any(results.begin(), results.end());
 
-    auto& done_result = any_done.results[any_done.index];
-
     const auto all_valid = std::all_of(any_done.results.begin(), any_done.results.end(), [](const auto& result) {
         return static_cast<bool>(result);
     });
 
     assert_true(all_valid);
 
+    auto& done_result = any_done.results[any_done.index];
+
     if (any_done.index % 4 == 0) {
         test_ready_result_costume_exception(std::move(done_result), any_done.index);
     } else {
         if constexpr (std::is_same_v<void, type>) {
-            test_ready_result_result(std::move(done_result));
+            test_ready_result(std::move(done_result));
         } else {
-            test_ready_result_result(std::move(done_result), values[any_done.index]);
+            test_ready_result(std::move(done_result), values[any_done.index]);
         }
     }
 
@@ -125,11 +125,9 @@ void concurrencpp::tests::test_when_any_vector_impl() {
     test_when_any_vector_empty_result<type>();
     test_when_any_vector_empty_range<type>();
 
-    {
-        auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(thread_executor);
-        test_when_any_vector_valid<type>(thread_executor).get();
-    }
+    auto ex = std::make_shared<concurrencpp::thread_executor>();
+    executor_shutdowner es(ex);
+    test_when_any_vector_valid<type>(ex).get();
 }
 
 void concurrencpp::tests::test_when_any_vector() {
@@ -144,8 +142,8 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
     result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
-    result_promise<std::string> rp_s;
-    auto s_res = rp_s.get_result();
+    result_promise<std::string> rp_str;
+    auto str_res = rp_str.get_result();
 
     result_promise<void> rp_void;
     auto void_res = rp_void.get_result();
@@ -153,17 +151,17 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
     result_promise<int&> rp_int_ref;
     auto int_ref_res = rp_int_ref.get_result();
 
-    result<std::string&> s_ref_res;
+    result<std::string&> str_ref_res;
 
     assert_throws_with_error_message<errors::empty_result>(
         [&] {
-            when_any(std::move(int_res), std::move(s_res), std::move(void_res), std::move(int_ref_res), std::move(s_ref_res));
+            when_any(std::move(int_res), std::move(str_res), std::move(void_res), std::move(int_ref_res), std::move(str_ref_res));
         },
         concurrencpp::details::consts::k_when_any_empty_result_error_msg);
 
     // all pre-operation results are still valid
     assert_true(static_cast<bool>(int_res));
-    assert_true(static_cast<bool>(s_res));
+    assert_true(static_cast<bool>(str_res));
     assert_true(static_cast<bool>(void_res));
     assert_true(static_cast<bool>(int_res));
 }
@@ -173,14 +171,14 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
     random randomizer;
 
     auto tts = randomizer(10, 100);
-    auto int_res_val = ex->submit([&counter, tts] {
+    auto int_res_val = ex->submit([&counter, tts]() -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
         return result_factory<int>::get();
     });
 
     tts = randomizer(10, 100);
-    auto int_res_ex = ex->submit([&counter, tts] {
+    auto int_res_ex = ex->submit([&counter, tts]() -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
         throw costume_exception(0);
@@ -231,14 +229,14 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
     });
 
     tts = randomizer(10, 100);
-    auto s_ref_res_val = ex->submit([&counter, tts]() -> std::string& {
+    auto str_ref_res_val = ex->submit([&counter, tts]() -> std::string& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
         return result_factory<std::string&>::get();
     });
 
     tts = randomizer(10, 100);
-    auto s_ref_res_ex = ex->submit([&counter, tts]() -> std::string& {
+    auto str_ref_res_ex = ex->submit([&counter, tts]() -> std::string& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
         throw costume_exception(4);
@@ -253,14 +251,14 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
                                       std::move(void_res_ex),
                                       std::move(int_ref_res_val),
                                       std::move(int_ref_res_ex),
-                                      std::move(s_ref_res_val),
-                                      std::move(s_ref_res_ex));
+                                      std::move(str_ref_res_val),
+                                      std::move(str_ref_res_ex));
 
-    assert_bigger_equal(counter.load(std::memory_order_relaxed), size_t(1));
+    assert_bigger_equal(counter.load(std::memory_order_relaxed), static_cast<size_t>(1));
 
     switch (any_done.index) {
         case 0: {
-            test_ready_result_result(std::move(std::get<0>(any_done.results)), result_factory<int>::get());
+            test_ready_result(std::move(std::get<0>(any_done.results)));
             break;
         }
         case 1: {
@@ -268,7 +266,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 2: {
-            test_ready_result_result(std::move(std::get<2>(any_done.results)), result_factory<std::string>::get());
+            test_ready_result(std::move(std::get<2>(any_done.results)));
             break;
         }
         case 3: {
@@ -276,7 +274,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 4: {
-            test_ready_result_result(std::move(std::get<4>(any_done.results)));
+            test_ready_result(std::move(std::get<4>(any_done.results)));
             break;
         }
         case 5: {
@@ -284,7 +282,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 6: {
-            test_ready_result_result(std::move(std::get<6>(any_done.results)), result_factory<int&>::get());
+            test_ready_result(std::move(std::get<6>(any_done.results)));
             break;
         }
         case 7: {
@@ -292,7 +290,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 8: {
-            test_ready_result_result(std::move(std::get<8>(any_done.results)), result_factory<std::string&>::get());
+            test_ready_result(std::move(std::get<8>(any_done.results)));
             break;
         }
         case 9: {
@@ -320,11 +318,9 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
 void concurrencpp::tests::test_when_any_tuple() {
     test_when_any_tuple_empty_result();
 
-    {
-        auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(thread_executor);
-        test_when_any_tuple_impl(thread_executor).get();
-    }
+    auto ex = std::make_shared<concurrencpp::thread_executor>();
+    executor_shutdowner es(ex);
+    test_when_any_tuple_impl(ex).get();
 }
 
 void concurrencpp::tests::test_when_any() {

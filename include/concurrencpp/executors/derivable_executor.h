@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_DERIVABLE_EXECUTOR_H
 #define CONCURRENCPP_DERIVABLE_EXECUTOR_H
 
+#include "concurrencpp/utils/bind.h"
 #include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp {

@@ -5,13 +5,23 @@
 
 #include "tester/tester.h"
 #include "helpers/assertions.h"
-#include "helpers/random.h"
 #include "helpers/object_observer.h"
 
 namespace concurrencpp::tests {
+    void test_initialy_resumed_null_result_promise_value();
+    void test_initialy_resumed_null_result_promise_exception();
     void test_initialy_resumed_null_result_promise();
+
+    void test_initialy_resumed_result_promise_value();
+    void test_initialy_resumed_result_promise_exception();
     void test_initialy_resumed_result_promise();
+
+    void test_initialy_rescheduled_null_result_promise_value();
+    void test_initialy_rescheduled_null_result_promise_exception();
     void test_initialy_rescheduled_null_result_promise();
+
+    void test_initialy_rescheduled_result_promise_value();
+    void test_initialy_rescheduled_result_promise_exception();
     void test_initialy_rescheduled_result_promise();
 }  // namespace concurrencpp::tests
 
@@ -32,12 +42,7 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 namespace concurrencpp::tests {
-    null_result initialy_resumed_null_result_coro(concurrencpp::details::wait_context& wc,
-                                                  worker_ptr w0,
-                                                  worker_ptr w1,
-                                                  worker_ptr w2,
-                                                  worker_ptr w3,
-                                                  testing_stub stub) {
+    null_result initialy_resumed_null_result_coro(worker_ptr w0, worker_ptr w1, worker_ptr w2, worker_ptr w3, testing_stub stub, const bool terminate_by_exception) {
         int i = 0;
         std::string s = "";
 
@@ -65,22 +70,39 @@ namespace concurrencpp::tests {
         assert_equal(i, 3);
         assert_equal(s, "aaa");
 
-        wc.notify();
+        if (terminate_by_exception) {
+            throw costume_exception(1234);
+        }
     }
 }  // namespace concurrencpp::tests
 
-void concurrencpp::tests::test_initialy_resumed_null_result_promise() {
+void concurrencpp::tests::test_initialy_resumed_null_result_promise_value() {
     worker_ptr workers[4];
     init_workers(workers);
 
     object_observer observer;
-    concurrencpp::details::wait_context wc;
-    initialy_resumed_null_result_coro(wc, workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub());
+    initialy_resumed_null_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), false);
 
-    wc.wait();
     assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
 
     shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_resumed_null_result_promise_exception() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+    initialy_resumed_null_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), true);
+
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
+
+    shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_resumed_null_result_promise() {
+    test_initialy_resumed_null_result_promise_value();
+    test_initialy_resumed_null_result_promise_exception();
 }
 
 namespace concurrencpp::tests {
@@ -122,7 +144,7 @@ namespace concurrencpp::tests {
     }
 }  // namespace concurrencpp::tests
 
-void concurrencpp::tests::test_initialy_resumed_result_promise() {
+void concurrencpp::tests::test_initialy_resumed_result_promise_value() {
     worker_ptr workers[4];
     init_workers(workers);
 
@@ -134,30 +156,42 @@ void concurrencpp::tests::test_initialy_resumed_result_promise() {
 
     assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
 
-    auto result = initialy_resumed_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), true);
+    shutdown_workers(workers);
+}
 
+void concurrencpp::tests::test_initialy_resumed_result_promise_exception() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+    auto result = initialy_resumed_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), true);
     result.wait();
 
     test_ready_result_costume_exception(std::move(result), 1234);
-    assert_true(observer.wait_destruction_count(2, std::chrono::seconds(10)));
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
 
     shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_resumed_result_promise() {
+    test_initialy_resumed_result_promise_value();
+    test_initialy_resumed_result_promise_exception();
 }
 
 namespace concurrencpp::tests {
     null_result initialy_rescheduled_null_result_coro(executor_tag,
                                                       worker_ptr w0,
                                                       const std::thread::id caller_thread_id,
-                                                      concurrencpp::details::wait_context& wc,
                                                       worker_ptr w1,
                                                       worker_ptr w2,
                                                       worker_ptr w3,
-                                                      testing_stub stub) {
+                                                      testing_stub stub,
+                                                      const bool terminate_by_exception) {
 
         assert_not_equal(caller_thread_id, std::this_thread::get_id());
 
         int i = 0;
-        std::string s = "";
+        std::string s;
 
         ++i;
         s += "a";
@@ -180,21 +214,39 @@ namespace concurrencpp::tests {
         assert_equal(i, 3);
         assert_equal(s, "aaa");
 
-        wc.notify();
+        if (terminate_by_exception) {
+            throw costume_exception(1234);
+        }
     }
 }  // namespace concurrencpp::tests
-void concurrencpp::tests::test_initialy_rescheduled_null_result_promise() {
+
+void concurrencpp::tests::test_initialy_rescheduled_null_result_promise_value() {
     worker_ptr workers[4];
     init_workers(workers);
 
     object_observer observer;
-    concurrencpp::details::wait_context wc;
-    initialy_rescheduled_null_result_coro({}, workers[0], std::this_thread::get_id(), wc, workers[1], workers[2], workers[3], observer.get_testing_stub());
+    initialy_rescheduled_null_result_coro({}, workers[0], std::this_thread::get_id(), workers[1], workers[2], workers[3], observer.get_testing_stub(), false);
 
-    wc.wait();
     assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
 
     shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_rescheduled_null_result_promise_exception() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+    initialy_rescheduled_null_result_coro({}, workers[0], std::this_thread::get_id(), workers[1], workers[2], workers[3], observer.get_testing_stub(), true);
+
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
+
+    shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_rescheduled_null_result_promise() {
+    test_initialy_rescheduled_null_result_promise_value();
+    test_initialy_rescheduled_null_result_promise_exception();
 }
 
 namespace concurrencpp::tests {
@@ -210,7 +262,7 @@ namespace concurrencpp::tests {
         assert_not_equal(caller_id, std::this_thread::get_id());
 
         int i = 0;
-        std::string s = "";
+        std::string s;
 
         co_await w0->submit([] {
         });
@@ -241,7 +293,7 @@ namespace concurrencpp::tests {
     }
 }  // namespace concurrencpp::tests
 
-void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
+void concurrencpp::tests::test_initialy_rescheduled_result_promise_value() {
     worker_ptr workers[4];
     init_workers(workers);
 
@@ -254,15 +306,29 @@ void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
     assert_equal(i, 3);
     assert_equal(s, "aaa");
 
+    shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_rescheduled_result_promise_exception() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+
     auto result =
         initialy_rescheduled_result_coro({}, workers[0], std::this_thread::get_id(), workers[1], workers[2], workers[3], observer.get_testing_stub(), true);
 
     result.wait();
     test_ready_result_costume_exception(std::move(result), 1234);
 
-    assert_true(observer.wait_destruction_count(2, std::chrono::seconds(10)));
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
 
     shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
+    test_initialy_rescheduled_result_promise_value();
+    test_initialy_rescheduled_result_promise_exception();
 }
 
 void concurrencpp::tests::test_coroutine_promises() {

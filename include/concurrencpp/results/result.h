@@ -4,6 +4,7 @@
 #include "concurrencpp/results/constants.h"
 #include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/result_awaitable.h"
+#include "concurrencpp/results/impl/result_state.h"
 
 #include "concurrencpp/errors.h"
 #include "concurrencpp/forward_declerations.h"
@@ -23,7 +24,7 @@ namespace concurrencpp {
         friend class details::when_result_helper;
 
        private:
-        std::shared_ptr<details::result_core<type>> m_state;
+        std::shared_ptr<details::result_state<type>> m_state;
 
         void throw_if_empty(const char* message) const {
             if (m_state.get() != nullptr) {
@@ -38,7 +39,7 @@ namespace concurrencpp {
         ~result() noexcept = default;
         result(result&& rhs) noexcept = default;
 
-        result(std::shared_ptr<details::result_core<type>> state) noexcept : m_state(std::move(state)) {}
+        result(std::shared_ptr<details::result_state<type>> state) noexcept : m_state(std::move(state)) {}
 
         result& operator=(result&& rhs) noexcept {
             if (this != &rhs) {
@@ -65,14 +66,14 @@ namespace concurrencpp {
             m_state->wait();
         }
 
-        template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
+        template<class duration_type, class ratio_type>
+        result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) {
             throw_if_empty(details::consts::k_result_wait_for_error_msg);
             return m_state->wait_for(duration);
         }
 
-        template<class clock, class duration>
-        result_status wait_until(std::chrono::time_point<clock, duration> timeout_time) {
+        template<class clock_type, class duration_type>
+        result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
             throw_if_empty(details::consts::k_result_wait_until_error_msg);
             return m_state->wait_until(timeout_time);
         }
@@ -121,7 +122,7 @@ namespace concurrencpp {
     class result_promise {
 
        private:
-        std::shared_ptr<details::result_core<type>> m_state;
+        std::shared_ptr<details::result_state<type>> m_state;
         bool m_result_retrieved;
 
         void throw_if_empty(const char* message) const {
@@ -141,13 +142,13 @@ namespace concurrencpp {
                 return;
             }
 
-            auto exception_ptr = std::make_exception_ptr(errors::broken_task("result_promise - broken task."));
+            auto exception_ptr = std::make_exception_ptr(errors::broken_task(details::consts::k_broken_task_exception_error_msg));
             m_state->set_exception(exception_ptr);
             m_state->publish_result();
         }
 
        public:
-        result_promise() : m_state(std::make_shared<details::result_core<type>>()), m_result_retrieved(false) {}
+        result_promise() : m_state(std::make_shared<details::result_state<type>>()), m_result_retrieved(false) {}
 
         result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
 
@@ -194,7 +195,7 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class... argument_types>
-        void set_from_function(callable_type&& callable, argument_types&&... args) {
+        void set_from_function(callable_type&& callable, argument_types&&... args) noexcept {
             constexpr auto is_invokable = std::is_invocable_r_v<type, callable_type, argument_types...>;
 
             static_assert(is_invokable,

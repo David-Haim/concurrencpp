@@ -46,29 +46,28 @@ namespace concurrencpp::tests {
     void test_timer_assignment_operator();
 }  // namespace concurrencpp::tests
 
-using concurrencpp::timer;
-
 using namespace std::chrono;
+using concurrencpp::timer;
 using time_point = std::chrono::time_point<high_resolution_clock>;
 
 namespace concurrencpp::tests {
     auto empty_callback = []() noexcept {
     };
 
-    class counter_executor : public concurrencpp::executor {
+    class counting_executor : public concurrencpp::executor {
 
        private:
         std::atomic_size_t m_invocation_count;
 
        public:
-        counter_executor() : executor("timer_counter_executor"), m_invocation_count(0) {}
+        counting_executor() : executor("counting executor"), m_invocation_count(0) {}
 
-        void enqueue(std::experimental::coroutine_handle<> task) override {
+        void enqueue(concurrencpp::task task) override {
             ++m_invocation_count;
             task();
         }
 
-        void enqueue(std::span<std::experimental::coroutine_handle<>>) override {
+        void enqueue(std::span<concurrencpp::task>) override {
             // do nothing
         }
 
@@ -97,38 +96,41 @@ namespace concurrencpp::tests {
         ::time_point m_start_time;
 
        public:
-        recording_executor() : executor("timer_recording_executor") {
-            m_time_points.reserve(64);
-        };
+        recording_executor() : executor("recording executor") {
+            m_time_points.reserve(128);
+        }
 
-        virtual void enqueue(std::experimental::coroutine_handle<> task) override {
+        void enqueue(concurrencpp::task task) override {
+            const auto now = high_resolution_clock::now();
+
             {
                 std::unique_lock<std::mutex> lock(m_lock);
-                m_time_points.emplace_back(std::chrono::high_resolution_clock::now());
+                m_time_points.emplace_back(now);
             }
 
             task();
         }
 
-        virtual void enqueue(std::span<std::experimental::coroutine_handle<>>) override {
+        void enqueue(std::span<concurrencpp::task>) override {
             // do nothing
         }
 
-        virtual int max_concurrency_level() const noexcept override {
+        int max_concurrency_level() const noexcept override {
             return 0;
         }
 
-        virtual bool shutdown_requested() const noexcept override {
+        bool shutdown_requested() const noexcept override {
             return false;
         }
 
-        virtual void shutdown() noexcept override {
+        void shutdown() noexcept override {
             // do nothing
         }
 
         void start_test() {
+            const auto now = high_resolution_clock::now();
             std::unique_lock<std::mutex> lock(m_lock);
-            m_start_time = std::chrono::high_resolution_clock::now();
+            m_start_time = now;
         }
 
         ::time_point get_start_time() {
@@ -150,7 +152,7 @@ namespace concurrencpp::tests {
         void reset() {
             std::unique_lock<std::mutex> lock(m_lock);
             m_time_points.clear();
-            m_start_time = std::chrono::high_resolution_clock::now();
+            m_start_time = high_resolution_clock::now();
         }
     };
 
@@ -159,8 +161,8 @@ namespace concurrencpp::tests {
        private:
         const std::chrono::milliseconds m_due_time;
         std::chrono::milliseconds m_frequency;
-        const std::shared_ptr<recording_executor> m_executor;
-        const std::shared_ptr<concurrencpp::timer_queue> m_timer_queue;
+        const std::shared_ptr<recording_executor> m_executor = std::make_shared<recording_executor>();
+        const std::shared_ptr<timer_queue> m_timer_queue;
         concurrencpp::timer m_timer;
 
         void assert_timer_stats() noexcept {
@@ -193,8 +195,8 @@ namespace concurrencpp::tests {
         }
 
         void assert_correct_time_points() {
-            const auto tested_due_time = calculate_due_time();
-            interval_ok(tested_due_time, m_due_time.count());
+            const auto recorded_due_time = calculate_due_time();
+            interval_ok(recorded_due_time, m_due_time.count());
 
             const auto intervals = calculate_frequencies();
             for (auto tested_frequency : intervals) {
@@ -203,8 +205,11 @@ namespace concurrencpp::tests {
         }
 
        public:
-        timer_tester(const std::chrono::milliseconds due_time, const std::chrono::milliseconds frequency, std::shared_ptr<concurrencpp::timer_queue> timer_queue) :
-            m_due_time(due_time), m_frequency(frequency), m_executor(std::make_shared<recording_executor>()), m_timer_queue(std::move(timer_queue)) {}
+        timer_tester(const milliseconds due_time, const milliseconds frequency) :
+            m_due_time(due_time), m_frequency(frequency), m_timer_queue(std::make_shared<timer_queue>()) {}
+
+        timer_tester(const milliseconds due_time, const milliseconds frequency, const std::shared_ptr<timer_queue>& timer_queue) :
+            m_due_time(due_time), m_frequency(frequency), m_timer_queue(timer_queue) {}
 
         void start_timer_test() {
             m_timer = m_timer_queue->make_timer(m_due_time, m_frequency, m_executor, [] {
@@ -220,16 +225,16 @@ namespace concurrencpp::tests {
             m_executor->start_test();
         }
 
-        void reset(std::chrono::milliseconds new_frequency) noexcept {
+        void set_new_frequency(std::chrono::milliseconds new_frequency) noexcept {
             m_timer.set_frequency(new_frequency);
             m_executor->reset();
             m_frequency = new_frequency;
         }
 
-        void test_frequencies(size_t frequency) {
+        void test_frequencies(size_t expected_frequency) {
             const auto frequencies = calculate_frequencies();
             for (auto tested_frequency : frequencies) {
-                interval_ok(tested_frequency, frequency);
+                interval_ok(tested_frequency, expected_frequency);
             }
         }
 
@@ -244,7 +249,7 @@ namespace concurrencpp::tests {
             assert_timer_stats();
             interval_ok(calculate_due_time(), m_due_time.count());
 
-            auto frequencies = calculate_frequencies();
+            const auto frequencies = calculate_frequencies();
             assert_true(frequencies.empty());
 
             m_timer.cancel();
@@ -258,14 +263,14 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 void concurrencpp::tests::test_one_timer() {
-    const auto due_time = 1270ms;
-    const auto frequency = 3230ms;
-    auto tq = std::make_shared<concurrencpp::timer_queue>();
+    const auto due_time = 1250ms;
+    const auto frequency = 250ms;
+    const auto tq = std::make_shared<concurrencpp::timer_queue>();
 
     timer_tester tester(due_time, frequency, tq);
     tester.start_timer_test();
 
-    std::this_thread::sleep_for(30s);
+    std::this_thread::sleep_for(20s);
 
     tester.test();
 }
@@ -279,7 +284,7 @@ void concurrencpp::tests::test_many_timers() {
     const size_t due_time_max = 2'000;
     const size_t frequency_min = 100;
     const size_t frequency_max = 3'000;
-    const size_t timer_count = 1'024 * 4;
+    const size_t timer_count = 1'024;
 
     auto round_down = [](size_t num) {
         return num - num % 50;
@@ -289,7 +294,7 @@ void concurrencpp::tests::test_many_timers() {
         const auto due_time = round_down(randomizer(due_time_min, due_time_max));
         const auto frequency = round_down(randomizer(frequency_min, frequency_max));
 
-        testers.emplace_front(std::chrono::milliseconds(due_time), std::chrono::milliseconds(frequency), timer_queue).start_timer_test();
+        testers.emplace_front(milliseconds(due_time), milliseconds(frequency), timer_queue).start_timer_test();
     }
 
     std::this_thread::sleep_for(5min);
@@ -314,7 +319,6 @@ void concurrencpp::tests::test_timer_destructor_dead_timer_queue() {
 
     {
         auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-
         timer = timer_queue->make_timer(10 * 1000ms, 10 * 1000ms, executor, empty_callback);
     }
 
@@ -322,21 +326,21 @@ void concurrencpp::tests::test_timer_destructor_dead_timer_queue() {
 }
 
 void concurrencpp::tests::test_timer_destructor_functionality() {
-    auto executor = std::make_shared<counter_executor>();
+    auto executor = std::make_shared<counting_executor>();
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
 
     size_t invocation_count_before = 0;
 
     {
-        auto timer = timer_queue->make_timer(500ms, 500ms, executor, [] {
+        auto timer = timer_queue->make_timer(150ms, 150ms, executor, [] {
         });
 
-        std::this_thread::sleep_for(4150ms);
+        std::this_thread::sleep_for(1500ms + 65ms);  // racy test, but supposed to generally work
 
         invocation_count_before = executor->invocation_count();
     }
 
-    std::this_thread::sleep_for(4s);
+    std::this_thread::sleep_for(2s);
 
     const auto invocation_count_after = executor->invocation_count();
     assert_equal(invocation_count_before, invocation_count_after);
@@ -352,13 +356,12 @@ void concurrencpp::tests::test_timer_destructor_RAII() {
     timers.reserve(timer_count);
 
     for (size_t i = 0; i < timer_count; i++) {
-        timers.emplace_back(timer_queue->make_timer(1'000ms, 1'000ms, inline_executor, observer.get_testing_stub()));
+        timers.emplace_back(timer_queue->make_timer(1s, 1s, inline_executor, observer.get_testing_stub()));
     }
 
     timers.clear();
-    timer_queue.reset();
 
-    assert_equal(observer.get_destruction_count(), timer_count);
+    assert_true(observer.wait_destruction_count(timer_count, minutes(2)));
 }
 
 void concurrencpp::tests::test_timer_destructor() {
@@ -390,79 +393,81 @@ void concurrencpp::tests::test_timer_cancel_dead_timer_queue() {
 void concurrencpp::tests::test_timer_cancel_before_due_time() {
     object_observer observer;
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    auto wt_executor = std::make_shared<concurrencpp::worker_thread_executor>();
+    auto ex = std::make_shared<concurrencpp::inline_executor>();
 
-    auto timer = timer_queue->make_timer(1'000ms, 500ms, wt_executor, observer.get_testing_stub());
-
+    auto timer = timer_queue->make_timer(1s, 1s, ex, observer.get_testing_stub());
     timer.cancel();
+
     assert_false(timer);
 
-    std::this_thread::sleep_for(4s);
+    std::this_thread::sleep_for(2s);
 
-    assert_equal(observer.get_execution_count(), size_t(0));
-    assert_equal(observer.get_destruction_count(), size_t(1));
-
-    wt_executor->shutdown();
+    assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
+    assert_true(observer.wait_destruction_count(1, 10s));
 }
 
 void concurrencpp::tests::test_timer_cancel_after_due_time_before_beat() {
     object_observer observer;
+    concurrencpp::details::wait_context wc;
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    auto wt_executor = std::make_shared<concurrencpp::worker_thread_executor>();
+    auto ex = std::make_shared<concurrencpp::inline_executor>();
 
-    auto timer = timer_queue->make_timer(500ms, 500ms, wt_executor, observer.get_testing_stub());
+    auto timer = timer_queue->make_timer(100ms, 200ms, ex, [&wc, stub = observer.get_testing_stub()]() mutable {
+        stub();
+        wc.notify();
+    });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(600));
-
+    // will be released after the first beat.
+    wc.wait();
     timer.cancel();
-    assert_false(timer);
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(2s);
 
-    assert_equal(observer.get_execution_count(), size_t(1));
-    assert_equal(observer.get_destruction_count(), size_t(1));
-
-    wt_executor->shutdown();
+    assert_false(static_cast<bool>(timer));
+    assert_equal(observer.get_execution_count(), static_cast<size_t>(1));
+    assert_true(observer.wait_destruction_count(1, 10s));
 }
 
 void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
     object_observer observer;
+    concurrencpp::details::wait_context wc;
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    auto wt_executor = std::make_shared<concurrencpp::worker_thread_executor>();
+    auto ex = std::make_shared<concurrencpp::inline_executor>();
+    constexpr size_t max_invocation_count = 4;
+    std::atomic_size_t invocation_counter = 0;
 
-    auto timer = timer_queue->make_timer(1'000ms, 1'000ms, wt_executor, observer.get_testing_stub());
+    auto timer = timer_queue->make_timer(100ms, 200ms, ex, [&invocation_counter, &wc, stub = observer.get_testing_stub()]() mutable {
+        stub();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1'000 * 4 + 220));
+        const auto c = invocation_counter.fetch_add(1, std::memory_order_relaxed) + 1;
+        if (c == max_invocation_count) {
+            wc.notify();
+        }
+    });
 
-    const auto execution_count_0 = observer.get_execution_count();
-
+    // will be released after the first beat.
+    wc.wait();
     timer.cancel();
-    assert_false(timer);
 
-    std::this_thread::sleep_for(std::chrono::seconds(4));
+    std::this_thread::sleep_for(2s);
 
-    const auto execution_count_1 = observer.get_execution_count();
-
-    assert_equal(execution_count_0, execution_count_1);
-    assert_equal(observer.get_destruction_count(), size_t(1));
-
-    wt_executor->shutdown();
+    assert_false(static_cast<bool>(timer));
+    assert_equal(observer.get_execution_count(), static_cast<size_t>(4));
+    assert_true(observer.wait_destruction_count(1, 10s));  // one instance was invoked 4 times.
 }
 
 void concurrencpp::tests::test_timer_cancel_RAII() {
     const size_t timer_count = 1'024;
     object_observer observer;
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
+    auto ex = std::make_shared<concurrencpp::inline_executor>();
 
     std::vector<concurrencpp::timer> timers;
     timers.reserve(timer_count);
 
     for (size_t i = 0; i < timer_count; i++) {
-        timers.emplace_back(timer_queue->make_timer(1'000ms, 1'000ms, inline_executor, observer.get_testing_stub()));
+        timers.emplace_back(timer_queue->make_timer(2s, 2s, ex, observer.get_testing_stub()));
     }
-
-    timer_queue.reset();
 
     for (auto& timer : timers) {
         timer.cancel();
@@ -497,32 +502,32 @@ void concurrencpp::tests::test_timer_operator_bool() {
 }
 
 void concurrencpp::tests::test_timer_set_frequency_before_due_time() {
-    auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    timer_tester tester(1'000ms, 1'000ms, timer_queue);
+    const auto new_frequency = 100ms;
+    timer_tester tester(250ms, 250ms);
     tester.start_timer_test();
+    tester.set_new_frequency(new_frequency);
 
-    tester.reset(500ms);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    tester.test_frequencies(500);
+    tester.test_frequencies(new_frequency.count());
 }
 
 void concurrencpp::tests::test_timer_set_frequency_after_due_time() {
-    auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    timer_tester tester(1'000ms, 1'000ms, timer_queue);
+    const auto new_frequency = 100ms;
+    timer_tester tester(150ms, 350ms);
     tester.start_timer_test();
 
-    std::this_thread::sleep_for(1200ms);
+    std::this_thread::sleep_for(215ms);
 
-    tester.reset(500ms);
+    tester.set_new_frequency(new_frequency);
 
-    std::this_thread::sleep_for(5s);
+    std::this_thread::sleep_for(4s);
 
-    tester.test_frequencies(500);
+    tester.test_frequencies(new_frequency.count());
 }
 
 void concurrencpp::tests::test_timer_set_frequency() {
+    // empty timer throws
     assert_throws<concurrencpp::errors::empty_timer>([] {
         timer timer;
         timer.set_frequency(200ms);
@@ -533,11 +538,10 @@ void concurrencpp::tests::test_timer_set_frequency() {
 }
 
 void concurrencpp::tests::test_timer_oneshot_timer() {
-    auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-    timer_tester tester(350ms, 0ms, timer_queue);
+    timer_tester tester(150ms, 0ms);
     tester.start_once_timer_test();
 
-    std::this_thread::sleep_for(5s);
+    std::this_thread::sleep_for(3s);
 
     tester.test_oneshot_timer();
 }
@@ -548,11 +552,11 @@ void concurrencpp::tests::test_timer_delay_object() {
     const auto expected_interval = 150ms;
 
     for (size_t i = 0; i < 15; i++) {
-        const auto before = std::chrono::high_resolution_clock::now();
+        const auto before = high_resolution_clock::now();
         auto delay_object = timer_queue->make_delay_object(expected_interval, wt_executor);
         assert_true(static_cast<bool>(delay_object));
         delay_object.get();
-        const auto after = std::chrono::high_resolution_clock::now();
+        const auto after = high_resolution_clock::now();
         const auto interval_ms = duration_cast<milliseconds>(after - before);
         timer_tester::interval_ok(interval_ms.count(), expected_interval.count());
     }
@@ -573,14 +577,13 @@ void concurrencpp::tests::test_timer_assignment_operator_empty_to_empty() {
 
 void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_non_empty() {
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>();
-
     auto executor0 = std::make_shared<inline_executor>();
     auto executor1 = std::make_shared<inline_executor>();
 
     object_observer observer0, observer1;
 
-    auto timer0 = timer_queue->make_timer(10 * 1'000ms, 10 * 1'000ms, executor0, observer0.get_testing_stub());
-    auto timer1 = timer_queue->make_timer(20 * 1'000ms, 20 * 1'000ms, executor1, observer1.get_testing_stub());
+    auto timer0 = timer_queue->make_timer(10s, 10s, executor0, observer0.get_testing_stub());
+    auto timer1 = timer_queue->make_timer(20s, 20s, executor1, observer1.get_testing_stub());
 
     timer0 = std::move(timer1);
 
@@ -588,10 +591,10 @@ void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_non_empty(
     assert_false(timer1);
 
     assert_true(observer0.wait_destruction_count(1, 20s));
-    assert_equal(observer1.get_destruction_count(), size_t(0));
+    assert_equal(observer1.get_destruction_count(), static_cast<size_t>(0));
 
-    assert_equal(timer0.get_due_time(), 20'000ms);
-    assert_equal(timer0.get_frequency(), 20'000ms);
+    assert_equal(timer0.get_due_time(), 20s);
+    assert_equal(timer0.get_frequency(), 20s);
     assert_equal(timer0.get_executor(), executor1);
 }
 
@@ -600,11 +603,10 @@ void concurrencpp::tests::test_timer_assignment_operator_empty_to_non_empty() {
     auto executor = std::make_shared<inline_executor>();
     object_observer observer;
 
-    auto timer0 = timer_queue->make_timer(10 * 1'000ms, 10 * 1'000ms, executor, observer.get_testing_stub());
+    auto timer0 = timer_queue->make_timer(10s, 10s, executor, observer.get_testing_stub());
     concurrencpp::timer timer1;
 
     timer0 = std::move(timer1);
-
     assert_false(timer0);
     assert_false(timer1);
 
@@ -617,15 +619,13 @@ void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_empty() {
     object_observer observer;
 
     concurrencpp::timer timer0;
-    auto timer1 = timer_queue->make_timer(10 * 1'000ms, 10 * 1'000ms, executor, observer.get_testing_stub());
+    auto timer1 = timer_queue->make_timer(10s, 10s, executor, observer.get_testing_stub());
 
     timer0 = std::move(timer1);
-
-    assert_true(timer0);
     assert_false(timer1);
-
-    assert_equal(timer0.get_due_time(), 10'000ms);
-    assert_equal(timer0.get_frequency(), 10'000ms);
+    assert_true(timer0);
+    assert_equal(timer0.get_due_time(), 10s);
+    assert_equal(timer0.get_frequency(), 10s);
     assert_equal(timer0.get_executor(), executor);
 }
 
@@ -634,13 +634,13 @@ void concurrencpp::tests::test_timer_assignment_operator_assign_to_self() {
     auto executor = std::make_shared<inline_executor>();
     object_observer observer;
 
-    auto timer = timer_queue->make_timer(1'000ms, 1'000ms, executor, observer.get_testing_stub());
+    auto timer = timer_queue->make_timer(1s, 1s, executor, observer.get_testing_stub());
 
     timer = std::move(timer);
 
     assert_true(timer);
-    assert_equal(timer.get_due_time(), 1'000ms);
-    assert_equal(timer.get_frequency(), 1'000ms);
+    assert_equal(timer.get_due_time(), 1s);
+    assert_equal(timer.get_frequency(), 1s);
     assert_equal(timer.get_executor(), executor);
 }
 

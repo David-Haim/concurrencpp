@@ -1,9 +1,6 @@
 #include "helpers/assertions.h"
 
-#include <sstream>
-
-#include <ctime>
-#include <cassert>
+#include <cstdio>
 
 namespace concurrencpp::tests::details {
     std::string to_string(bool value) {
@@ -58,19 +55,7 @@ namespace concurrencpp::tests::details {
         return {str.begin(), str.end()};
     }
 
-    std::string to_string(std::thread::id id) {
-        std::stringstream stream;
-        stream << id;
-        return stream.str();
-    }
-
-    std::string to_string(std::chrono::time_point<std::chrono::high_resolution_clock> time_point) {
-        auto time_from_epoch = time_point.time_since_epoch();
-        auto seconds_from_epoch = std::chrono::duration_cast<std::chrono::seconds>(time_from_epoch);
-        return std::string("time_from_epoch[") + std::to_string(seconds_from_epoch.count()) + "]";
-    }
-
-    void assert_same_failed_impl(const std::string& a, const std::string& b) {
+    void assert_equal_failed_impl(const std::string& a, const std::string& b) {
         std::string error_msg = "assertion failed. ";
         error_msg += "expected [";
         error_msg += a;
@@ -82,7 +67,7 @@ namespace concurrencpp::tests::details {
         std::abort();
     }
 
-    void assert_not_same_failed_impl(const std::string& a, const std::string& b) {
+    void assert_not_equal_failed_impl(const std::string& a, const std::string& b) {
         std::string error_msg = "assertion failed. ";
         error_msg += "expected: [";
         error_msg += a;

@@ -13,6 +13,8 @@ namespace concurrencpp::tests {
     void test_make_ready_result_impl();
     void test_make_ready_result();
 
+    template<class type>
+    void test_make_exceptional_result_impl();
     void test_make_exceptional_result();
 }  // namespace concurrencpp::tests
 
@@ -26,7 +28,7 @@ void concurrencpp::tests::test_make_ready_result_impl() {
         result = make_ready_result<type>(result_factory<type>::get());
     }
 
-    test_ready_result_result(std::move(result));
+    test_ready_result(std::move(result));
 }
 
 void concurrencpp::tests::test_make_ready_result() {
@@ -37,30 +39,29 @@ void concurrencpp::tests::test_make_ready_result() {
     test_make_ready_result_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_make_exceptional_result() {
+template<class type>
+void concurrencpp::tests::test_make_exceptional_result_impl() {
+    // empty exception_ptr makes make_exceptional_result throw.
     assert_throws_with_error_message<std::invalid_argument>(
         [] {
-            make_exceptional_result<std::string>({});
+            make_exceptional_result<type>({});
         },
         concurrencpp::details::consts::k_make_exceptional_result_exception_null_error_msg);
 
-    auto assert_ok = [](result<int>& result) {
-        assert_equal(result.status(), result_status::exception);
-        try {
-            result.get();
-        } catch (const std::runtime_error& re) {
-            assert_equal(std::string("error"), re.what());
-            return;
-        } catch (...) {
-        }
-        assert_false(true);
-    };
+    const size_t id = 123456789;
+    auto res0 = make_exceptional_result<type>(costume_exception(id));
+    test_ready_result_costume_exception(std::move(res0), id);
 
-    result<int> res = make_exceptional_result<int>(std::runtime_error("error"));
-    assert_ok(res);
+    auto res1 = make_exceptional_result<type>(std::make_exception_ptr(costume_exception(id)));
+    test_ready_result_costume_exception(std::move(res1), id);
+}
 
-    res = make_exceptional_result<int>(std::make_exception_ptr(std::runtime_error("error")));
-    assert_ok(res);
+void concurrencpp::tests::test_make_exceptional_result() {
+    test_make_exceptional_result_impl<int>();
+    test_make_exceptional_result_impl<std::string>();
+    test_make_exceptional_result_impl<void>();
+    test_make_exceptional_result_impl<int&>();
+    test_make_exceptional_result_impl<std::string&>();
 }
 
 void concurrencpp::tests::test_make_result() {

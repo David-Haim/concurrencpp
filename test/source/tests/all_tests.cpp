@@ -1,6 +1,8 @@
 #include "tests/all_tests.h"
 
 void concurrencpp::tests::test_all() {
+    test_task();
+
     test_inline_executor();
     test_thread_pool_executor();
     test_thread_executor();
