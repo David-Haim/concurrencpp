@@ -57,6 +57,17 @@ namespace concurrencpp::details {
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
         }
+
+        type& get_ref() {
+            assert_state();
+
+            if (m_result.has_value()) {
+                return m_result.value();
+            }
+
+            assert(static_cast<bool>(m_exception));
+            std::rethrow_exception(m_exception);
+        }
     };
 
     template<>
@@ -107,6 +118,10 @@ namespace concurrencpp::details {
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
         }
+
+        void get_ref() const {
+            return get();
+        }
     };
 
     template<class type>
@@ -147,7 +162,7 @@ namespace concurrencpp::details {
             return result_status::idle;
         }
 
-        type& get() {
+        type& get() const {
             assert_state();
 
             if (m_pointer != nullptr) {
@@ -157,6 +172,10 @@ namespace concurrencpp::details {
 
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
+        }
+
+        type& get_ref() const {
+            return get();
         }
     };
 }  // namespace concurrencpp::details

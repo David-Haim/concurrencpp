@@ -133,6 +133,19 @@ void result_state_base::try_rewind_consumer() noexcept {
     m_consumer.clear();
 }
 
+void result_state_base::share_result(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept {
+    const auto state = m_pc_state.load(std::memory_order_acquire);
+    if (state == pc_state::producer) {
+        return;
+    }
+
+    m_consumer.set_shared_context(std::move(shared_result_state));
+
+    auto expected_state = pc_state::idle;
+    m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer, std::memory_order_acq_rel);
+    // if m_pc_state is producer, anyway we don't have any (a)waiters at this point. we can just bail early.
+}
+
 void result_state_base::publish_result() noexcept {
     const auto state_before = this->m_pc_state.exchange(pc_state::producer, std::memory_order_acq_rel);
 

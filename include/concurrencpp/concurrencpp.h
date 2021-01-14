@@ -10,6 +10,8 @@
 #include "concurrencpp/results/result.h"
 #include "concurrencpp/results/make_result.h"
 #include "concurrencpp/results/when_result.h"
+#include "concurrencpp/results/shared_result.h"
+#include "concurrencpp/results/shared_result_awaitable.h"
 #include "concurrencpp/executors/executor_all.h"
 
 #endif

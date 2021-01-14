@@ -54,6 +54,7 @@ namespace concurrencpp::details {
 
     template<class... result_types>
     class when_all_tuple_state final : public when_all_state_base, public std::enable_shared_from_this<when_all_tuple_state<result_types...>> {
+
         using tuple_type = std::tuple<result_types...>;
 
        private:

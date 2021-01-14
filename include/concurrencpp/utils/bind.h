@@ -6,7 +6,7 @@
 
 namespace concurrencpp::details {
     template<class callable_type>
-    auto bind(callable_type&& callable) {
+    auto&& bind(callable_type&& callable) {
         return std::forward<callable_type>(callable);  // no arguments to bind
     }
 

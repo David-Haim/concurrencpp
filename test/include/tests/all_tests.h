@@ -20,6 +20,10 @@ namespace concurrencpp::tests {
     void test_when_all();
     void test_when_any();
 
+    void test_shared_result();
+    void test_shared_result_await_all();
+    void test_shared_result_resolve_all();
+
     void test_coroutine_promises();
     void test_coroutines();
 
