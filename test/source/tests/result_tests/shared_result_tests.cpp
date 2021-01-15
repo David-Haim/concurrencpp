@@ -262,6 +262,26 @@ void concurrencpp::tests::test_shared_result_get_impl() {
         assert_false(static_cast<bool>(result));
         test_ready_result_costume_exception(std::move(sr), id);
     }
+
+    // get can be called multiple times
+    {
+        shared_result<type> sr_val(result_factory<type>::make_ready());
+
+        for (size_t i = 0; i < 6; i++) {
+            sr_val.get();
+            assert_true(static_cast<bool>(sr_val));
+        }
+
+        shared_result<type> sr_ex(result_factory<type>::make_exceptional());
+
+        for (size_t i = 0; i < 6; i++) {
+            try {
+                sr_ex.get();
+            } catch (...) {
+            }
+            assert_true(static_cast<bool>(sr_ex));
+        }
+    }
 }
 
 void concurrencpp::tests::test_shared_result_get() {

@@ -1,14 +1,14 @@
 #ifndef CONCURRENCPP_SHARED_RESULT_H
 #define CONCURRENCPP_SHARED_RESULT_H
 
-#include "result.h"
-#include "shared_result_awaitable.h"
-#include "impl/shared_result_state.h"
+#include "concurrencpp/results/result.h"
+#include "concurrencpp/results/shared_result_awaitable.h"
+#include "concurrencpp/results/impl/shared_result_state.h"
 
 namespace concurrencpp::details {
-    struct share_result_helper {
+    struct shared_result_helper {
         template<class type>
-        static std::shared_ptr<result_state<type>> get_state(result<type>& result) {
+        static std::shared_ptr<result_state<type>> get_state(result<type>& result) noexcept {
             return std::move(result.m_state);
         }
     };
@@ -35,12 +35,12 @@ namespace concurrencpp {
 
         shared_result(std::shared_ptr<details::shared_result_state<type>> state) noexcept : m_state(std::move(state)) {}
 
-        shared_result(result<type>&& rhs) noexcept {
+        shared_result(result<type> rhs) {
             if (!static_cast<bool>(rhs)) {
                 return;
             }
 
-            auto result_state = details::share_result_helper::get_state(rhs);
+            auto result_state = details::shared_result_helper::get_state(rhs);
             m_state = std::make_shared<details::shared_result_state<type>>(result_state);
             result_state->share_result(m_state);
         }
@@ -65,7 +65,7 @@ namespace concurrencpp {
         }
 
         operator bool() const noexcept {
-            return m_state.get() != nullptr;
+            return static_cast<bool>(m_state.get());
         }
 
         result_status status() const {
@@ -91,12 +91,6 @@ namespace concurrencpp {
         }
 
         std::add_lvalue_reference_t<type> get() {
-            throw_if_empty(details::consts::k_shared_result_get_error_msg);
-            m_state->wait();
-            return m_state->get();
-        }
-
-        std::add_const_t<std::add_lvalue_reference_t<type>> get() const {
             throw_if_empty(details::consts::k_shared_result_get_error_msg);
             m_state->wait();
             return m_state->get();

@@ -45,7 +45,7 @@ namespace concurrencpp::details {
     struct executor_bulk_tag {};
 
     class when_result_helper;
-    struct share_result_helper;
+    struct shared_result_helper;
 
     enum class when_any_status { set, result_ready };
 }  // namespace concurrencpp::details

@@ -204,6 +204,16 @@ void concurrencpp::tests::test_shared_result_await_impl() {
             concurrencpp::details::consts::k_shared_result_operator_co_await_error_msg);
     }
 
+    // await can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.operator co_await();
+            assert_true(sr);
+        }
+    }
+
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto manual_executor = std::make_shared<concurrencpp::manual_executor>();
     executor_shutdowner es0(thread_executor), es1(manual_executor);
@@ -706,6 +716,17 @@ void concurrencpp::tests::test_shared_result_await_via_impl() {
             sr.await_via({}, true);
         },
         concurrencpp::details::consts::k_shared_result_await_via_executor_null_error_msg);
+
+    // await_via can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+        auto executor = std::make_shared<inline_executor>();
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.await_via(executor);
+            assert_true(sr);
+        }
+    }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto throwing_executor = std::make_shared<struct throwing_executor>();

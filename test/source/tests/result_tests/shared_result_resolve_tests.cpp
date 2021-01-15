@@ -174,6 +174,16 @@ void concurrencpp::tests::test_shared_result_resolve_impl() {
             concurrencpp::details::consts::k_shared_result_resolve_error_msg);
     }
 
+    // resolve can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.resolve();
+            assert_true(sr);
+        }
+    }
+
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto manual_executor = std::make_shared<concurrencpp::manual_executor>();
     executor_shutdowner es0(thread_executor), es1(manual_executor);
@@ -598,6 +608,17 @@ void concurrencpp::tests::test_shared_result_resolve_via_impl() {
             shared_result<type>(std::move(result)).resolve_via({});
         },
         concurrencpp::details::consts::k_shared_result_resolve_via_executor_null_error_msg);
+
+    // resolve_via can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+        auto executor = std::make_shared<inline_executor>();
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.resolve_via(executor);
+            assert_true(sr);
+        }
+    }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto throwing_executor = std::make_shared<concurrencpp::tests::throwing_executor>();
