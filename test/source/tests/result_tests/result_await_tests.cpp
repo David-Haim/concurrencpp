@@ -193,10 +193,11 @@ template<class type>
 void concurrencpp::tests::test_result_await_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            result<type> result;
-            result.resolve();
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                result<type>().operator co_await();
+            },
+            concurrencpp::details::consts::k_result_operator_co_await_error_msg);
     }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
@@ -674,11 +675,12 @@ namespace concurrencpp::tests {
 template<class type>
 void concurrencpp::tests::test_result_await_via_impl() {
     // empty result throws
-    assert_throws<concurrencpp::errors::empty_result>([] {
-        result<type> result;
-        auto executor = std::make_shared<inline_executor>();
-        result.resolve_via(executor);
-    });
+    assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+        [] {
+            auto executor = std::make_shared<inline_executor>();
+            result<type>().await_via(executor);
+        },
+        concurrencpp::details::consts::k_result_await_via_error_msg);
 
     // null executor throws
     assert_throws_with_error_message<std::invalid_argument>(

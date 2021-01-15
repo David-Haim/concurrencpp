@@ -48,6 +48,28 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - Associated task was interrupted abnormally";
 
+    inline const char* k_shared_result_status_error_msg = "shared_result::status() - result is empty.";
+
+    inline const char* k_shared_result_get_error_msg = "shared_result::get() - result is empty.";
+
+    inline const char* k_shared_result_wait_error_msg = "shared_result::wait() - result is empty.";
+
+    inline const char* k_shared_result_wait_for_error_msg = "shared_result::wait_for() - result is empty.";
+
+    inline const char* k_shared_result_wait_until_error_msg = "shared_result::wait_until() - result is empty.";
+
+    inline const char* k_shared_result_operator_co_await_error_msg = "shared_result::operator co_await() - result is empty.";
+
+    inline const char* k_shared_result_await_via_error_msg = "shared_result::await_via() - result is empty.";
+
+    inline const char* k_shared_result_await_via_executor_null_error_msg = "shared_result::await_via() - given executor is null.";
+
+    inline const char* k_shared_result_resolve_error_msg = "shared_result::resolve() - result is empty.";
+
+    inline const char* k_shared_result_resolve_via_error_msg = "shared_result::resolve_via() - result is empty.";
+
+    inline const char* k_shared_result_resolve_via_executor_null_error_msg = "shared_result::resolve_via() - given executor is null.";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

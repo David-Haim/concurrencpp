@@ -49,7 +49,7 @@ namespace concurrencpp {
         shared_result(shared_result&& rhs) noexcept = default;
 
         shared_result& operator=(const shared_result& rhs) noexcept {
-            if (this != &rhs) {
+            if (this != &rhs && m_state != rhs.m_state) {
                 m_state = rhs.m_state;
             }
 
@@ -57,7 +57,7 @@ namespace concurrencpp {
         }
 
         shared_result& operator=(shared_result&& rhs) noexcept {
-            if (this != &rhs) {
+            if (this != &rhs && m_state != rhs.m_state) {
                 m_state = std::move(rhs.m_state);
             }
 
@@ -69,64 +69,64 @@ namespace concurrencpp {
         }
 
         result_status status() const {
-            throw_if_empty(details::consts::k_result_status_error_msg);
+            throw_if_empty(details::consts::k_shared_result_status_error_msg);
             return m_state->status();
         }
 
         void wait() {
-            throw_if_empty(details::consts::k_result_wait_error_msg);
+            throw_if_empty(details::consts::k_shared_result_wait_error_msg);
             m_state->wait();
         }
 
         template<class duration_type, class ratio_type>
         result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) {
-            throw_if_empty(details::consts::k_result_wait_for_error_msg);
+            throw_if_empty(details::consts::k_shared_result_wait_for_error_msg);
             return m_state->wait_for(duration);
         }
 
         template<class clock_type, class duration_type>
         result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
-            throw_if_empty(details::consts::k_result_wait_until_error_msg);
+            throw_if_empty(details::consts::k_shared_result_wait_until_error_msg);
             return m_state->wait_until(timeout_time);
         }
 
         std::add_lvalue_reference_t<type> get() {
-            throw_if_empty(details::consts::k_result_get_error_msg);
+            throw_if_empty(details::consts::k_shared_result_get_error_msg);
             m_state->wait();
             return m_state->get();
         }
 
         std::add_const_t<std::add_lvalue_reference_t<type>> get() const {
-            throw_if_empty(details::consts::k_result_get_error_msg);
+            throw_if_empty(details::consts::k_shared_result_get_error_msg);
             m_state->wait();
             return m_state->get();
         }
 
         auto operator co_await() {
-            throw_if_empty(details::consts::k_result_operator_co_await_error_msg);
-            return shared_awaitable<type>(m_state);
+            throw_if_empty(details::consts::k_shared_result_operator_co_await_error_msg);
+            return shared_awaitable<type> {m_state};
         }
 
         auto await_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_result_await_via_error_msg);
+            throw_if_empty(details::consts::k_shared_result_await_via_error_msg);
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_result_await_via_executor_null_error_msg);
+                throw std::invalid_argument(details::consts::k_shared_result_await_via_executor_null_error_msg);
             }
 
             return shared_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};
         }
 
         auto resolve() {
-            throw_if_empty(details::consts::k_result_resolve_error_msg);
+            throw_if_empty(details::consts::k_shared_result_resolve_error_msg);
             return shared_resolve_awaitable<type> {m_state};
         }
 
         auto resolve_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_result_resolve_via_error_msg);
+            throw_if_empty(details::consts::k_shared_result_resolve_via_error_msg);
 
             if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_result_resolve_via_executor_null_error_msg);
+                throw std::invalid_argument(details::consts::k_shared_result_resolve_via_executor_null_error_msg);
             }
 
             return shared_resolve_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};

@@ -17,31 +17,6 @@ namespace concurrencpp::tests {
             assert_equal(value_ptr, std::addressof(result.get()));
         }
     }
-
-    template<class type>
-    void test_same_exception_ptr_shared_result(::concurrencpp::shared_result<type>& result) noexcept {
-        std::exception_ptr exception_ptr;
-
-        try {
-            result.get();
-        } catch (...) {
-            exception_ptr = std::current_exception();
-        }
-
-        assert_not_equal(exception_ptr, nullptr);
-
-        for (size_t i = 0; i < 8; i++) {
-            std::exception_ptr comparer;
-
-            try {
-                result.get();
-            } catch (...) {
-                comparer = std::current_exception();
-            }
-
-            assert_equal(exception_ptr, comparer);
-        }
-    }
 }  // namespace concurrencpp::tests
 
 namespace concurrencpp::tests {
@@ -168,13 +143,17 @@ namespace concurrencpp::tests {
         assert_true(static_cast<bool>(result));
         assert_equal(result.status(), concurrencpp::result_status::exception);
 
-        try {
-            result.get();
-        } catch (costume_exception e) {
-            assert_equal(e.id, id);
-            test_same_exception_ptr_shared_result(result);
-            return;
-        } catch (...) {
+        for (size_t i = 0; i < 10; i++) {
+            try {
+                result.get();
+            } catch (costume_exception e) {
+                assert_equal(e.id, id);
+                if (i == 9) {
+                    return;
+                }
+
+            } catch (...) {
+            }
         }
 
         assert_true(false);

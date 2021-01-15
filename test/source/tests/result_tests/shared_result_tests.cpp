@@ -34,15 +34,27 @@ namespace concurrencpp::tests {
     void test_shared_result_wait_until();
 
     template<class type>
-    void test_shared_result_assignment_operator_empty_to_empty();
+    void test_shared_result_assignment_operator_empty_to_empty_move();
     template<class type>
-    void test_shared_result_assignment_operator_non_empty_to_non_empty();
+    void test_shared_result_assignment_operator_non_empty_to_non_empty_move();
     template<class type>
-    void test_shared_result_assignment_operator_empty_to_non_empty();
+    void test_shared_result_assignment_operator_empty_to_non_empty_move();
     template<class type>
-    void test_shared_result_assignment_operator_non_empty_to_empty();
+    void test_shared_result_assignment_operator_non_empty_to_empty_move();
     template<class type>
-    void test_shared_result_assignment_operator_assign_to_self();
+    void test_shared_result_assignment_operator_assign_to_self_move();
+
+    template<class type>
+    void test_shared_result_assignment_operator_empty_to_empty_copy();
+    template<class type>
+    void test_shared_result_assignment_operator_non_empty_to_non_empty_copy();
+    template<class type>
+    void test_shared_result_assignment_operator_empty_to_non_empty_copy();
+    template<class type>
+    void test_shared_result_assignment_operator_non_empty_to_empty_copy();
+    template<class type>
+    void test_shared_result_assignment_operator_assign_to_self_copy();
+
     template<class type>
     void test_shared_result_assignment_operator_impl();
     void test_shared_result_assignment_operator();
@@ -90,9 +102,11 @@ template<class type>
 void concurrencpp::tests::test_shared_result_status_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            shared_result<type>().status();
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                shared_result<type>().status();
+            },
+            concurrencpp::details::consts::k_shared_result_status_error_msg);
     }
 
     // idle result
@@ -146,9 +160,11 @@ template<class type>
 void concurrencpp::tests::test_shared_result_get_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            shared_result<type>().get();
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                shared_result<type>().get();
+            },
+            concurrencpp::details::consts::k_shared_result_get_error_msg);
     }
 
     // get blocks until value is present
@@ -260,9 +276,11 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            shared_result<type>().wait();
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                shared_result<type>().wait();
+            },
+            concurrencpp::details::consts::k_shared_result_wait_error_msg);
     }
 
     // wait blocks until value is present
@@ -379,9 +397,11 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_for_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            shared_result<type>().wait_for(seconds(1));
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                shared_result<type>().wait_for(seconds(1));
+            },
+            concurrencpp::details::consts::k_shared_result_wait_for_error_msg);
     }
 
     // if the result is ready by value, don't block and return status::value
@@ -515,10 +535,12 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_until_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            const auto later = high_resolution_clock::now() + seconds(10);
-            shared_result<type>().wait_until(later);
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                const auto later = high_resolution_clock::now() + seconds(10);
+                shared_result<type>().wait_until(later);
+            },
+            concurrencpp::details::consts::k_shared_result_wait_until_error_msg);
     }
 
     // if time_point <= now, the function is equivalent to result::status
@@ -674,7 +696,7 @@ void concurrencpp::tests::test_shared_result_wait_until() {
 }
 
 template<class type>
-void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_empty() {
+void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_empty_move() {
     shared_result<type> result_0, result_1;
     result_0 = std::move(result_1);
     assert_false(static_cast<bool>(result_0));
@@ -682,7 +704,7 @@ void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_empty(
 }
 
 template<class type>
-void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_non_empty() {
+void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_non_empty_move() {
     result_promise<type> rp_0, rp_1;
     result<type> result_0 = rp_0.get_result(), result_1 = rp_1.get_result();
     shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
@@ -700,7 +722,7 @@ void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_no
 }
 
 template<class type>
-void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_non_empty() {
+void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_non_empty_move() {
     result_promise<type> rp_0;
     result<type> result_0 = rp_0.get_result(), result_1;
     shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
@@ -711,7 +733,7 @@ void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_non_em
 }
 
 template<class type>
-void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_empty() {
+void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_empty_move() {
     result_promise<type> rp_1;
     result<type> result_0, result_1 = rp_1.get_result();
     shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
@@ -725,7 +747,7 @@ void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_em
 }
 
 template<class type>
-void concurrencpp::tests::test_shared_result_assignment_operator_assign_to_self() {
+void concurrencpp::tests::test_shared_result_assignment_operator_assign_to_self_move() {
     shared_result<type> empty;
 
     empty = std::move(empty);
@@ -737,15 +759,97 @@ void concurrencpp::tests::test_shared_result_assignment_operator_assign_to_self(
 
     non_empty = std::move(non_empty);
     assert_true(static_cast<bool>(non_empty));
+
+    auto copy = non_empty;
+    copy = std::move(non_empty);
+    assert_true(static_cast<bool>(copy));
+    assert_true(static_cast<bool>(non_empty));
+}
+
+template<class type>
+void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_empty_copy() {
+    shared_result<type> result_0, result_1;
+    result_0 = result_1;
+    assert_false(static_cast<bool>(result_0));
+    assert_false(static_cast<bool>(result_1));
+}
+
+template<class type>
+void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_non_empty_copy() {
+    result_promise<type> rp_0, rp_1;
+    result<type> result_0 = rp_0.get_result(), result_1 = rp_1.get_result();
+    shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
+
+    sr0 = sr1;
+
+    assert_true(static_cast<bool>(sr1));
+    assert_true(static_cast<bool>(sr0));
+
+    rp_0.set_from_function(result_factory<type>::get);
+    assert_equal(sr0.status(), result_status::idle);
+
+    rp_1.set_from_function(result_factory<type>::get);
+    test_ready_result(std::move(sr0));
+}
+
+template<class type>
+void concurrencpp::tests::test_shared_result_assignment_operator_empty_to_non_empty_copy() {
+    result_promise<type> rp_0;
+    result<type> result_0 = rp_0.get_result(), result_1;
+    shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
+
+    sr0 = sr1;
+    assert_false(static_cast<bool>(sr0));
+    assert_false(static_cast<bool>(sr1));
+}
+
+template<class type>
+void concurrencpp::tests::test_shared_result_assignment_operator_non_empty_to_empty_copy() {
+    result_promise<type> rp_1;
+    result<type> result_0, result_1 = rp_1.get_result();
+    shared_result<type> sr0(std::move(result_0)), sr1(std::move(result_1));
+
+    sr0 = sr1;
+    assert_true(static_cast<bool>(sr0));
+    assert_true(static_cast<bool>(sr1));
+
+    rp_1.set_from_function(result_factory<type>::get);
+    test_ready_result(std::move(sr0));
+}
+
+template<class type>
+void concurrencpp::tests::test_shared_result_assignment_operator_assign_to_self_copy() {
+    shared_result<type> empty;
+
+    empty = empty;
+    assert_false(static_cast<bool>(empty));
+
+    result_promise<type> rp_1;
+    auto res1 = rp_1.get_result();
+    shared_result<type> non_empty(std::move(res1));
+
+    non_empty = non_empty;
+    assert_true(static_cast<bool>(non_empty));
+
+    auto copy = non_empty;
+    copy = non_empty;
+    assert_true(static_cast<bool>(copy));
+    assert_true(static_cast<bool>(non_empty));
 }
 
 template<class type>
 void concurrencpp::tests::test_shared_result_assignment_operator_impl() {
-    test_shared_result_assignment_operator_empty_to_empty<type>();
-    test_shared_result_assignment_operator_non_empty_to_empty<type>();
-    test_shared_result_assignment_operator_empty_to_non_empty<type>();
-    test_shared_result_assignment_operator_non_empty_to_non_empty<type>();
-    test_shared_result_assignment_operator_assign_to_self<type>();
+    test_shared_result_assignment_operator_empty_to_empty_move<type>();
+    test_shared_result_assignment_operator_non_empty_to_empty_move<type>();
+    test_shared_result_assignment_operator_empty_to_non_empty_move<type>();
+    test_shared_result_assignment_operator_non_empty_to_non_empty_move<type>();
+    test_shared_result_assignment_operator_assign_to_self_move<type>();
+
+    test_shared_result_assignment_operator_empty_to_empty_copy<type>();
+    test_shared_result_assignment_operator_non_empty_to_empty_copy<type>();
+    test_shared_result_assignment_operator_empty_to_non_empty_copy<type>();
+    test_shared_result_assignment_operator_non_empty_to_non_empty_copy<type>();
+    test_shared_result_assignment_operator_assign_to_self_copy<type>();
 }
 
 void concurrencpp::tests::test_shared_result_assignment_operator() {

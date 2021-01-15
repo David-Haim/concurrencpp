@@ -197,9 +197,11 @@ template<class type>
 void concurrencpp::tests::test_shared_result_await_impl() {
     // empty result throws
     {
-        assert_throws<concurrencpp::errors::empty_result>([] {
-            shared_result<type>().resolve();
-        });
+        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+            [] {
+                shared_result<type>().operator co_await();
+            },
+            concurrencpp::details::consts::k_shared_result_operator_co_await_error_msg);
     }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
@@ -689,19 +691,21 @@ namespace concurrencpp::tests {
 template<class type>
 void concurrencpp::tests::test_shared_result_await_via_impl() {
     // empty result throws
-    assert_throws<concurrencpp::errors::empty_result>([] {
-        auto executor = std::make_shared<inline_executor>();
-        shared_result<type>().resolve_via(executor);
-    });
+    assert_throws_with_error_message<concurrencpp::errors::empty_result>(
+        [] {
+            auto executor = std::make_shared<inline_executor>();
+            shared_result<type>().await_via(executor);
+        },
+        concurrencpp::details::consts::k_shared_result_await_via_error_msg);
 
     // null executor throws
     assert_throws_with_error_message<std::invalid_argument>(
         [] {
             auto result = result_factory<type>::make_ready();
             concurrencpp::shared_result<type> sr(std::move(result));
-            sr.resolve_via({}, true);
+            sr.await_via({}, true);
         },
-        concurrencpp::details::consts::k_result_resolve_via_executor_null_error_msg);
+        concurrencpp::details::consts::k_shared_result_await_via_executor_null_error_msg);
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto throwing_executor = std::make_shared<struct throwing_executor>();
