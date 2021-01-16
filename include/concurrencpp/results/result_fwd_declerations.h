@@ -10,6 +10,10 @@
 namespace concurrencpp {
     template<class type>
     class result;
+
+    template<class type>
+    class shared_result;
+
     template<class type>
     class result_promise;
 
@@ -33,9 +37,15 @@ namespace concurrencpp::details {
     template<class type>
     class result_state;
 
+    class shared_result_state_base;
+
+    template<class type>
+    class shared_result_state;
+
     struct executor_bulk_tag {};
 
     class when_result_helper;
+    struct shared_result_helper;
 
     enum class when_any_status { set, result_ready };
 }  // namespace concurrencpp::details

@@ -37,6 +37,8 @@ namespace concurrencpp::details {
 
         void try_rewind_consumer() noexcept;
 
+        void share_result(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept;
+
         void publish_result() noexcept;
     };
 
@@ -68,6 +70,10 @@ namespace concurrencpp::details {
             m_producer.build_exception(std::move(error));
         }
 
+        bool is_ready() const noexcept {
+            return m_pc_state.load(std::memory_order_acquire) == pc_state::producer;
+        }
+
         // Consumer-side functions
         result_status status() const noexcept {
             const auto state = m_pc_state.load(std::memory_order_acquire);
@@ -78,6 +84,15 @@ namespace concurrencpp::details {
             }
 
             return m_producer.status();
+        }
+
+        result_status status_shared() const noexcept {
+            const auto state = m_pc_state.load(std::memory_order_acquire);
+            if (state == pc_state::producer) {
+                return m_producer.status();
+            }
+
+            return result_status::idle;
         }
 
         template<class duration_unit, class ratio>
@@ -139,6 +154,11 @@ namespace concurrencpp::details {
         type get() {
             assert_done();
             return m_producer.get();
+        }
+
+        std::add_lvalue_reference_t<type> get_ref() {
+            assert_done();
+            return m_producer.get_ref();
         }
 
         template<class callable_type>

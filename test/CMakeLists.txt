@@ -10,7 +10,8 @@ option(ENABLE_THREAD_SANITIZER "\
 Build concurrencpp with LLVM thread sanitizer. \
 Does not have an effect if the compiler is not Clang based." OFF)
 
-if(ENABLE_THREAD_SANITIZER AND CXX_COMPILER_ID MATCHES "Clang")
+string(TOLOWER ${CMAKE_CXX_COMPILER_ID} compiler_id)
+if(ENABLE_THREAD_SANITIZER AND compiler_id MATCHES "clang")
   # Instead of polluting the lists file, we inject a command definition
   # override that will apply the sanitizer flag
   set(CMAKE_PROJECT_concurrencpp_INCLUDE
@@ -49,6 +50,9 @@ set(test_sources
         source/tests/result_tests/result_promise_tests.cpp
         source/tests/result_tests/result_resolve_tests.cpp
         source/tests/result_tests/result_tests.cpp
+        source/tests/result_tests/shared_result_tests.cpp
+        source/tests/result_tests/shared_result_resolve_tests.cpp
+        source/tests/result_tests/shared_result_await_tests.cpp
         source/tests/result_tests/when_all_tests.cpp
         source/tests/result_tests/when_any_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
@@ -87,7 +91,7 @@ if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
-set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result when_all when_any)
+set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result shared_result when_all when_any)
 foreach(source IN LISTS tsan_sources)
   temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp)
 endforeach()

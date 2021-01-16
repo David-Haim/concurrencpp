@@ -22,6 +22,7 @@ namespace concurrencpp {
         static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
 
         friend class details::when_result_helper;
+        friend class details::shared_result_helper;
 
        private:
         std::shared_ptr<details::result_state<type>> m_state;
@@ -53,7 +54,7 @@ namespace concurrencpp {
         result& operator=(const result& rhs) = delete;
 
         operator bool() const noexcept {
-            return m_state.get() != nullptr;
+            return static_cast<bool>(m_state.get());
         }
 
         result_status status() const {

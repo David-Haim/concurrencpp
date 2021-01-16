@@ -4,6 +4,7 @@
 #include "concurrencpp/task.h"
 #include "concurrencpp/forward_declerations.h"
 #include "concurrencpp/coroutines/coroutine.h"
+#include "concurrencpp/results/result_fwd_declerations.h"
 
 #include <mutex>
 #include <condition_variable>
@@ -93,7 +94,7 @@ namespace concurrencpp::details {
     class consumer_context {
 
        private:
-        enum class consumer_status { idle, await, await_via, wait, when_all, when_any };
+        enum class consumer_status { idle, await, await_via, wait, when_all, when_any, shared };
 
         union storage {
             int idle;
@@ -102,6 +103,7 @@ namespace concurrencpp::details {
             std::shared_ptr<wait_context> wait_ctx;
             std::shared_ptr<when_all_state_base> when_all_state;
             when_any_context when_any_ctx;
+            std::weak_ptr<shared_result_state_base> shared_ctx;
 
             template<class type, class... argument_type>
             static void build(type& o, argument_type&&... arguments) noexcept {
@@ -136,6 +138,8 @@ namespace concurrencpp::details {
         void set_when_all_context(std::shared_ptr<when_all_state_base> when_all_state) noexcept;
 
         void set_when_any_context(std::shared_ptr<when_any_state_base> when_any_ctx, size_t index) noexcept;
+
+        void set_shared_context(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept;
 
         void operator()() noexcept;
     };
