@@ -39,7 +39,6 @@ set(test_sources
         source/tests/all_tests.cpp
         source/tests/coroutine_tests/coroutine_promises_test.cpp
         source/tests/coroutine_tests/coroutines_tests.cpp
-        source/tests/executor_tests/derivable_executor_tests.cpp
         source/tests/executor_tests/inline_executor_tests.cpp
         source/tests/executor_tests/manual_executor_tests.cpp
         source/tests/executor_tests/thread_executor_tests.cpp
@@ -70,7 +69,8 @@ set(test_headers
         include/tests/test_utils/executor_shutdowner.h
         include/tests/test_utils/result_factory.h
         include/tests/test_utils/throwing_executor.h
-        include/tests/test_utils/test_ready_result.h)
+        include/tests/test_utils/test_ready_result.h
+        include/tests/test_utils/make_result_array.h)
 
 function(temp_test NAMESPACE NAME)
   set(target ${NAMESPACE}_${NAME})
@@ -91,12 +91,21 @@ if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
-set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result shared_result when_all when_any)
+set(tsan_sources
+    executors
+    fibonacci
+    matrix_multiplication
+    quick_sort
+    result
+    shared_result
+    when_all
+    when_any)
 foreach(source IN LISTS tsan_sources)
-  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp)
+  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp source/helpers/assertions.cpp)
 endforeach()
 
-return()
+
+#return()
 
 # add_test(NAMESPACE <namespace> NAME <name> [PROPERTIES ...])
 #

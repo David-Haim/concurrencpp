@@ -234,7 +234,7 @@ void concurrencpp::tests::test_shared_result_get_impl() {
         const auto time_after = high_resolution_clock::now();
         const auto total_blocking_time = duration_cast<milliseconds>(time_after - time_before).count();
         assert_false(static_cast<bool>(result));
-        assert_smaller_equal(total_blocking_time, 5);
+        assert_smaller_equal(total_blocking_time, 10);
         test_ready_result(std::move(sr));
     }
 
@@ -258,7 +258,7 @@ void concurrencpp::tests::test_shared_result_get_impl() {
         const auto time_after = high_resolution_clock::now();
         const auto total_blocking_time = duration_cast<milliseconds>(time_after - time_before).count();
 
-        assert_smaller_equal(total_blocking_time, 5);
+        assert_smaller_equal(total_blocking_time, 10);
         assert_false(static_cast<bool>(result));
         test_ready_result_costume_exception(std::move(sr), id);
     }

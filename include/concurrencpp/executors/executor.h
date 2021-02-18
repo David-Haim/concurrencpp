@@ -3,6 +3,7 @@
 
 #include "concurrencpp/task.h"
 #include "concurrencpp/results/result.h"
+#include "concurrencpp/results/promises.h"
 
 #include <span>
 #include <vector>

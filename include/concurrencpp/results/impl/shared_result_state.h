@@ -1,102 +1,130 @@
 #ifndef CONCURRENCPP_SHARED_RESULT_STATE_H
 #define CONCURRENCPP_SHARED_RESULT_STATE_H
 
-#include <optional>
+#include "concurrencpp/results/impl/result_state.h"
 
-#include "consumer_context.h"
+#include <shared_mutex>
 
 namespace concurrencpp::details {
     struct shared_await_context {
         shared_await_context* next = nullptr;
-        await_context await_context;
+        coroutine_handle<void> caller_handle;
     };
 
     struct shared_await_via_context {
         shared_await_via_context* next = nullptr;
         await_via_context await_context;
 
-        shared_await_via_context(std::shared_ptr<concurrencpp::executor> executor) noexcept;
+        shared_await_via_context(std::shared_ptr<executor> executor) noexcept;
     };
+}  // namespace concurrencpp::details
 
+namespace concurrencpp::details {
     class shared_result_state_base {
 
        protected:
-        std::mutex m_lock;
+        mutable std::shared_mutex m_lock;
         shared_await_context* m_awaiters = nullptr;
         shared_await_via_context* m_via_awaiters = nullptr;
-        std::condition_variable m_condition;
+        std::condition_variable_any m_condition;
         bool m_ready = false;
 
-       public:
-        void await_impl(shared_await_context& awaiter) noexcept;
-        void await_via_impl(shared_await_via_context& awaiter) noexcept;
-        void wait_impl(std::unique_lock<std::mutex>& lock);
-        bool wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms);
+        void await_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_context& awaiter) noexcept;
+        void await_via_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_via_context& awaiter) noexcept;
+        void wait_impl(std::unique_lock<std::shared_mutex>& write_lock) noexcept;
+        bool wait_for_impl(std::unique_lock<std::shared_mutex>& write_lock, std::chrono::milliseconds ms) noexcept;
 
-        void notify_all() noexcept;
+        void notify_all(std::unique_lock<std::shared_mutex>& lock) noexcept;
+
+       public:
+        virtual ~shared_result_state_base() noexcept = default;
+        virtual void on_result_ready() noexcept = 0;
     };
 
     template<class type>
-    class shared_result_state : public shared_result_state_base {
+    class shared_result_state final : public shared_result_state_base {
 
        private:
-        std::shared_ptr<result_state<type>> m_state;
+        consumer_result_state_ptr<type> m_state;
+        producer_context<type> m_producer_context;
 
-        bool result_ready() const noexcept {
-            return m_state->is_ready();
+        void on_result_ready() noexcept override {
+            std::unique_lock<std::shared_mutex> lock(m_lock);
+            auto state = std::move(m_state);
+            state->initialize_producer_from(m_producer_context);
+            notify_all(lock);
         }
 
        public:
-        shared_result_state(std::shared_ptr<result_state<type>> state) : m_state(std::move(state)) {}
+        shared_result_state(consumer_result_state_ptr<type> state) : m_state(std::move(state)) {}
+
+        ~shared_result_state() noexcept {
+            std::unique_lock<std::shared_mutex> lock(m_lock);
+            auto state = std::move(m_state);
+            lock.unlock();
+
+            if (static_cast<bool>(state)) {
+                state->try_rewind_consumer();
+            }
+        }
 
         result_status status() const noexcept {
-            return m_state->status_shared();
+            std::shared_lock<std::shared_mutex> lock(m_lock);
+            return m_producer_context.status();
         }
 
         bool await(shared_await_context& awaiter) noexcept {
-            if (result_ready()) {
+            {
+                std::shared_lock<std::shared_mutex> read_lock(m_lock);
+                if (m_ready) {
+                    return false;
+                }
+            }
+
+            std::unique_lock<std::shared_mutex> write_lock(m_lock);
+            if (m_ready) {
                 return false;
             }
 
-            std::unique_lock<std::mutex> lock(m_lock);
-            if (result_ready()) {
-                return false;
-            }
-
-            await_impl(awaiter);
+            await_impl(write_lock, awaiter);
             return true;
         }
 
         bool await_via(shared_await_via_context& awaiter, const bool force_rescheduling) noexcept {
-            if (result_ready()) {
+            auto resume_if_ready = [&awaiter, force_rescheduling]() mutable {
                 if (force_rescheduling) {
                     awaiter.await_context();
-                    return true;
                 }
 
-                return false;
-            }
+                return force_rescheduling;
+            };
 
-            std::unique_lock<std::mutex> lock(m_lock);
-            if (result_ready()) {
-                if (force_rescheduling) {
-                    awaiter.await_context();
-                    return true;
+            {
+                std::shared_lock<std::shared_mutex> read_lock(m_lock);
+                if (m_ready) {
+                    return resume_if_ready();
                 }
-                return false;
             }
 
-            await_via_impl(awaiter);
+            std::unique_lock<std::shared_mutex> write_lock(m_lock);
+            if (m_ready) {
+                return resume_if_ready();
+            }
+
+            await_via_impl(write_lock, awaiter);
             return true;
         }
 
-        void wait() {
-            if (result_ready()) {
-                return;
+        void wait() noexcept {
+            {
+                std::shared_lock<std::shared_mutex> read_lock(m_lock);
+                if (m_ready) {
+                    return;
+                }
             }
 
-            std::unique_lock<std::mutex> lock(m_lock);
-            if (result_ready()) {
+            std::unique_lock<std::shared_mutex> lock(m_lock);
+            if (m_ready) {
                 return;
             }
 
@@ -104,26 +132,32 @@ namespace concurrencpp::details {
         }
 
         template<class duration_unit, class ratio>
-        concurrencpp::result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
-            const auto status0 = status();
-            if (status0 != result_status::idle) {
-                return status0;
-            }
-
-            std::unique_lock<std::mutex> lock(m_lock);
-            const auto status1 = status();
-            if (status1 != result_status::idle) {
-                return status1;
+        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) noexcept {
+            {
+                std::shared_lock<std::shared_mutex> read_lock(m_lock);
+                if (m_ready) {
+                    return m_producer_context.status();
+                }
             }
 
             const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration) + std::chrono::milliseconds(1);
+
+            std::unique_lock<std::shared_mutex> lock(m_lock);
+            if (m_ready) {
+                return m_producer_context.status();
+            }
+
             const auto ready = wait_for_impl(lock, ms);
+            if (ready) {
+                return m_producer_context.status();
+            }
+
             lock.unlock();
-            return ready ? status() : result_status::idle;
+            return result_status::idle;
         }
 
         template<class clock, class duration>
-        concurrencpp::result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
+        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) noexcept {
             const auto now = clock::now();
             if (timeout_time <= now) {
                 return status();
@@ -134,7 +168,7 @@ namespace concurrencpp::details {
         }
 
         std::add_lvalue_reference_t<type> get() {
-            return m_state->get_ref();
+            return m_producer_context.get_ref();
         }
     };
 }  // namespace concurrencpp::details

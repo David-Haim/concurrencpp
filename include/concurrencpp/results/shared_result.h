@@ -8,7 +8,7 @@
 namespace concurrencpp::details {
     struct shared_result_helper {
         template<class type>
-        static std::shared_ptr<result_state<type>> get_state(result<type>& result) noexcept {
+        static consumer_result_state_ptr<type> get_state(result<type>& result) noexcept {
             return std::move(result.m_state);
         }
     };
@@ -41,8 +41,9 @@ namespace concurrencpp {
             }
 
             auto result_state = details::shared_result_helper::get_state(rhs);
-            m_state = std::make_shared<details::shared_result_state<type>>(result_state);
-            result_state->share_result(m_state);
+            auto result_state_ptr = result_state.get();
+            m_state = std::make_shared<details::shared_result_state<type>>(std::move(result_state));
+            result_state_ptr->share_result(m_state);
         }
 
         shared_result(const shared_result& rhs) noexcept = default;

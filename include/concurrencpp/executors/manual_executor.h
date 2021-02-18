@@ -50,7 +50,6 @@ namespace concurrencpp {
         size_t clear();
 
         bool loop_once();
-
         bool loop_once_for(std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>
@@ -59,7 +58,6 @@ namespace concurrencpp {
         }
 
         size_t loop(size_t max_count);
-
         size_t loop_for(size_t max_count, std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>
@@ -68,7 +66,6 @@ namespace concurrencpp {
         }
 
         void wait_for_task();
-
         bool wait_for_task_for(std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>
@@ -77,7 +74,6 @@ namespace concurrencpp {
         }
 
         void wait_for_tasks(size_t count);
-
         size_t wait_for_tasks_for(size_t count, std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>

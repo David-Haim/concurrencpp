@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_THREAD_EXECUTOR_H
 #define CONCURRENCPP_THREAD_EXECUTOR_H
 
-#include "concurrencpp/executors/derivable_executor.h"
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/executors/derivable_executor.h"
 
 #include <list>
 #include <span>

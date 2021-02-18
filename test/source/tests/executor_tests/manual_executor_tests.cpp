@@ -244,13 +244,12 @@ void concurrencpp::tests::test_manual_executor_submit_foreign() {
 
     for (size_t i = 0; i < task_count / 2; i++) {
         assert_true(executor->loop_once());
+        assert_equal(results[i].get(), i);
         assert_equal(observer.get_execution_count(), i + 1);
         assert_equal(observer.get_destruction_count(), i + 1);
-        assert_equal(results[i].get(), i);
     }
 
     executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_executed_locally(observer.get_execution_map());
 
@@ -259,6 +258,8 @@ void concurrencpp::tests::test_manual_executor_submit_foreign() {
             results[i].get();
         });
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 }
 
 void concurrencpp::tests::test_manual_executor_submit_inline() {
@@ -295,13 +296,12 @@ void concurrencpp::tests::test_manual_executor_submit_inline() {
 
     for (size_t i = 0; i < task_count / 2; i++) {
         assert_true(executor->loop_once());
+        assert_equal(results[i].get(), i);
         assert_equal(observer.get_execution_count(), i + 1);
         assert_equal(observer.get_destruction_count(), i + 1);
-        assert_equal(results[i].get(), i);
     }
 
     executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_executed_locally(observer.get_execution_map());
 
@@ -310,6 +310,8 @@ void concurrencpp::tests::test_manual_executor_submit_inline() {
             results[i].get();
         });
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 }
 
 void concurrencpp::tests::test_manual_executor_submit() {
@@ -417,13 +419,12 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_foreign() {
 
     for (size_t i = 0; i < task_count / 2; i++) {
         assert_true(executor->loop_once());
+        assert_equal(results[i].get(), i);
         assert_equal(observer.get_execution_count(), i + 1);
         assert_equal(observer.get_destruction_count(), i + 1);
-        assert_equal(results[i].get(), i);
     }
 
     executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_executed_locally(observer.get_execution_map());
 
@@ -432,6 +433,8 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_foreign() {
             results[i].get();
         });
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 }
 
 void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
@@ -467,13 +470,12 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
 
     for (size_t i = 0; i < task_count / 2; i++) {
         assert_true(executor->loop_once());
+        assert_equal(results[i].get(), i);
         assert_equal(observer.get_execution_count(), i + 1);
         assert_equal(observer.get_destruction_count(), i + 1);
-        assert_equal(results[i].get(), i);
     }
 
     executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_executed_locally(observer.get_execution_map());
 
@@ -482,6 +484,8 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
             results[i].get();
         });
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 }
 
 void concurrencpp::tests::test_manual_executor_bulk_submit() {
@@ -514,10 +518,10 @@ void concurrencpp::tests::test_manual_executor_loop_once() {
 
     for (size_t i = 0; i < task_count; i++) {
         assert_true(executor->loop_once());
+        assert_equal(results[i].get(), i);
         assert_equal(observer.get_execution_count(), i + 1);
         assert_equal(observer.get_destruction_count(), i + 1);
         assert_equal(executor->size(), task_count - (i + 1));
-        assert_equal(results[i].get(), i);
     }
 
     assert_executed_locally(observer.get_execution_map());
@@ -720,7 +724,6 @@ void concurrencpp::tests::test_manual_executor_loop() {
 
         const auto total_executed = (i + 1) * chunk_size;
         assert_equal(observer.get_execution_count(), total_executed);
-        assert_equal(observer.get_destruction_count(), total_executed);
         assert_equal(executor->size(), task_count - total_executed);
     }
 
@@ -729,7 +732,6 @@ void concurrencpp::tests::test_manual_executor_loop() {
     assert_equal(executed, remained);
 
     assert_equal(observer.get_execution_count(), task_count);
-    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_true(executor->empty());
     assert_equal(executor->size(), static_cast<size_t>(0));
@@ -741,6 +743,8 @@ void concurrencpp::tests::test_manual_executor_loop() {
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 }
 
 void concurrencpp::tests::test_manual_executor_loop_for() {
@@ -942,13 +946,14 @@ void concurrencpp::tests::test_manual_executor_clear() {
     assert_true(executor->empty());
     assert_equal(executor->size(), static_cast<size_t>(0));
     assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
-    assert_equal(observer.get_destruction_count(), task_count);
 
     for (auto& result : results) {
         assert_throws<concurrencpp::errors::broken_task>([&result]() mutable {
             result.get();
         });
     }
+
+    assert_equal(observer.get_destruction_count(), task_count);
 
     assert_equal(executor->clear(), static_cast<size_t>(0));
 }

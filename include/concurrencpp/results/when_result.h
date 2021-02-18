@@ -2,9 +2,9 @@
 #define CONCURRENCPP_WHEN_RESULT_H
 
 #include <tuple>
+#include <mutex>
 #include <memory>
 #include <atomic>
-#include <mutex>
 #include <vector>
 
 #include "concurrencpp/errors.h"
@@ -16,11 +16,9 @@ namespace concurrencpp::details {
        private:
         template<class type>
         static void throw_if_empty_single(const char* error_message, const result<type>& result) {
-            if (static_cast<bool>(result)) {
-                return;
+            if (!static_cast<bool>(result)) {
+                throw errors::empty_result(error_message);
             }
-
-            throw errors::empty_result(error_message);
         }
 
         static void throw_if_empty_impl(const char* error_message) noexcept {
@@ -59,7 +57,7 @@ namespace concurrencpp::details {
 
        private:
         tuple_type m_tuple;
-        std::shared_ptr<result_state<tuple_type>> m_state_ptr;
+        producer_result_state_ptr<tuple_type> m_state_ptr;
 
         template<class type>
         void set_state(result<type>& result) noexcept {
@@ -68,12 +66,12 @@ namespace concurrencpp::details {
         }
 
        public:
-        when_all_tuple_state(result_types&&... results) noexcept :
-            m_tuple(std::forward<result_types>(results)...), m_state_ptr(std::make_shared<result_state<tuple_type>>()) {
+        when_all_tuple_state(result_types&&... results) noexcept : m_tuple(std::forward<result_types>(results)...), m_state_ptr(new result_state<tuple_type>()) {
             m_counter = sizeof...(result_types);
         }
 
         void set_state() noexcept {
+            std::unique_lock<std::recursive_mutex> lock(m_lock);
             std::apply(
                 [this](auto&... result) {
                     (this->set_state(result), ...);
@@ -82,16 +80,20 @@ namespace concurrencpp::details {
         }
 
         void on_result_ready() noexcept override {
-            if (m_counter.fetch_sub(1, std::memory_order_relaxed) != 1) {
+            if (m_counter.fetch_sub(1, std::memory_order_acq_rel) != 1) {
                 return;
             }
 
-            m_state_ptr->set_result(std::move(m_tuple));
-            m_state_ptr->publish_result();
+            std::unique_lock<std::recursive_mutex> lock(m_lock);
+            auto state = std::move(m_state_ptr);
+            auto tuple = std::move(m_tuple);
+            lock.unlock();
+
+            state->set_result(std::move(tuple));
         }
 
         result<tuple_type> get_result() noexcept {
-            return {m_state_ptr};
+            return {m_state_ptr.get()};
         }
     };
 
@@ -100,7 +102,7 @@ namespace concurrencpp::details {
 
        private:
         std::vector<type> m_vector;
-        std::shared_ptr<result_state<std::vector<type>>> m_state_ptr;
+        producer_result_state_ptr<std::vector<type>> m_state_ptr;
 
         template<class given_type>
         void set_state(result<given_type>& result) noexcept {
@@ -111,27 +113,33 @@ namespace concurrencpp::details {
        public:
         template<class iterator_type>
         when_all_vector_state(iterator_type begin, iterator_type end) :
-            m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)), m_state_ptr(std::make_shared<result_state<std::vector<type>>>()) {
+            m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)), m_state_ptr(new result_state<std::vector<type>>()) {
             m_counter = m_vector.size();
         }
 
         void set_state() noexcept {
+            std::unique_lock<std::recursive_mutex> lock(m_lock);
             for (auto& result : m_vector) {
                 set_state(result);
             }
+            lock.unlock();
         }
 
         void on_result_ready() noexcept override {
-            if (m_counter.fetch_sub(1, std::memory_order_relaxed) != 1) {
+            if (m_counter.fetch_sub(1, std::memory_order_acq_rel) != 1) {
                 return;
             }
 
-            m_state_ptr->set_result(std::move(m_vector));
-            m_state_ptr->publish_result();
+            std::unique_lock<std::recursive_mutex> lock(m_lock);
+            auto state = std::move(m_state_ptr);
+            auto vector = std::move(m_vector);
+            lock.unlock();
+
+            state->set_result(std::move(vector));
         }
 
         result<std::vector<type>> get_result() noexcept {
-            return {m_state_ptr};
+            return {m_state_ptr.get()};
         }
     };
 }  // namespace concurrencpp::details
@@ -160,7 +168,7 @@ namespace concurrencpp::details {
 
        private:
         tuple_type m_results;
-        std::shared_ptr<result_state<when_any_result<tuple_type>>> m_state_ptr;
+        producer_result_state_ptr<when_any_result<tuple_type>> m_state_ptr;
 
         template<size_t index>
         std::pair<when_any_status, size_t> set_state_impl(std::unique_lock<std::recursive_mutex>& lock) noexcept {  // should be called under a lock.
@@ -212,13 +220,16 @@ namespace concurrencpp::details {
             assert(lock.owns_lock());
             (void)lock;
 
-            m_state_ptr->set_result(index, std::move(m_results));
-            m_state_ptr->publish_result();
+            auto state = std::move(m_state_ptr);
+            auto results = std::move(m_results);
+            lock.unlock();
+
+            state->set_result(index, std::move(results));
         }
 
        public:
         when_any_tuple_state(result_types&&... results) :
-            m_results(std::forward<result_types>(results)...), m_state_ptr(std::make_shared<result_state<when_any_result<tuple_type>>>()) {}
+            m_results(std::forward<result_types>(results)...), m_state_ptr(new result_state<when_any_result<tuple_type>>()) {}
 
         void on_result_ready(size_t index) noexcept override {
             if (m_fulfilled.exchange(true, std::memory_order_relaxed)) {
@@ -240,7 +251,7 @@ namespace concurrencpp::details {
         }
 
         result<when_any_result<tuple_type>> get_result() noexcept {
-            return {m_state_ptr};
+            return {m_state_ptr.get()};
         }
     };
 
@@ -249,7 +260,7 @@ namespace concurrencpp::details {
 
        private:
         std::vector<type> m_results;
-        std::shared_ptr<result_state<when_any_result<std::vector<type>>>> m_state_ptr;
+        producer_result_state_ptr<when_any_result<std::vector<type>>> m_state_ptr;
 
         void unset_state(std::unique_lock<std::recursive_mutex>& lock) noexcept {
             assert(lock.owns_lock());
@@ -265,15 +276,18 @@ namespace concurrencpp::details {
         void complete_promise(std::unique_lock<std::recursive_mutex>& lock, size_t index) noexcept {
             assert(lock.owns_lock());
             (void)lock;
-            m_state_ptr->set_result(index, std::move(m_results));
-            m_state_ptr->publish_result();
+
+            auto results = std::move(m_results);
+            auto state = std::move(m_state_ptr);
+            lock.unlock();
+
+            state->set_result(index, std::move(results));
         }
 
        public:
         template<class iterator_type>
         when_any_vector_state(iterator_type begin, iterator_type end) :
-            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)),
-            m_state_ptr(std::make_shared<result_state<when_any_result<std::vector<type>>>>()) {}
+            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)), m_state_ptr(new result_state<when_any_result<std::vector<type>>>()) {}
 
         void on_result_ready(size_t index) noexcept override {
             if (m_fulfilled.exchange(true, std::memory_order_relaxed)) {
@@ -303,7 +317,7 @@ namespace concurrencpp::details {
         }
 
         result<when_any_result<std::vector<type>>> get_result() noexcept {
-            return {m_state_ptr};
+            return {m_state_ptr.get()};
         }
     };
 }  // namespace concurrencpp::details
@@ -318,9 +332,9 @@ namespace concurrencpp {
         details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg, std::forward<result_types>(results)...);
 
         auto when_all_state = std::make_shared<details::when_all_tuple_state<typename std::decay<result_types>::type...>>(std::forward<result_types>(results)...);
-
+        auto result = when_all_state->get_result();
         when_all_state->set_state();
-        return when_all_state->get_result();
+        return std::move(result);
     }
 
     template<class iterator_type>
@@ -334,8 +348,9 @@ namespace concurrencpp {
         }
 
         auto when_all_state = std::make_shared<details::when_all_vector_state<type>>(begin, end);
+        auto result = when_all_state->get_result();
         when_all_state->set_state();
-        return when_all_state->get_result();
+        return std::move(result);
     }
 
     template<class... result_types>
@@ -343,9 +358,10 @@ namespace concurrencpp {
         static_assert(sizeof...(result_types) != 0, "concurrencpp::when_any() - the function must accept at least one result object.");
         details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_any_empty_result_error_msg, std::forward<result_types>(results)...);
 
-        auto state = std::make_shared<details::when_any_tuple_state<result_types...>>(std::forward<result_types>(results)...);
-        state->set_state();
-        return state->get_result();
+        auto when_any_state = std::make_shared<details::when_any_tuple_state<result_types...>>(std::forward<result_types>(results)...);
+        auto result = when_any_state->get_result();
+        when_any_state->set_state();
+        return std::move(result);
     }
 
     template<class iterator_type>
@@ -358,9 +374,10 @@ namespace concurrencpp {
 
         using type = typename std::iterator_traits<iterator_type>::value_type;
 
-        auto state = std::make_shared<details::when_any_vector_state<type>>(begin, end);
-        state->set_state();
-        return state->get_result();
+        auto when_any_state = std::make_shared<details::when_any_vector_state<type>>(begin, end);
+        auto result = when_any_state->get_result();
+        when_any_state->set_state();
+        return std::move(result);
     }
 }  // namespace concurrencpp
 

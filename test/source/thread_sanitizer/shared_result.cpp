@@ -2,148 +2,257 @@
 
 #include <iostream>
 
-void shared_result_get(std::shared_ptr<concurrencpp::thread_executor> tp);
-void shared_result_wait(std::shared_ptr<concurrencpp::thread_executor> tp);
-void shared_result_wait_for(std::shared_ptr<concurrencpp::thread_executor> tp);
-concurrencpp::result<void> shared_result_await(std::shared_ptr<concurrencpp::thread_executor> tp);
-concurrencpp::result<void> shared_result_await_via(std::shared_ptr<concurrencpp::thread_executor> tp);
+void test_shared_result_get(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_wait(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_wait_for(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_await(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_await_via(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_resolve(std::shared_ptr<concurrencpp::thread_executor> te);
+void test_shared_result_resolve_via(std::shared_ptr<concurrencpp::thread_executor> te);
 
 int main() {
+    std::cout << "Starting concurrencpp::shared_result test" << std::endl;
+
     concurrencpp::runtime runtime;
+    const auto thread_executor = runtime.thread_executor();
 
-    std::cout << "shared_result::get" << std::endl;
-    shared_result_get(runtime.thread_executor());
-    std::cout << "================================" << std::endl;
-
-    std::cout << "shared_result::wait" << std::endl;
-    shared_result_wait(runtime.thread_executor());
-    std::cout << "================================" << std::endl;
-
-    std::cout << "shared_result::wait_for" << std::endl;
-    shared_result_wait_for(runtime.thread_executor());
-    std::cout << "================================" << std::endl;
-
-    std::cout << "shared_result::await" << std::endl;
-    shared_result_await(runtime.thread_executor()).get();
-    std::cout << "================================" << std::endl;
-
-    std::cout << "shared_result::await_via" << std::endl;
-    shared_result_await_via(runtime.thread_executor()).get();
-    std::cout << "================================" << std::endl;
+    test_shared_result_get(thread_executor);
+    test_shared_result_wait(thread_executor);
+    test_shared_result_wait_for(thread_executor);
+    test_shared_result_await(thread_executor);
+    test_shared_result_await_via(thread_executor);
+    test_shared_result_resolve(thread_executor);
+    test_shared_result_resolve_via(thread_executor);
 }
+
+#include "tests/test_utils/make_result_array.h"
 
 using namespace concurrencpp;
+using namespace std::chrono;
 
-void shared_result_get(std::shared_ptr<thread_executor> tp) {
-    const size_t task_count = 512;
+template<class type>
+std::vector<shared_result<type>> to_shared_results(std::vector<result<type>> results) {
+    std::vector<shared_result<type>> shared_results;
+    shared_results.reserve(results.size());
+    std::for_each(results.begin(), results.end(), [&shared_results](auto& result) {
+        shared_results.emplace_back(std::move(result));
+    });
 
-    std::vector<shared_result<int>> results;
-    results.reserve(task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(tp->submit([i] {
-            std::this_thread::yield();
-            return int(i);
-        }));
-    }
-
-    for (size_t i = 0; i < task_count; i++) {
-        auto res = results[i].get();
-        if (res != i) {
-            std::cerr << "submit + get, expected " << i << " and got " << res << std::endl;
-            std::abort();
-        }
-    }
+    return shared_results;
 }
 
-void shared_result_wait(std::shared_ptr<thread_executor> tp) {
-    const size_t task_count = 512;
+namespace concurrencpp::tests {
+    template<class type, class method_functor, class converter_type>
+    void test_shared_result_method_val(std::shared_ptr<thread_executor> te, method_functor&& tested_method, converter_type&& converter) {
+        const auto tp = system_clock::now() + seconds(2);
+        auto results = make_result_array<type>(1024, tp, te, converter);
+        auto shared_results = to_shared_results(std::move(results));
 
-    std::vector<shared_result<int>> results;
-    results.reserve(task_count);
+        std::thread consumers[8];
 
-    for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(tp->submit([i] {
-            std::this_thread::yield();
-            return int(i);
-        }));
-    }
+        for (auto& thread : consumers) {
+            thread = std::thread([=]() mutable {
+                std::this_thread::sleep_until(tp - milliseconds(1));
+                test_shared_result_array(std::move(shared_results), tested_method, converter);
+            });
+        }
 
-    for (size_t i = 0; i < task_count; i++) {
-        results[i].wait();
-        auto res = results[i].get();
-        if (res != i) {
-            std::cerr << "submit + get, expected " << i << " and got " << res << std::endl;
-            std::abort();
+        for (auto& thread : consumers) {
+            thread.join();
         }
     }
+
+    template<class type, class method_functor, class converter_type>
+    void test_shared_result_method_ex(std::shared_ptr<thread_executor> te, method_functor&& tested_method, converter_type&& converter) {
+        const auto tp = system_clock::now() + seconds(1);
+        auto results = make_exceptional_array<type>(1024, tp, te, converter);
+        auto shared_results = to_shared_results(std::move(results));
+
+        std::thread consumers[8];
+
+        for (auto& thread : consumers) {
+            thread = std::thread([=]() mutable {
+                std::this_thread::sleep_until(tp - milliseconds(1));
+                test_shared_result_exceptional_array(std::move(shared_results), tested_method);
+            });
+        }
+
+        for (auto& thread : consumers) {
+            thread.join();
+        }
+    }
+}  // namespace concurrencpp::tests
+
+namespace concurrencpp::tests {
+    struct get_method {
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            co_return res.get();
+        }
+    };
+
+    struct wait_method {
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            res.wait();
+            co_return res.get();
+        }
+    };
+
+    struct wait_for_method {
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            while (res.wait_for(milliseconds(5)) == result_status::idle) {
+                // do nothing.
+            }
+
+            co_return res.get();
+        }
+    };
+
+    class await_method {
+
+       private:
+        template<class type>
+        result<type> await_task(shared_result<type> res) {
+            co_return co_await res;
+        }
+
+       public:
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            auto wrapper_res = await_task(std::move(res));
+            wrapper_res.wait();
+            return std::move(wrapper_res);
+        }
+    };
+
+    class await_via_method {
+
+       private:
+        std::shared_ptr<thread_executor> m_executor;
+
+        template<class type>
+        result<type> await_task(shared_result<type> res) {
+            co_return co_await res.await_via(m_executor, true);
+        }
+
+       public:
+        await_via_method(std::shared_ptr<thread_executor> executor) noexcept : m_executor(std::move(executor)) {}
+
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            auto wrapper_res = await_task(std::move(res));
+            wrapper_res.wait();
+            return std::move(wrapper_res);
+        }
+    };
+
+    class resolve_method {
+
+       private:
+        template<class type>
+        result<type> await_task(shared_result<type> res) {
+            co_return co_await co_await res.resolve();
+        }
+
+       public:
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            auto wrapper_res = await_task(std::move(res));
+            co_return wrapper_res.get();
+        }
+    };
+
+    class resolve_via_method {
+
+       private:
+        std::shared_ptr<thread_executor> m_executor;
+
+        template<class type>
+        result<type> await_task(shared_result<type> res) {
+            co_return co_await co_await res.resolve_via(m_executor, true);
+        }
+
+       public:
+        resolve_via_method(std::shared_ptr<thread_executor> executor) noexcept : m_executor(std::move(executor)) {}
+
+        template<class type>
+        result<type> operator()(shared_result<type> res) {
+            auto wrapper_res = await_task(std::move(res));
+            co_return wrapper_res.get();
+        }
+    };
+
+    template<class tested_method>
+    void test_shared_result_method(std::shared_ptr<thread_executor> te, tested_method&& method) {
+        tests::test_shared_result_method_val<size_t>(te, method, converter<size_t> {});
+        tests::test_shared_result_method_val<std::string>(te, method, converter<std::string> {});
+        tests::test_shared_result_method_val<void>(te, method, converter<void> {});
+        tests::test_shared_result_method_val<size_t&>(te, method, converter<size_t&> {});
+        tests::test_shared_result_method_val<std::string&>(te, method, converter<std::string&> {});
+
+        tests::test_shared_result_method_ex<size_t>(te, method, converter<size_t> {});
+        tests::test_shared_result_method_ex<std::string>(te, method, converter<std::string> {});
+        tests::test_shared_result_method_ex<void>(te, method, converter<void> {});
+        tests::test_shared_result_method_ex<size_t&>(te, method, converter<size_t&> {});
+        tests::test_shared_result_method_ex<std::string&>(te, method, converter<std::string&> {});
+    }
+
+}  // namespace concurrencpp::tests
+
+void test_shared_result_get(std::shared_ptr<thread_executor> te) {
+    std::cout << "Testing shared_result::get()" << std::endl;
+
+    tests::test_shared_result_method(te, tests::get_method {});
+
+    std::cout << "================================" << std::endl;
 }
 
-void shared_result_wait_for(std::shared_ptr<thread_executor> tp) {
-    const size_t task_count = 512;
+void test_shared_result_wait(std::shared_ptr<thread_executor> te) {
+    std::cout << "Testing shared_result::wait()" << std::endl;
 
-    std::vector<shared_result<int>> results;
-    results.reserve(task_count);
+    tests::test_shared_result_method(te, tests::wait_method {});
 
-    for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(tp->submit([i] {
-            std::this_thread::yield();
-            return int(i);
-        }));
-    }
-
-    for (size_t i = 0; i < task_count; i++) {
-        while (results[i].wait_for(std::chrono::milliseconds(5)) == result_status::idle)
-            ;
-
-        auto res = results[i].get();
-        if (res != i) {
-            std::cerr << "submit + get, expected " << i << " and got " << res << std::endl;
-            std::abort();
-        }
-    }
+    std::cout << "================================" << std::endl;
 }
 
-result<void> shared_result_await(std::shared_ptr<thread_executor> tp) {
-    const size_t task_count = 512;
+void test_shared_result_wait_for(std::shared_ptr<thread_executor> te) {
+    std::cout << "Testing shared_result::wait_for()" << std::endl;
 
-    std::vector<shared_result<int>> results;
-    results.reserve(task_count);
+    tests::test_shared_result_method(te, tests::wait_for_method {});
 
-    for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(tp->submit([i] {
-            std::this_thread::yield();
-            return int(i);
-        }));
-    }
-
-    for (size_t i = 0; i < task_count; i++) {
-        auto res = co_await results[i];
-        if (res != i) {
-            std::cerr << "submit + await, expected " << i << " and got " << res << std::endl;
-            std::abort();
-        }
-    }
+    std::cout << "================================" << std::endl;
 }
 
-result<void> shared_result_await_via(std::shared_ptr<thread_executor> tp) {
-    const size_t task_count = 512;
+void test_shared_result_await(std::shared_ptr<thread_executor> te) {
+    std::cout << "Testing shared_result::await()" << std::endl;
 
-    std::vector<shared_result<int>> results;
-    results.reserve(task_count);
+    tests::test_shared_result_method(te, tests::await_method {});
 
-    for (size_t i = 0; i < task_count; i++) {
-        results.emplace_back(tp->submit([i] {
-            std::this_thread::yield();
-            return int(i);
-        }));
-    }
+    std::cout << "================================" << std::endl;
+}
 
-    for (size_t i = 0; i < task_count; i++) {
-        auto res = co_await results[i].await_via(tp);
-        if (res != i) {
-            std::cerr << "submit + await, expected " << i << " and got " << res << std::endl;
-            std::abort();
-        }
-    }
+void test_shared_result_await_via(std::shared_ptr<thread_executor> te) {
+    std::cout << "Testing shared_result::await_via()" << std::endl;
+
+    tests::test_shared_result_method(te, tests::await_via_method {te});
+
+    std::cout << "================================" << std::endl;
+}
+
+void test_shared_result_resolve(std::shared_ptr<concurrencpp::thread_executor> te) {
+    std::cout << "Testing shared_result::resolve()" << std::endl;
+
+    tests::test_shared_result_method(te, tests::resolve_method {});
+
+    std::cout << "================================" << std::endl;
+}
+
+void test_shared_result_resolve_via(std::shared_ptr<concurrencpp::thread_executor> te) {
+    std::cout << "Testing shared_result::resolve_via()" << std::endl;
+
+    tests::test_shared_result_method(te, tests::resolve_via_method {te});
+
+    std::cout << "================================" << std::endl;
 }

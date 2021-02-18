@@ -60,7 +60,7 @@ void thread::set_name(std::string_view name) noexcept {
     ::pthread_setname_np(::pthread_self(), name.data());
 }
 
-#elif defined(CRCPP_MACH_OS)
+#elif defined(CRCPP_MAC_OS)
 
 #    include <pthread.h>
 
