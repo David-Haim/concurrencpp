@@ -1,9 +1,9 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
-#include "concurrencpp/results/impl/result_state.h"
+#include "concurrencpp/task.h"
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/errors.h"
+#include "concurrencpp/results/impl/result_state.h"
 
 #include <vector>
 
@@ -16,8 +16,15 @@ namespace concurrencpp::details {
     };
 
     template<class executor_type>
-    struct initial_scheduling_awaiter : public details::suspend_always {
-        void await_suspend(details::coroutine_handle<void> handle) const {
+    class initial_scheduling_awaiter : public suspend_always {
+
+       private:
+        await_via_context m_await_via_context;
+
+       public:
+        void await_suspend(coroutine_handle<void> handle) {
+            m_await_via_context.set_coro_handle(handle);
+
             auto& per_thread_data = coroutine_per_thread_data::s_tl_per_thread_data;
             auto executor_base_ptr = std::exchange(per_thread_data.executor, nullptr);
 
@@ -25,15 +32,25 @@ namespace concurrencpp::details {
             assert(dynamic_cast<executor_type*>(executor_base_ptr) != nullptr);
 
             auto executor_ptr = static_cast<executor_type*>(executor_base_ptr);
-            executor_ptr->enqueue(handle);
+            executor_ptr->enqueue(m_await_via_context.get_functor());
+        }
+
+        void await_resume() const {
+            m_await_via_context.throw_if_interrupted();
         }
     };
 
     template<>
-    struct initial_scheduling_awaiter<concurrencpp::inline_executor> : public details::suspend_never {};
+    struct initial_scheduling_awaiter<concurrencpp::inline_executor> : public suspend_never {};
 
-    struct initial_accumulating_awaiter : public details::suspend_always {
-        void await_suspend(details::coroutine_handle<void> handle) const noexcept;
+    class initial_accumulating_awaiter : public suspend_always {
+
+       private:
+        await_via_context m_await_via_context;
+
+       public:
+        void await_suspend(coroutine_handle<void> handle) noexcept;
+        void await_resume();
     };
 
     template<class executor_type>
@@ -72,7 +89,7 @@ namespace concurrencpp::details {
     };
 
     struct initialy_resumed_promise {
-        details::suspend_never initial_suspend() const noexcept {
+        suspend_never initial_suspend() const noexcept {
             return {};
         }
     };
@@ -102,7 +119,7 @@ namespace concurrencpp::details {
             return {};
         }
 
-        details::suspend_never final_suspend() const noexcept {
+        suspend_never final_suspend() const noexcept {
             return {};
         }
 
@@ -127,11 +144,10 @@ namespace concurrencpp::details {
         }
     };
 
-    struct result_publisher : public details::suspend_always {
+    struct result_publisher : public suspend_always {
         template<class promise_type>
-        bool await_suspend(details::coroutine_handle<promise_type> handle) const noexcept {
-            handle.promise().publish_result();
-            return false;  // don't suspend, resume and destroy this
+        void await_suspend(coroutine_handle<promise_type> handle) const noexcept {
+            handle.promise().complete_producer(handle);
         }
     };
 
@@ -139,37 +155,24 @@ namespace concurrencpp::details {
     struct result_coro_promise : public return_value_struct<result_coro_promise<type>, type> {
 
        private:
-        std::shared_ptr<result_state<type>> m_result_ptr;
+        result_state<type> m_result_state;
 
        public:
-        result_coro_promise() : m_result_ptr(std::make_shared<result_state<type>>()) {}
-
-        ~result_coro_promise() noexcept {
-            if (!static_cast<bool>(this->m_result_ptr)) {
-                return;
-            }
-
-            auto broken_task_error = std::make_exception_ptr(concurrencpp::errors::broken_task("coroutine was destroyed before finishing execution"));
-            this->m_result_ptr->set_exception(broken_task_error);
-            this->m_result_ptr->publish_result();
-        }
-
         template<class... argument_types>
-        void set_result(argument_types&&... args) {
-            this->m_result_ptr->set_result(std::forward<argument_types>(args)...);
+        void set_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
+            this->m_result_state.set_result(std::forward<argument_types>(arguments)...);
         }
 
         void unhandled_exception() noexcept {
-            this->m_result_ptr->set_exception(std::current_exception());
+            this->m_result_state.set_exception(std::current_exception());
         }
 
-        ::concurrencpp::result<type> get_return_object() noexcept {
-            return {this->m_result_ptr};
+        result<type> get_return_object() noexcept {
+            return {&m_result_state};
         }
 
-        void publish_result() noexcept {
-            this->m_result_ptr->publish_result();
-            this->m_result_ptr.reset();
+        void complete_producer(coroutine_handle<void> done_handle) noexcept {
+            this->m_result_state.complete_producer(done_handle);
         }
 
         result_publisher final_suspend() const noexcept {

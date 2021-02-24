@@ -6,7 +6,7 @@
 #elif defined(unix) || defined(__unix__) || defined(__unix)
 #    define CRCPP_UNIX_OS
 #elif defined(__APPLE__) || defined(__MACH__)
-#    define CRCPP_MACH_OS
+#    define CRCPP_MAC_OS
 #elif defined(__FreeBSD__)
 #    define CRCPP_FREE_BSD_OS
 #elif defined(__ANDROID__)

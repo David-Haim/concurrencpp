@@ -12,12 +12,12 @@
 
 namespace concurrencpp::tests {
     template<class type>
-    void test_result_await_impl();
-    void test_result_await();
+    void test_shared_result_await_impl();
+    void test_shared_result_await();
 
     template<class type>
-    void test_result_await_via_impl();
-    void test_result_await_via();
+    void test_shared_result_await_via_impl();
+    void test_shared_result_await_via();
 
 }  // namespace concurrencpp::tests
 
@@ -57,10 +57,11 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task() {
             auto result = result_factory<type>::make_ready();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
-            co_return co_await result;
+            co_return co_await sr;
         }
 
        public:
@@ -82,10 +83,11 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
-            co_return co_await result;
+            co_return co_await sr;
         }
 
        public:
@@ -116,8 +118,9 @@ namespace concurrencpp::tests {
             auto result = manual_executor->submit([]() -> decltype(auto) {
                 return result_factory<type>::get();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
-            co_return co_await result;
+            co_return co_await sr;
         }
 
         result<void> inner_task(std::shared_ptr<manual_executor> manual_executor) {
@@ -157,8 +160,9 @@ namespace concurrencpp::tests {
                 throw costume_exception(id);
                 return result_factory<type>::get();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
-            co_return co_await result;
+            co_return co_await sr;
         }
 
         result<void> inner_task(std::shared_ptr<manual_executor> manual_executor) {
@@ -190,14 +194,24 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 template<class type>
-void concurrencpp::tests::test_result_await_impl() {
+void concurrencpp::tests::test_shared_result_await_impl() {
     // empty result throws
     {
         assert_throws_with_error_message<concurrencpp::errors::empty_result>(
             [] {
-                result<type>().operator co_await();
+                shared_result<type>().operator co_await();
             },
-            concurrencpp::details::consts::k_result_operator_co_await_error_msg);
+            concurrencpp::details::consts::k_shared_result_operator_co_await_error_msg);
+    }
+
+    // await can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.operator co_await();
+            assert_true(sr);
+        }
     }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
@@ -210,12 +224,12 @@ void concurrencpp::tests::test_result_await_impl() {
     test_await_not_ready_result<type, result_status::exception>()(manual_executor, thread_executor).get();
 }
 
-void concurrencpp::tests::test_result_await() {
-    test_result_await_impl<int>();
-    test_result_await_impl<std::string>();
-    test_result_await_impl<void>();
-    test_result_await_impl<int&>();
-    test_result_await_impl<std::string&>();
+void concurrencpp::tests::test_shared_result_await() {
+    test_shared_result_await_impl<int>();
+    test_shared_result_await_impl<std::string>();
+    test_shared_result_await_impl<void>();
+    test_shared_result_await_impl<int&>();
+    test_shared_result_await_impl<std::string&>();
 }
 
 /*
@@ -258,12 +272,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
             auto result = result_factory<type>::make_ready();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, false);
+            co_return co_await sr.await_via(executor, false);
         }
 
        public:
@@ -287,12 +302,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor) {
             auto result = result_factory<type>::make_ready();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, true);
+            co_return co_await sr.await_via(executor, true);
         }
 
        public:
@@ -316,12 +332,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<throwing_executor> executor) {
             auto result = result_factory<type>::make_ready();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, false);
+            co_return co_await sr.await_via(executor, false);
         }
 
        public:
@@ -342,11 +359,12 @@ namespace concurrencpp::tests {
             // result is ready + force_rescheduling = true + executor throws
             // = inline execution, errors::broken_task exception is thrown
             auto result = result_factory<type>::make_ready();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             const auto thread_id_0 = thread::get_current_virtual_id();
 
             try {
-                co_await result.await_via(executor, true);
+                co_await sr.await_via(executor, true);
             } catch (const errors::broken_task&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
@@ -369,12 +387,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, false);
+            co_return co_await sr.await_via(executor, false);
         }
 
        public:
@@ -399,12 +418,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<thread_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, true);
+            co_return co_await sr.await_via(executor, true);
         }
 
        public:
@@ -428,12 +448,13 @@ namespace concurrencpp::tests {
 
         result<type> proxy_task(std::shared_ptr<throwing_executor> executor, const size_t id) {
             auto result = make_exceptional_result<type>(costume_exception(id));
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             m_thread_id_0 = thread::get_current_virtual_id();
 
             thread_id_setter setter(m_thread_id_1);  // sets thread id after await returns
 
-            co_return co_await result.await_via(executor, false);
+            co_return co_await sr.await_via(executor, false);
         }
 
        public:
@@ -455,11 +476,12 @@ namespace concurrencpp::tests {
             // result is ready (exception) + force_rescheduling = true + executor throws
             // = inline execution, errors::broken_task exception is thrown
             auto result = result_factory<type>::make_exceptional();
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             const auto thread_id_0 = thread::get_current_virtual_id();
 
             try {
-                co_await result.await_via(executor, true);
+                co_await sr.await_via(executor, true);
             } catch (const errors::broken_task&) {
                 const auto thread_id_1 = thread::get_current_virtual_id();
 
@@ -494,8 +516,9 @@ namespace concurrencpp::tests {
             auto result = manual_executor->submit([]() -> decltype(auto) {
                 return result_factory<type>::get();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
-            co_return co_await result.await_via(thread_executor, true);
+            co_return co_await sr.await_via(thread_executor, true);
         }
 
         result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
@@ -540,9 +563,10 @@ namespace concurrencpp::tests {
             auto result = manual_executor->submit([]() -> decltype(auto) {
                 return result_factory<type>::get();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             try {
-                co_await result.await_via(throwing_executor, true);
+                co_await sr.await_via(throwing_executor, true);
             } catch (const errors::broken_task&) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
                 co_return;
@@ -590,8 +614,9 @@ namespace concurrencpp::tests {
                 throw costume_exception(id);
                 return result_factory<type>::get();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
-            co_return co_await result.await_via(thread_executor, true);
+            co_return co_await sr.await_via(thread_executor, true);
         }
 
         result<void> inner_task(std::shared_ptr<manual_executor> manual_executor, std::shared_ptr<thread_executor> thread_executor) {
@@ -637,9 +662,10 @@ namespace concurrencpp::tests {
             auto result = manual_executor->submit([]() -> decltype(auto) {
                 return result_factory<type>::throw_ex();
             });
+            concurrencpp::shared_result<type> sr(std::move(result));
 
             try {
-                co_await result.await_via(throwing_executor, true);
+                co_await sr.await_via(throwing_executor, true);
             } catch (const errors::broken_task&) {
                 m_resuming_thread_id = thread::get_current_virtual_id();
                 co_return;
@@ -673,22 +699,34 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 template<class type>
-void concurrencpp::tests::test_result_await_via_impl() {
+void concurrencpp::tests::test_shared_result_await_via_impl() {
     // empty result throws
     assert_throws_with_error_message<concurrencpp::errors::empty_result>(
         [] {
             auto executor = std::make_shared<inline_executor>();
-            result<type>().await_via(executor);
+            shared_result<type>().await_via(executor);
         },
-        concurrencpp::details::consts::k_result_await_via_error_msg);
+        concurrencpp::details::consts::k_shared_result_await_via_error_msg);
 
     // null executor throws
     assert_throws_with_error_message<std::invalid_argument>(
         [] {
             auto result = result_factory<type>::make_ready();
-            result.resolve_via({}, true);
+            concurrencpp::shared_result<type> sr(std::move(result));
+            sr.await_via({}, true);
         },
-        concurrencpp::details::consts::k_result_resolve_via_executor_null_error_msg);
+        concurrencpp::details::consts::k_shared_result_await_via_executor_null_error_msg);
+
+    // await_via can be called multiple times
+    {
+        shared_result<type> sr(result_factory<type>::make_ready());
+        auto executor = std::make_shared<inline_executor>();
+
+        for (size_t i = 0; i < 6; i++) {
+            sr.await_via(executor);
+            assert_true(sr);
+        }
+    }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
     auto throwing_executor = std::make_shared<struct throwing_executor>();
@@ -713,19 +751,19 @@ void concurrencpp::tests::test_result_await_via_impl() {
     test_await_via_not_ready_result<type, result_status::exception, true>()(manual_executor, throwing_executor, thread_executor).get();
 }
 
-void concurrencpp::tests::test_result_await_via() {
-    test_result_await_via_impl<int>();
-    test_result_await_via_impl<std::string>();
-    test_result_await_via_impl<void>();
-    test_result_await_via_impl<int&>();
-    test_result_await_via_impl<std::string&>();
+void concurrencpp::tests::test_shared_result_await_via() {
+    test_shared_result_await_via_impl<int>();
+    test_shared_result_await_via_impl<std::string>();
+    test_shared_result_await_via_impl<void>();
+    test_shared_result_await_via_impl<int&>();
+    test_shared_result_await_via_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_result_await_all() {
-    tester tester("result::await, result::await_via test");
+void concurrencpp::tests::test_shared_result_await_all() {
+    tester tester("shared_result::await, shared_result::await_via test");
 
-    tester.add_step("await", test_result_await);
-    tester.add_step("await_via", test_result_await_via);
+    tester.add_step("await", test_shared_result_await);
+    tester.add_step("await_via", test_shared_result_await_via);
 
     tester.launch_test();
 }

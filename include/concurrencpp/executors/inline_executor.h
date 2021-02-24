@@ -11,11 +11,9 @@ namespace concurrencpp {
         std::atomic_bool m_abort;
 
         void throw_if_aborted() const {
-            if (!m_abort.load(std::memory_order_relaxed)) {
-                return;
+            if (m_abort.load(std::memory_order_relaxed)) {
+                details::throw_executor_shutdown_exception(name);
             }
-
-            details::throw_executor_shutdown_exception(name);
         }
 
        public:

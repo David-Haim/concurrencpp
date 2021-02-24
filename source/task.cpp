@@ -14,6 +14,9 @@ namespace concurrencpp::details {
         coroutine_handle<void> m_coro_handle;
 
        public:
+        coroutine_handle_wrapper(const coroutine_handle_wrapper&) = delete;
+        coroutine_handle_wrapper& operator=(const coroutine_handle_wrapper&) = delete;
+
         coroutine_handle_wrapper(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
 
         coroutine_handle_wrapper(coroutine_handle_wrapper&& rhs) noexcept : m_coro_handle(rhs.m_coro_handle) {
@@ -30,7 +33,6 @@ namespace concurrencpp::details {
 
         void execute_destroy() noexcept {
             m_coro_handle();
-            m_coro_handle = {};
         }
 
         void operator()() noexcept {

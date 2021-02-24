@@ -136,14 +136,14 @@ void manual_executor::wait_for_tasks_impl(size_t count) {
 
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     m_condition.wait(lock, [this, count] {
-        return (m_tasks.size() == count) || m_abort;
+        return (m_tasks.size() >= count) || m_abort;
     });
 
     if (m_abort) {
         details::throw_executor_shutdown_exception(name);
     }
 
-    assert(m_tasks.size() == count);
+    assert(m_tasks.size() >= count);
 }
 
 size_t manual_executor::wait_for_tasks_impl(size_t count, std::chrono::time_point<std::chrono::system_clock> deadline) {
@@ -151,7 +151,7 @@ size_t manual_executor::wait_for_tasks_impl(size_t count, std::chrono::time_poin
 
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     m_condition.wait_until(lock, deadline, [this, count] {
-        return (m_tasks.size() == count) || m_abort;
+        return (m_tasks.size() >= count) || m_abort;
     });
 
     if (m_abort) {

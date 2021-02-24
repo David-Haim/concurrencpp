@@ -1,9 +1,8 @@
 #ifndef CONCURRENCPP_PRODUCER_CONTEXT_H
 #define CONCURRENCPP_PRODUCER_CONTEXT_H
 
-#include "concurrencpp/results/result_fwd_declerations.h"
-
 #include <optional>
+#include <exception>
 
 #include <cassert>
 
@@ -20,8 +19,10 @@ namespace concurrencpp::details {
         }
 
        public:
+        producer_context& operator=(producer_context&& rhs) noexcept = default;
+
         template<class... argument_types>
-        void build_result(argument_types&&... arguments) {
+        void build_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
             assert(!m_result.has_value());
             assert(!static_cast<bool>(m_exception));
             m_result.emplace(std::forward<argument_types>(arguments)...);
@@ -57,6 +58,17 @@ namespace concurrencpp::details {
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
         }
+
+        type& get_ref() {
+            assert_state();
+
+            if (m_result.has_value()) {
+                return m_result.value();
+            }
+
+            assert(static_cast<bool>(m_exception));
+            std::rethrow_exception(m_exception);
+        }
     };
 
     template<>
@@ -71,6 +83,8 @@ namespace concurrencpp::details {
         }
 
        public:
+        producer_context& operator=(producer_context&& rhs) noexcept = default;
+
         void build_result() noexcept {
             assert(!m_ready);
             assert(!static_cast<bool>(m_exception));
@@ -107,6 +121,10 @@ namespace concurrencpp::details {
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
         }
+
+        void get_ref() const {
+            return get();
+        }
     };
 
     template<class type>
@@ -121,9 +139,12 @@ namespace concurrencpp::details {
         }
 
        public:
+        producer_context& operator=(producer_context&& rhs) noexcept = default;
+
         void build_result(type& reference) noexcept {
             assert(m_pointer == nullptr);
             assert(!static_cast<bool>(m_exception));
+            assert(reinterpret_cast<size_t>(std::addressof(reference)) % alignof(type) == 0);
             m_pointer = std::addressof(reference);
         }
 
@@ -147,7 +168,7 @@ namespace concurrencpp::details {
             return result_status::idle;
         }
 
-        type& get() {
+        type& get() const {
             assert_state();
 
             if (m_pointer != nullptr) {
@@ -157,6 +178,10 @@ namespace concurrencpp::details {
 
             assert(static_cast<bool>(m_exception));
             std::rethrow_exception(m_exception);
+        }
+
+        type& get_ref() const {
+            return get();
         }
     };
 }  // namespace concurrencpp::details

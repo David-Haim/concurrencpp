@@ -12,6 +12,11 @@ void concurrencpp::tests::test_all() {
     test_result();
     test_result_resolve_all();
     test_result_await_all();
+
+    test_shared_result();
+    test_shared_result_await_all();
+    test_shared_result_resolve_all();
+
     test_result_promise();
     test_make_result();
 

@@ -6,23 +6,28 @@
 concurrencpp::result<void> quick_sort(concurrencpp::executor_tag, std::shared_ptr<concurrencpp::thread_pool_executor> tp, int* a, int lo, int hi);
 
 int main() {
+    std::cout << "Starting parallel quick sort test" << std::endl;
+
     concurrencpp::runtime_options opts;
-    opts.max_cpu_threads = 24;
+    opts.max_cpu_threads = std::thread::hardware_concurrency() * 8;
     concurrencpp::runtime runtime(opts);
 
     ::srand(::time(nullptr));
 
-    std::vector<int> array(8 * 1'000'000);
+    std::vector<int> array(8'000'000);
     for (auto& i : array) {
-        i = rand() % 10 * 10'000;
+        i = ::rand() % 100'000;
     }
 
     quick_sort({}, runtime.thread_pool_executor(), array.data(), 0, array.size() - 1).get();
 
     const auto is_sorted = std::is_sorted(array.begin(), array.end());
     if (!is_sorted) {
-        std::cerr << "array is not sorted." << std::endl;
+        std::cerr << "Quick sort test failed: array is not sorted." << std::endl;
+        std::abort();
     }
+
+    std::cout << "================================" << std::endl;
 }
 
 using namespace concurrencpp;
@@ -81,8 +86,8 @@ result<void> quick_sort(executor_tag, std::shared_ptr<thread_pool_executor> tp, 
     }
 
     const auto p = partition(a, lo, hi);
-    auto res0 = quick_sort(executor_tag {}, tp, a, lo, p);
-    auto res1 = quick_sort(executor_tag {}, tp, a, p + 1, hi);
+    auto res0 = quick_sort({}, tp, a, lo, p);
+    auto res1 = quick_sort({}, tp, a, p + 1, hi);
 
     co_await res0;
     co_await res1;

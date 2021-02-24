@@ -12,10 +12,13 @@ namespace concurrencpp {
         static_assert(std::is_same_v<type, void> ? (sizeof...(argument_types) == 0) : true,
                       "concurrencpp::make_ready_result<void> - this overload does not accept any argument.");
 
-        auto result_state_ptr = std::make_shared<details::result_state<type>>();
-        result_state_ptr->set_result(std::forward<argument_types>(arguments)...);
-        result_state_ptr->publish_result();
-        return {std::move(result_state_ptr)};
+        details::producer_result_state_ptr<type> promise(new details::result_state<type>());
+        details::consumer_result_state_ptr<type> state_ptr(promise.get());
+
+        promise->set_result(std::forward<argument_types>(arguments)...);
+        promise.reset();  // publish the result;
+
+        return {std::move(state_ptr)};
     }
 
     template<class type>
@@ -24,10 +27,13 @@ namespace concurrencpp {
             throw std::invalid_argument(details::consts::k_make_exceptional_result_exception_null_error_msg);
         }
 
-        auto result_state_ptr = std::make_shared<details::result_state<type>>();
-        result_state_ptr->set_exception(exception_ptr);
-        result_state_ptr->publish_result();
-        return {std::move(result_state_ptr)};
+        details::producer_result_state_ptr<type> promise(new details::result_state<type>());
+        details::consumer_result_state_ptr<type> state_ptr(promise.get());
+
+        promise->set_exception(exception_ptr);
+        promise.reset();  // publish the result;
+
+        return {std::move(state_ptr)};
     }
 
     template<class type, class exception_type>

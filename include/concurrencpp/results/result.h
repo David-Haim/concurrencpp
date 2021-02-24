@@ -1,15 +1,11 @@
 #ifndef CONCURRENCPP_RESULT_H
 #define CONCURRENCPP_RESULT_H
 
+#include "concurrencpp/errors.h"
+#include "concurrencpp/utils/bind.h"
 #include "concurrencpp/results/constants.h"
-#include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/result_awaitable.h"
 #include "concurrencpp/results/impl/result_state.h"
-
-#include "concurrencpp/errors.h"
-#include "concurrencpp/forward_declerations.h"
-
-#include "concurrencpp/utils/bind.h"
 
 #include <type_traits>
 
@@ -22,24 +18,23 @@ namespace concurrencpp {
         static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
 
         friend class details::when_result_helper;
+        friend struct details::shared_result_helper;
 
        private:
-        std::shared_ptr<details::result_state<type>> m_state;
+        details::consumer_result_state_ptr<type> m_state;
 
         void throw_if_empty(const char* message) const {
-            if (m_state.get() != nullptr) {
-                return;
+            if (static_cast<bool>(!m_state)) {
+                throw errors::empty_result(message);
             }
-
-            throw errors::empty_result(message);
         }
 
        public:
         result() noexcept = default;
-        ~result() noexcept = default;
         result(result&& rhs) noexcept = default;
 
-        result(std::shared_ptr<details::result_state<type>> state) noexcept : m_state(std::move(state)) {}
+        result(details::consumer_result_state_ptr<type> state) noexcept : m_state(std::move(state)) {}
+        result(details::result_state<type>* state) noexcept : m_state(state) {}
 
         result& operator=(result&& rhs) noexcept {
             if (this != &rhs) {
@@ -53,7 +48,7 @@ namespace concurrencpp {
         result& operator=(const result& rhs) = delete;
 
         operator bool() const noexcept {
-            return m_state.get() != nullptr;
+            return static_cast<bool>(m_state);
         }
 
         result_status status() const {
@@ -61,19 +56,19 @@ namespace concurrencpp {
             return m_state->status();
         }
 
-        void wait() {
+        void wait() const {
             throw_if_empty(details::consts::k_result_wait_error_msg);
             m_state->wait();
         }
 
         template<class duration_type, class ratio_type>
-        result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) {
+        result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) const {
             throw_if_empty(details::consts::k_result_wait_for_error_msg);
             return m_state->wait_for(duration);
         }
 
         template<class clock_type, class duration_type>
-        result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
+        result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) const {
             throw_if_empty(details::consts::k_result_wait_until_error_msg);
             return m_state->wait_until(timeout_time);
         }
@@ -121,16 +116,18 @@ namespace concurrencpp {
     template<class type>
     class result_promise {
 
+        static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
+
+        static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
+
        private:
-        std::shared_ptr<details::result_state<type>> m_state;
+        details::producer_result_state_ptr<type> m_state;
         bool m_result_retrieved;
 
         void throw_if_empty(const char* message) const {
-            if (static_cast<bool>(m_state)) {
-                return;
+            if (!static_cast<bool>(m_state)) {
+                throw errors::empty_result_promise(message);
             }
-
-            throw errors::empty_result_promise(message);
         }
 
         void break_task_if_needed() noexcept {
@@ -144,11 +141,11 @@ namespace concurrencpp {
 
             auto exception_ptr = std::make_exception_ptr(errors::broken_task(details::consts::k_broken_task_exception_error_msg));
             m_state->set_exception(exception_ptr);
-            m_state->publish_result();
+            m_state.reset();
         }
 
        public:
-        result_promise() : m_state(std::make_shared<details::result_state<type>>()), m_result_retrieved(false) {}
+        result_promise() : m_state(new details::result_state<type>()), m_result_retrieved(false) {}
 
         result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
 
@@ -178,8 +175,7 @@ namespace concurrencpp {
             throw_if_empty(details::consts::k_result_promise_set_result_error_msg);
 
             m_state->set_result(std::forward<argument_types>(arguments)...);
-            m_state->publish_result();
-            m_state.reset();
+            m_state.reset();  // publishes the result
         }
 
         void set_exception(std::exception_ptr exception_ptr) {
@@ -190,8 +186,7 @@ namespace concurrencpp {
             }
 
             m_state->set_exception(exception_ptr);
-            m_state->publish_result();
-            m_state.reset();
+            m_state.reset();  // publishes the result
         }
 
         template<class callable_type, class... argument_types>
@@ -203,8 +198,7 @@ namespace concurrencpp {
 
             throw_if_empty(details::consts::k_result_promise_set_from_function_error_msg);
             m_state->from_callable(details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));
-            m_state->publish_result();
-            m_state.reset();
+            m_state.reset();  // publishes the result
         }
 
         result<type> get_result() {
@@ -215,7 +209,7 @@ namespace concurrencpp {
             }
 
             m_result_retrieved = true;
-            return result<type>(m_state);
+            return result<type>(m_state.get());
         }
     };
 }  // namespace concurrencpp

@@ -10,7 +10,8 @@ option(ENABLE_THREAD_SANITIZER "\
 Build concurrencpp with LLVM thread sanitizer. \
 Does not have an effect if the compiler is not Clang based." OFF)
 
-if(ENABLE_THREAD_SANITIZER AND CXX_COMPILER_ID MATCHES "Clang")
+string(TOLOWER ${CMAKE_CXX_COMPILER_ID} compiler_id)
+if(ENABLE_THREAD_SANITIZER AND compiler_id MATCHES "clang")
   # Instead of polluting the lists file, we inject a command definition
   # override that will apply the sanitizer flag
   set(CMAKE_PROJECT_concurrencpp_INCLUDE
@@ -38,7 +39,6 @@ set(test_sources
         source/tests/all_tests.cpp
         source/tests/coroutine_tests/coroutine_promises_test.cpp
         source/tests/coroutine_tests/coroutines_tests.cpp
-        source/tests/executor_tests/derivable_executor_tests.cpp
         source/tests/executor_tests/inline_executor_tests.cpp
         source/tests/executor_tests/manual_executor_tests.cpp
         source/tests/executor_tests/thread_executor_tests.cpp
@@ -49,6 +49,9 @@ set(test_sources
         source/tests/result_tests/result_promise_tests.cpp
         source/tests/result_tests/result_resolve_tests.cpp
         source/tests/result_tests/result_tests.cpp
+        source/tests/result_tests/shared_result_tests.cpp
+        source/tests/result_tests/shared_result_resolve_tests.cpp
+        source/tests/result_tests/shared_result_await_tests.cpp
         source/tests/result_tests/when_all_tests.cpp
         source/tests/result_tests/when_any_tests.cpp
         source/tests/timer_tests/timer_queue_tests.cpp
@@ -66,7 +69,8 @@ set(test_headers
         include/tests/test_utils/executor_shutdowner.h
         include/tests/test_utils/result_factory.h
         include/tests/test_utils/throwing_executor.h
-        include/tests/test_utils/test_ready_result.h)
+        include/tests/test_utils/test_ready_result.h
+        include/tests/test_utils/make_result_array.h)
 
 function(temp_test NAMESPACE NAME)
   set(target ${NAMESPACE}_${NAME})
@@ -87,12 +91,21 @@ if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
-set(tsan_sources executors fibbonacci matrix_multiplication quick_sort result when_all when_any)
+set(tsan_sources
+    executors
+    fibonacci
+    matrix_multiplication
+    quick_sort
+    result
+    shared_result
+    when_all
+    when_any)
 foreach(source IN LISTS tsan_sources)
-  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp)
+  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp source/helpers/assertions.cpp)
 endforeach()
 
-return()
+
+#return()
 
 # add_test(NAMESPACE <namespace> NAME <name> [PROPERTIES ...])
 #

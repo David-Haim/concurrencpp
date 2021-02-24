@@ -159,14 +159,14 @@ void concurrencpp::tests::test_thread_executor_submit_foreign() {
         results[i] = executor->submit(observer.get_testing_stub(i));
     }
 
+    for (size_t i = 0; i < task_count; i++) {
+        assert_equal(results[i].get(), i);
+    }
+
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
 
     assert_unique_execution_threads(observer.get_execution_map(), task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        assert_equal(results[i].get(), i);
-    }
 }
 
 void concurrencpp::tests::test_thread_executor_submit_inline() {
@@ -185,15 +185,15 @@ void concurrencpp::tests::test_thread_executor_submit_inline() {
         return results;
     });
 
-    assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
-    assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    assert_unique_execution_threads(observer.get_execution_map(), task_count);
-
     auto results = results_res.get();
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
     }
+
+    assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
+    assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
+
+    assert_unique_execution_threads(observer.get_execution_map(), task_count);
 }
 
 void concurrencpp::tests::test_thread_executor_submit() {
@@ -265,14 +265,14 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_foreign() {
 
     auto results = executor->bulk_submit<value_testing_stub>(stubs);
 
+    for (size_t i = 0; i < task_count; i++) {
+        assert_equal(results[i].get(), i);
+    }
+
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
 
     assert_unique_execution_threads(observer.get_execution_map(), task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        assert_equal(results[i].get(), i);
-    }
 }
 
 void concurrencpp::tests::test_thread_executor_bulk_submit_inline() {
@@ -292,15 +292,15 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_inline() {
         return executor->bulk_submit<value_testing_stub>(stubs);
     });
 
-    assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
-    assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
-
-    assert_unique_execution_threads(observer.get_execution_map(), task_count);
-
     auto results = results_res.get();
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
     }
+
+    assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
+    assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
+
+    assert_unique_execution_threads(observer.get_execution_map(), task_count);
 }
 
 void concurrencpp::tests::test_thread_executor_bulk_submit() {
