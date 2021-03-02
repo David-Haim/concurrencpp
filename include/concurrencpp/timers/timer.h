@@ -138,7 +138,7 @@ namespace concurrencpp {
         std::chrono::milliseconds get_frequency() const;
         void set_frequency(std::chrono::milliseconds new_frequency);
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return static_cast<bool>(m_state);
         }
     };

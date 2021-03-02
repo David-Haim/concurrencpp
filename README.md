@@ -528,7 +528,7 @@ class result{
         Returns true if this is a non-empty result.
         Applications must not use this object if this->operator bool() is false.
     */
-    operator bool() const noexcept;
+    explicit operator bool() const noexcept;
 
     /*
         Queries the status of *this.
@@ -877,7 +877,7 @@ class share_result {
         Returns true if this is a non-empty shared-result.
         Applications must not use this object if this->operator bool() is false.
     */
-    operator bool() const noexcept;
+    explicit operator bool() const noexcept;
 
     /*
         Queries the status of *this.
@@ -1249,7 +1249,7 @@ class timer {
         Returns true is *this is not an empty timer, false otherwise.
         The timer should not be used if this->operator bool() is false.
     */
-    operator bool() const noexcept;
+   explicit  operator bool() const noexcept;
 };
 ```
 
@@ -1501,7 +1501,7 @@ Task objects apply the short-buffer-optimization (sbo) for regular, small callab
     /*
         Returns true if *this stores a callable. false otherwise.
     */
-        operator bool() const noexcept;
+       expliit  operator bool() const noexcept;
 
     /*
         Returns true if *this stores a callable,
