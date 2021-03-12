@@ -1,71 +1,43 @@
 #include "concurrencpp/task.h"
+#include "concurrencpp/results/impl/consumer_context.h"
 
 #include <cstring>
 
 using concurrencpp::task;
 using concurrencpp::details::vtable;
 
-static_assert(sizeof(task) == concurrencpp::details::task_constants::total_size, "concurrencpp::task - object size is bigger than a cache-line.");
+static_assert(sizeof(task) == concurrencpp::details::task_constants::total_size,
+              "concurrencpp::task - object size is bigger than a cache-line.");
 
-namespace concurrencpp::details {
-    class coroutine_handle_wrapper {
-
-       private:
-        coroutine_handle<void> m_coro_handle;
-
-       public:
-        coroutine_handle_wrapper(const coroutine_handle_wrapper&) = delete;
-        coroutine_handle_wrapper& operator=(const coroutine_handle_wrapper&) = delete;
-
-        coroutine_handle_wrapper(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
-
-        coroutine_handle_wrapper(coroutine_handle_wrapper&& rhs) noexcept : m_coro_handle(rhs.m_coro_handle) {
-            rhs.m_coro_handle = {};
-        }
-
-        ~coroutine_handle_wrapper() noexcept {
-            if (!static_cast<bool>(m_coro_handle)) {
-                return;
-            }
-
-            m_coro_handle.destroy();
-        }
-
-        void execute_destroy() noexcept {
-            m_coro_handle();
-        }
-
-        void operator()() noexcept {
-            execute_destroy();
-        }
-    };
-}  // namespace concurrencpp::details
+using concurrencpp::details::callable_vtable;
+using concurrencpp::details::await_via_functor;
+using concurrencpp::details::coroutine_handle_functor;
 
 void task::build(task&& rhs) noexcept {
-    m_vtable = rhs.m_vtable;
+    m_vtable = std::exchange(rhs.m_vtable, nullptr);
     if (m_vtable == nullptr) {
         return;
     }
 
-    if (rhs.contains_coro_handle()) {
-        build(std::move(rhs.as<details::coroutine_handle_wrapper>()));
-        rhs.clear();
-        return;
+    if (contains<coroutine_handle_functor>(m_vtable)) {
+        return callable_vtable<coroutine_handle_functor>::move_destroy(rhs.m_buffer, m_buffer);
     }
 
-    const auto move_fn = m_vtable->move_fn;
-    if (vtable::trivially_copiable(move_fn)) {
+    if (contains<await_via_functor>(m_vtable)) {
+        return callable_vtable<await_via_functor>::move_destroy(rhs.m_buffer, m_buffer);
+    }
+
+    const auto move_destroy_fn = m_vtable->move_destroy_fn;
+    if (vtable::trivially_copiable_destructible(move_destroy_fn)) {
         std::memcpy(m_buffer, rhs.m_buffer, details::task_constants::buffer_size);
-        rhs.clear();
         return;
     }
 
-    move_fn(rhs.m_buffer, m_buffer);
-    rhs.clear();
+    move_destroy_fn(rhs.m_buffer, m_buffer);
 }
 
 void task::build(details::coroutine_handle<void> coro_handle) noexcept {
-    build(details::coroutine_handle_wrapper {coro_handle});
+    build(details::coroutine_handle_functor {coro_handle});
 }
 
 task::task() noexcept : m_buffer(), m_vtable(nullptr) {}
@@ -84,8 +56,12 @@ void task::operator()() {
         return;
     }
 
-    if (contains_coro_handle(vtable)) {
-        return as<details::coroutine_handle_wrapper>().execute_destroy();
+    if (contains<coroutine_handle_functor>(vtable)) {
+        return callable_vtable<coroutine_handle_functor>::execute_destroy(m_buffer);
+    }
+
+    if (contains<await_via_functor>(vtable)) {
+        return callable_vtable<await_via_functor>::execute_destroy(m_buffer);
     }
 
     vtable->execute_destroy_fn(m_buffer);
@@ -107,9 +83,13 @@ void task::clear() noexcept {
     }
 
     const auto vtable = std::exchange(m_vtable, nullptr);
-    if (contains_coro_handle(vtable)) {
-        as<details::coroutine_handle_wrapper>().~coroutine_handle_wrapper();
-        return;
+
+    if (contains<coroutine_handle_functor>(vtable)) {
+        return callable_vtable<coroutine_handle_functor>::destroy(m_buffer);
+    }
+
+    if (contains<await_via_functor>(vtable)) {
+        return callable_vtable<await_via_functor>::destroy(m_buffer);
     }
 
     auto destroy_fn = vtable->destroy_fn;
@@ -122,12 +102,4 @@ void task::clear() noexcept {
 
 task::operator bool() const noexcept {
     return m_vtable != nullptr;
-}
-
-bool task::contains_coro_handle(const details::vtable* vtable) noexcept {
-    return vtable == &details::callable_vtable<details::coroutine_handle_wrapper>::s_vtable;
-}
-
-bool task::contains_coro_handle() const noexcept {
-    return contains_coro_handle(m_vtable);
 }

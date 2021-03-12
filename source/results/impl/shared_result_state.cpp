@@ -6,7 +6,9 @@ using concurrencpp::details::shared_result_state_base;
  * shared_await_via_context
  */
 
-concurrencpp::details::shared_await_via_context::shared_await_via_context(std::shared_ptr<concurrencpp::executor> executor) noexcept : await_context(executor) {}
+concurrencpp::details::shared_await_via_context::shared_await_via_context(
+    const std::shared_ptr<concurrencpp::executor>& executor) noexcept :
+    await_context(executor) {}
 
 /*
  * shared_result_state_base
@@ -24,7 +26,8 @@ void shared_result_state_base::await_impl(std::unique_lock<std::shared_mutex>& w
     m_awaiters = &awaiter;
 }
 
-void shared_result_state_base::await_via_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_via_context& awaiter) noexcept {
+void shared_result_state_base::await_via_impl(std::unique_lock<std::shared_mutex>& write_lock,
+                                              shared_await_via_context& awaiter) noexcept {
     if (m_via_awaiters == nullptr) {
         m_via_awaiters = &awaiter;
         return;

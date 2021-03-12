@@ -2,13 +2,8 @@
 #define CONCURRENCPP_OBJECT_OBSERVER_H
 
 #include <chrono>
-#include <atomic>
 #include <memory>
-#include <mutex>
-#include <thread>
-#include <vector>
 #include <unordered_map>
-#include <condition_variable>
 
 namespace concurrencpp::tests {
 

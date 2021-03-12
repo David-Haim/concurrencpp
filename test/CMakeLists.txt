@@ -30,100 +30,40 @@ FetchContent_MakeAvailable(concurrencpp)
 
 enable_testing()
 
-# TODO: remove this once tests were properly fixed
 set(test_sources
-        source/helpers/assertions.cpp
-        source/helpers/object_observer.cpp
-        source/main.cpp
-        source/tester/tester.cpp
-        source/tests/all_tests.cpp
-        source/tests/coroutine_tests/coroutine_promises_test.cpp
-        source/tests/coroutine_tests/coroutines_tests.cpp
-        source/tests/executor_tests/inline_executor_tests.cpp
-        source/tests/executor_tests/manual_executor_tests.cpp
-        source/tests/executor_tests/thread_executor_tests.cpp
-        source/tests/executor_tests/thread_pool_executor_tests.cpp
-        source/tests/executor_tests/worker_thread_executor_tests.cpp
-        source/tests/result_tests/make_result_tests.cpp
-        source/tests/result_tests/result_await_tests.cpp
-        source/tests/result_tests/result_promise_tests.cpp
-        source/tests/result_tests/result_resolve_tests.cpp
-        source/tests/result_tests/result_tests.cpp
-        source/tests/result_tests/shared_result_tests.cpp
-        source/tests/result_tests/shared_result_resolve_tests.cpp
-        source/tests/result_tests/shared_result_await_tests.cpp
-        source/tests/result_tests/when_all_tests.cpp
-        source/tests/result_tests/when_any_tests.cpp
-        source/tests/timer_tests/timer_queue_tests.cpp
-        source/tests/timer_tests/timer_tests.cpp
-        source/tests/runtime_tests.cpp
-        source/tests/task_tests.cpp
-        )
+        source/infra/assertions.cpp
+        source/infra/tester.cpp
+        source/utils/object_observer.cpp
+)
 
 set(test_headers
-        include/helpers/assertions.h
-        include/helpers/object_observer.h
-        include/helpers/random.h
-        include/tester/tester.h
-        include/tests/all_tests.h
-        include/tests/test_utils/executor_shutdowner.h
-        include/tests/test_utils/result_factory.h
-        include/tests/test_utils/throwing_executor.h
-        include/tests/test_utils/test_ready_result.h
-        include/tests/test_utils/make_result_array.h)
+        include/infra/assertions.h
+        include/infra/tester.h
+        include/utils/object_observer.h
+        include/utils/random.h
+        include/utils/custom_exception.h
+        include/utils/executor_shutdowner.h
+        include/utils/test_generators.h
+        include/utils/throwing_executor.h
+        include/utils/test_ready_result.h)
 
-function(temp_test NAMESPACE NAME)
-  set(target ${NAMESPACE}_${NAME})
-  add_executable(${target} ${ARGN})
-  target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
-  target_compile_features(${target} PRIVATE cxx_std_20)
-  target_coroutine_options(${target})
-  target_include_directories(${target}
-          PRIVATE
-          "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
-  add_test(NAME ${NAMESPACE}.${NAME} COMMAND ${target})
-  set_property(TEST ${NAMESPACE}.${NAME} PROPERTY RUN_SERIAL YES)
-endfunction()
-
-temp_test(dummy main ${test_headers} ${test_sources})
-
-if(NOT ENABLE_THREAD_SANITIZER)
-  return()
-endif()
-
-set(tsan_sources
-    executors
-    fibonacci
-    matrix_multiplication
-    quick_sort
-    result
-    shared_result
-    when_all
-    when_any)
-foreach(source IN LISTS tsan_sources)
-  temp_test(dummy tsan_${source} ${test_headers} source/thread_sanitizer/${source}.cpp source/helpers/assertions.cpp)
-endforeach()
-
-
-#return()
-
-# add_test(NAMESPACE <namespace> NAME <name> [PROPERTIES ...])
+# add_test(NAME <name> PATH <path> [PROPERTIES ...])
 #
-# Add test with the name <namespace>.<name> with the source file at
-# source/<namespace>/<name>.cpp with project specific options that outputs the
-# exectuable <namespace>_<name>.
+# Add test with the name <name> with the source file at
+# <path> with project specific options that outputs the
+# exectuable <name>.exe .
 #
 # Additional properties may be forwarded to `set_tests_properties` using the
 # PROPERTIES arguments.
 # See: https://cmake.org/cmake/help/latest/manual/cmake-properties.7.html#properties-on-tests
 #
 function(add_test)
-  cmake_parse_arguments(TEST "" "NAMESPACE;NAME" "PROPERTIES" ${ARGN})
+  cmake_parse_arguments(TEST "" "NAME;PATH" "PROPERTIES" ${ARGN})
 
-  set(target "${TEST_NAMESPACE}_${TEST_NAME}")
-  set(test_name "${TEST_NAMESPACE}.${TEST_NAME}")
+  set(target "${TEST_NAME}")
+  set(test_name "${TEST_NAME}")
 
-  add_executable(${target} "source/${TEST_NAMESPACE}/${TEST_NAME}.cpp")
+  add_executable(${target} ${TEST_PATH} ${test_headers} ${test_sources})
 
   target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
 
@@ -141,10 +81,43 @@ function(add_test)
   endif()
 endfunction()
 
-# TODO: add tests
+add_test(NAME task_tests PATH source/tests/task_tests.cpp)
+add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
+
+add_test(NAME inline_executor_tests PATH source/tests/executor_tests/inline_executor_tests.cpp)
+add_test(NAME manual_executor_tests PATH source/tests/executor_tests/manual_executor_tests.cpp)
+add_test(NAME thread_executor_tests PATH source/tests/executor_tests/thread_executor_tests.cpp)
+add_test(NAME thread_pool_executor_tests PATH source/tests/executor_tests/thread_pool_executor_tests.cpp)
+add_test(NAME worker_thread_executor_tests PATH source/tests/executor_tests/worker_thread_executor_tests.cpp)
+
+add_test(NAME result_tests PATH source/tests/result_tests/result_tests.cpp)
+add_test(NAME result_resolving_tests PATH source/tests/result_tests/result_resolve_tests.cpp)
+add_test(NAME result_awaiting_tests PATH source/tests/result_tests/result_await_tests.cpp)
+
+add_test(NAME shared_result_tests PATH source/tests/result_tests/shared_result_tests.cpp)
+add_test(NAME shared_result_resolving_tests PATH source/tests/result_tests/shared_result_resolve_tests.cpp)
+add_test(NAME shared_result_awaiting_tests PATH source/tests/result_tests/shared_result_await_tests.cpp)
+
+add_test(NAME make_result_tests PATH source/tests/result_tests/make_result_tests.cpp)
+add_test(NAME result_promise_tests PATH source/tests/result_tests/result_promise_tests.cpp)
+add_test(NAME when_all_tests PATH source/tests/result_tests/when_all_tests.cpp)
+add_test(NAME when_any_tests PATH source/tests/result_tests/when_any_tests.cpp)
+
+add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
+add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)
+
+add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
+add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)
 
 if(NOT ENABLE_THREAD_SANITIZER)
   return()
 endif()
 
-# TODO: add thread sanitizer tests
+add_test(NAME tsan_executor_tests PATH source/thread_sanitizer/executors.cpp)
+add_test(NAME tsan_result_tests PATH source/thread_sanitizer/result.cpp)
+add_test(NAME tsan_shared_result_tests PATH source/thread_sanitizer/shared_result.cpp)
+add_test(NAME tsan_when_all_tests PATH source/thread_sanitizer/when_all.cpp)
+add_test(NAME tsan_when_any_tests PATH source/thread_sanitizer/when_any.cpp)
+add_test(NAME tsan_fibonacci PATH source/thread_sanitizer/fibonacci.cpp)
+add_test(NAME tsan_quick_sort PATH source/thread_sanitizer/quick_sort.cpp)
+add_test(NAME tsan_matrix_multiplication PATH source/thread_sanitizer/matrix_multiplication.cpp)

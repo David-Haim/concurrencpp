@@ -2,8 +2,6 @@
 
 #include <algorithm>
 
-#include <cmath>
-
 using concurrencpp::thread_pool_executor;
 using concurrencpp::details::idle_worker_set;
 using concurrencpp::details::thread_pool_worker;
@@ -20,17 +18,14 @@ namespace concurrencpp::details {
             return hash(this_thread_id);
         }
 
-        thread_pool_per_thread_data() noexcept : this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
+        thread_pool_per_thread_data() noexcept :
+            this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
     };
 
     static thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
 }  // namespace concurrencpp::details
 
-idle_worker_set::idle_worker_set(size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {
-    for (size_t i = 0; i < size; i++) {
-        m_idle_flags[i].flag = status::active;
-    }
-}
+idle_worker_set::idle_worker_set(size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {}
 
 void idle_worker_set::set_idle(size_t idle_thread) noexcept {
     const auto before = m_idle_flags[idle_thread].flag.exchange(status::idle, std::memory_order_relaxed);
@@ -70,7 +65,8 @@ size_t idle_worker_set::find_idle_worker(size_t caller_index) noexcept {
         return static_cast<size_t>(-1);
     }
 
-    const auto starting_pos = (caller_index != static_cast<size_t>(-1)) ? caller_index : (s_tl_thread_pool_data.this_thread_hashed_id % m_size);
+    const auto starting_pos =
+        (caller_index != static_cast<size_t>(-1)) ? caller_index : (s_tl_thread_pool_data.this_thread_hashed_id % m_size);
 
     for (size_t i = 0; i < m_size; i++) {
         const auto index = (starting_pos + i) % m_size;
@@ -114,15 +110,20 @@ void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>
     }
 }
 
-thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::milliseconds max_idle_time) :
-    m_atomic_abort(false), m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
-    m_worker_name(details::make_executor_worker_name(parent_pool.name)), m_semaphore(0), m_idle(true), m_abort(false), m_event_found(false) {
+thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool,
+                                       size_t index,
+                                       size_t pool_size,
+                                       std::chrono::milliseconds max_idle_time) :
+    m_atomic_abort(false),
+    m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
+    m_worker_name(details::make_executor_worker_name(parent_pool.name)), m_semaphore(0), m_idle(true), m_abort(false),
+    m_event_found(false) {
     m_idle_worker_list.reserve(pool_size);
 }
 
 thread_pool_worker::thread_pool_worker(thread_pool_worker&& rhs) noexcept :
-    m_parent_pool(rhs.m_parent_pool), m_index(rhs.m_index), m_pool_size(rhs.m_pool_size), m_max_idle_time(rhs.m_max_idle_time), m_semaphore(0), m_idle(true),
-    m_abort(true) {
+    m_parent_pool(rhs.m_parent_pool), m_index(rhs.m_index), m_pool_size(rhs.m_pool_size), m_max_idle_time(rhs.m_max_idle_time),
+    m_semaphore(0), m_idle(true), m_abort(true) {
     std::abort();  // shouldn't be called
 }
 
@@ -173,7 +174,7 @@ void thread_pool_worker::balance_work() {
         auto donation_end_it = m_private_queue.begin() + end;
 
         assert(donation_begin_it < m_private_queue.end());
-        assert(donation_end_it < m_private_queue.end());
+        assert(donation_end_it <= m_private_queue.end());
 
         m_parent_pool.worker_at(idle_worker_index).enqueue_foreign(donation_begin_it, donation_end_it);
 
@@ -340,7 +341,7 @@ void thread_pool_worker::ensure_worker_active(bool first_enqueuer, std::unique_l
 void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_executor_shutdown_exception(m_parent_pool.name);
+        throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
     m_event_found.store(true, std::memory_order_relaxed);
@@ -353,7 +354,7 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
 void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_executor_shutdown_exception(m_parent_pool.name);
+        throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
     m_event_found.store(true, std::memory_order_relaxed);
@@ -366,7 +367,20 @@ void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
 void thread_pool_worker::enqueue_foreign(std::deque<task>::iterator begin, std::deque<task>::iterator end) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_executor_shutdown_exception(m_parent_pool.name);
+        throw_runtime_shutdown_exception(m_parent_pool.name);
+    }
+
+    m_event_found.store(true, std::memory_order_relaxed);
+
+    const auto is_empty = m_public_queue.empty();
+    m_public_queue.insert(m_public_queue.end(), std::make_move_iterator(begin), std::make_move_iterator(end));
+    ensure_worker_active(is_empty, lock);
+}
+
+void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end) {
+    std::unique_lock<std::mutex> lock(m_lock);
+    if (m_abort) {
+        throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
     m_event_found.store(true, std::memory_order_relaxed);
@@ -378,7 +392,7 @@ void thread_pool_worker::enqueue_foreign(std::deque<task>::iterator begin, std::
 
 void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
     if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_executor_shutdown_exception(m_parent_pool.name);
+        throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
     m_private_queue.emplace_back(std::move(task));
@@ -386,7 +400,7 @@ void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
 
 void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
     if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_executor_shutdown_exception(m_parent_pool.name);
+        throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
     m_private_queue.insert(m_private_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
@@ -431,7 +445,8 @@ bool thread_pool_worker::appears_empty() const noexcept {
 }
 
 thread_pool_executor::thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time) :
-    derivable_executor<concurrencpp::thread_pool_executor>(pool_name), m_round_robin_cursor(0), m_idle_workers(pool_size), m_abort(false) {
+    derivable_executor<concurrencpp::thread_pool_executor>(pool_name), m_round_robin_cursor(0), m_idle_workers(pool_size),
+    m_abort(false) {
     m_workers.reserve(pool_size);
 
     for (size_t i = 0; i < pool_size; i++) {
@@ -496,19 +511,34 @@ void thread_pool_executor::enqueue(std::span<concurrencpp::task> tasks) {
         return;
     }
 
-    const auto approx_bulk_size = static_cast<float>(tasks.size()) / static_cast<float>(m_workers.size());
-    const auto bulk_size = static_cast<size_t>(std::ceil(approx_bulk_size));
+    const auto task_count = tasks.size();
+    const auto total_worker_count = m_workers.size();
+    const auto donation_count = task_count / total_worker_count;
+    auto extra = task_count - donation_count * total_worker_count;
 
-    size_t worker_index = 0;
-    auto cursor = tasks.data();
-    const auto absolute_end = tasks.data() + tasks.size();
+    size_t begin = 0;
+    size_t end = donation_count;
 
-    while (cursor < absolute_end) {
-        auto end = (cursor + bulk_size > absolute_end) ? absolute_end : (cursor + bulk_size);
-        std::span<concurrencpp::task> range = {cursor, end};
-        m_workers[worker_index].enqueue_foreign(range);
-        cursor += bulk_size;
-        ++worker_index;
+    for (size_t i = 0; i < total_worker_count; i++) {
+        assert(begin < task_count);
+
+        if (extra != 0) {
+            end++;
+            extra--;
+        }
+
+        assert(end <= task_count);
+
+        auto tasks_begin_it = tasks.begin() + begin;
+        auto tasks_end_it = tasks.begin() + end;
+
+        assert(tasks_begin_it < tasks.end());
+        assert(tasks_end_it <= tasks.end());
+
+        m_workers[i].enqueue_foreign(tasks_begin_it, tasks_end_it);
+
+        begin = end;
+        end += donation_count;
     }
 }
 

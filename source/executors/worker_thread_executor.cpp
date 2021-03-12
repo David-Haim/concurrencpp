@@ -8,8 +8,8 @@ namespace concurrencpp::details {
 using concurrencpp::worker_thread_executor;
 
 worker_thread_executor::worker_thread_executor() :
-    derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name), m_private_atomic_abort(false), m_abort(false),
-    m_semaphore(0), m_atomic_abort(false) {
+    derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
+    m_private_atomic_abort(false), m_abort(false), m_semaphore(0), m_atomic_abort(false) {
     m_thread = details::thread(details::make_executor_worker_name(name), [this] {
         work_loop();
     });
@@ -78,7 +78,7 @@ void worker_thread_executor::work_loop() noexcept {
 
 void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     m_private_queue.emplace_back(std::move(task));
@@ -86,7 +86,7 @@ void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
 
 void worker_thread_executor::enqueue_local(std::span<concurrencpp::task> tasks) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     m_private_queue.insert(m_private_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
@@ -95,7 +95,7 @@ void worker_thread_executor::enqueue_local(std::span<concurrencpp::task> tasks) 
 void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     const auto is_empty = m_public_queue.empty();
@@ -110,7 +110,7 @@ void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
 void worker_thread_executor::enqueue_foreign(std::span<concurrencpp::task> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     const auto is_empty = m_public_queue.empty();

@@ -77,7 +77,7 @@ bool result_state_base::await_via(await_via_context& await_ctx, bool force_resch
     return await_via_ready(await_ctx, force_rescheduling);
 }
 
-void result_state_base::when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept {
+void result_state_base::when_all(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
         return when_all_state->on_result_ready();
@@ -96,13 +96,14 @@ void result_state_base::when_all(std::shared_ptr<when_all_state_base> when_all_s
     when_all_state->on_result_ready();
 }
 
-concurrencpp::details::when_any_status result_state_base::when_any(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept {
+concurrencpp::details::when_any_status result_state_base::when_any(const std::shared_ptr<when_any_state_base>& when_any_state,
+                                                                   size_t index) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
         return when_any_status::result_ready;
     }
 
-    m_consumer.set_when_any_context(std::move(when_any_state), index);
+    m_consumer.set_when_any_context(when_any_state, index);
 
     auto expected_state = pc_state::idle;
     const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
@@ -134,7 +135,7 @@ void result_state_base::try_rewind_consumer() noexcept {
     m_consumer.clear();
 }
 
-void result_state_base::share_result(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept {
+void result_state_base::share_result(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
         const auto shared_state = shared_result_state.lock();
@@ -145,7 +146,7 @@ void result_state_base::share_result(std::weak_ptr<shared_result_state_base> sha
         return;
     }
 
-    m_consumer.set_shared_context(std::move(shared_result_state));
+    m_consumer.set_shared_context(shared_result_state);
 
     auto expected_state = pc_state::idle;
     m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);

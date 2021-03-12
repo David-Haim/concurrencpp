@@ -16,18 +16,21 @@ namespace concurrencpp::details {
     };
 
     struct vtable {
-        void (*move_fn)(void* src, void* dst) noexcept;
+        void (*move_destroy_fn)(void* src, void* dst) noexcept;
         void (*execute_destroy_fn)(void* target);
         void (*destroy_fn)(void* target) noexcept;
 
         vtable(const vtable&) noexcept = default;
 
-        constexpr vtable() noexcept : move_fn(nullptr), execute_destroy_fn(nullptr), destroy_fn(nullptr) {}
+        constexpr vtable() noexcept : move_destroy_fn(nullptr), execute_destroy_fn(nullptr), destroy_fn(nullptr) {}
 
-        constexpr vtable(decltype(move_fn) move_fn, decltype(execute_destroy_fn) execute_destroy_fn, decltype(destroy_fn) destroy_fn) noexcept :
-            move_fn(move_fn), execute_destroy_fn(execute_destroy_fn), destroy_fn(destroy_fn) {}
+        constexpr vtable(decltype(move_destroy_fn) move_destroy_fn,
+                         decltype(execute_destroy_fn) execute_destroy_fn,
+                         decltype(destroy_fn) destroy_fn) noexcept :
+            move_destroy_fn(move_destroy_fn),
+            execute_destroy_fn(execute_destroy_fn), destroy_fn(destroy_fn) {}
 
-        static constexpr bool trivially_copiable(decltype(move_fn) move_fn) noexcept {
+        static constexpr bool trivially_copiable_destructible(decltype(move_destroy_fn) move_fn) noexcept {
             return move_fn == nullptr;
         }
 
@@ -52,25 +55,15 @@ namespace concurrencpp::details {
             return *static_cast<callable_type**>(src);
         }
 
-        static void move_inline(void* src, void* dst) noexcept {
+        static void move_destroy_inline(void* src, void* dst) noexcept {
             auto callable_ptr = inline_ptr(src);
             new (dst) callable_type(std::move(*callable_ptr));
+            callable_ptr->~callable_type();
         }
 
-        static void move_allocated(void* src, void* dst) noexcept {
+        static void move_destroy_allocated(void* src, void* dst) noexcept {
             auto callable_ptr = std::exchange(allocated_ref_ptr(src), nullptr);
             new (dst) callable_type*(callable_ptr);
-        }
-
-        static void move(void* src, void* dst) noexcept {
-            assert(src != nullptr);
-            assert(dst != nullptr);
-
-            if (is_inlinable()) {
-                return move_inline(src, dst);
-            }
-
-            return move_allocated(src, dst);
         }
 
         static void execute_destroy_inline(void* target) {
@@ -85,16 +78,6 @@ namespace concurrencpp::details {
             delete callable_ptr;
         }
 
-        static void execute_destroy(void* target) {
-            assert(target != nullptr);
-
-            if (is_inlinable()) {
-                return execute_destroy_inline(target);
-            }
-
-            return execute_destroy_allocated(target);
-        }
-
         static void destroy_inline(void* target) noexcept {
             auto callable_ptr = inline_ptr(target);
             callable_ptr->~callable_type();
@@ -105,24 +88,14 @@ namespace concurrencpp::details {
             delete callable_ptr;
         }
 
-        static void destroy(void* target) noexcept {
-            assert(target != nullptr);
-
-            if (is_inlinable()) {
-                return destroy_inline(target);
-            }
-
-            return destroy_allocated(target);
-        }
-
         static constexpr vtable make_vtable() noexcept {
-            void (*move_fn)(void* src, void* dst) noexcept;
+            void (*move_destroy_fn)(void* src, void* dst) noexcept;
             void (*destroy_fn)(void* target) noexcept;
 
-            if constexpr (std::is_trivially_copy_constructible_v<callable_type>) {
-                move_fn = nullptr;
+            if constexpr (std::is_trivially_copy_constructible_v<callable_type> && std::is_trivially_destructible_v<callable_type>) {
+                move_destroy_fn = nullptr;
             } else {
-                move_fn = move;
+                move_destroy_fn = move_destroy;
             }
 
             if constexpr (std::is_trivially_destructible_v<callable_type>) {
@@ -131,7 +104,7 @@ namespace concurrencpp::details {
                 destroy_fn = destroy;
             }
 
-            return vtable(move_fn, execute_destroy, destroy_fn);
+            return vtable(move_destroy_fn, execute_destroy, destroy_fn);
         }
 
         template<class passed_callable_type>
@@ -159,6 +132,37 @@ namespace concurrencpp::details {
             build_allocated(dst, std::forward<passed_callable_type>(callable));
         }
 
+        static void move_destroy(void* src, void* dst) noexcept {
+            assert(src != nullptr);
+            assert(dst != nullptr);
+
+            if (is_inlinable()) {
+                return move_destroy_inline(src, dst);
+            }
+
+            return move_destroy_allocated(src, dst);
+        }
+
+        static void execute_destroy(void* target) {
+            assert(target != nullptr);
+
+            if (is_inlinable()) {
+                return execute_destroy_inline(target);
+            }
+
+            return execute_destroy_allocated(target);
+        }
+
+        static void destroy(void* target) noexcept {
+            assert(target != nullptr);
+
+            if (is_inlinable()) {
+                return destroy_inline(target);
+            }
+
+            return destroy_allocated(target);
+        }
+
         static constexpr callable_type* as(void* src) noexcept {
             if (is_inlinable()) {
                 return inline_ptr(src);
@@ -169,6 +173,38 @@ namespace concurrencpp::details {
 
         static constexpr inline vtable s_vtable = make_vtable();
     };
+
+    class coroutine_handle_functor {
+
+       private:
+        coroutine_handle<void> m_coro_handle;
+
+       public:
+        coroutine_handle_functor() noexcept : m_coro_handle() {}
+
+        coroutine_handle_functor(const coroutine_handle_functor&) = delete;
+        coroutine_handle_functor& operator=(const coroutine_handle_functor&) = delete;
+
+        coroutine_handle_functor(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
+
+        coroutine_handle_functor(coroutine_handle_functor&& rhs) noexcept : m_coro_handle(std::exchange(rhs.m_coro_handle, {})) {}
+
+        ~coroutine_handle_functor() noexcept {
+            if (static_cast<bool>(m_coro_handle)) {
+                m_coro_handle.destroy();
+            }
+        }
+
+        void execute_destroy() noexcept {
+            auto coro_handle = std::exchange(m_coro_handle, {});
+            coro_handle();
+        }
+
+        void operator()() noexcept {
+            execute_destroy();
+        }
+    };
+
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
@@ -190,13 +226,9 @@ namespace concurrencpp {
         }
 
         template<class callable_type>
-        callable_type& as() noexcept {
-            static_assert(std::is_same_v<callable_type, typename std::decay_t<callable_type>>);
-            return *details::callable_vtable<callable_type>::as(m_buffer);
+        static bool contains(const details::vtable* const vtable) noexcept {
+            return vtable == &details::callable_vtable<callable_type>::s_vtable;
         }
-
-        static bool contains_coro_handle(const details::vtable* vtable) noexcept;
-        bool contains_coro_handle() const noexcept;
 
        public:
         task() noexcept;
@@ -225,7 +257,7 @@ namespace concurrencpp {
             using decayed_type = typename std::decay_t<callable_type>;
 
             if constexpr (std::is_same_v<decayed_type, details::coroutine_handle<void>>) {
-                return contains_coro_handle();
+                return contains<details::coroutine_handle_functor>();
             }
 
             return m_vtable == &details::callable_vtable<decayed_type>::s_vtable;

@@ -1,13 +1,12 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tests/test_utils/test_ready_result.h"
-#include "tests/test_utils/executor_shutdowner.h"
-
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/random.h"
-#include "helpers/object_observer.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/random.h"
+#include "utils/object_observer.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
+#include "utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
     template<class type>
@@ -71,22 +70,20 @@ void concurrencpp::tests::test_when_any_vector_empty_range() {
 template<class type>
 concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::shared_ptr<thread_executor> ex) {
     const size_t task_count = 64;
-    auto values = result_factory<type>::get_many(task_count);
+    value_gen<type> gen;
     std::vector<result<type>> results;
     random randomizer;
 
     for (size_t i = 0; i < task_count; i++) {
         const auto time_to_sleep = randomizer(10, 100);
-        results.emplace_back(ex->submit([&, i, time_to_sleep]() -> type {
+        results.emplace_back(ex->submit([gen, i, time_to_sleep]() mutable -> type {
             std::this_thread::sleep_for(std::chrono::milliseconds(time_to_sleep));
 
             if (i % 4 == 0) {
-                throw costume_exception(i);
+                throw custom_exception(i);
             }
 
-            if constexpr (!std::is_same_v<void, type>) {
-                return values[i];
-            }
+            return gen.value_of(i);
         }));
     }
 
@@ -101,12 +98,12 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
     auto& done_result = any_done.results[any_done.index];
 
     if (any_done.index % 4 == 0) {
-        test_ready_result_costume_exception(std::move(done_result), any_done.index);
+        test_ready_result_custom_exception(std::move(done_result), any_done.index);
     } else {
         if constexpr (std::is_same_v<void, type>) {
             test_ready_result(std::move(done_result));
         } else {
-            test_ready_result(std::move(done_result), values[any_done.index]);
+            test_ready_result(std::move(done_result), gen.value_of(any_done.index));
         }
     }
 
@@ -174,30 +171,30 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
     auto int_res_val = ex->submit([&counter, tts]() -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        return result_factory<int>::get();
+        return value_gen<int>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto int_res_ex = ex->submit([&counter, tts]() -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        throw costume_exception(0);
-        return result_factory<int>::get();
+        throw custom_exception(0);
+        return value_gen<int>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto s_res_val = ex->submit([&counter, tts]() -> std::string {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        return result_factory<std::string>::get();
+        return value_gen<std::string>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto s_res_ex = ex->submit([&counter, tts]() -> std::string {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        throw costume_exception(1);
-        return result_factory<std::string>::get();
+        throw custom_exception(1);
+        return value_gen<std::string>::default_value();
     });
 
     tts = randomizer(10, 100);
@@ -210,37 +207,37 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
     auto void_res_ex = ex->submit([&counter, tts] {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        throw costume_exception(2);
+        throw custom_exception(2);
     });
 
     tts = randomizer(10, 100);
     auto int_ref_res_val = ex->submit([&counter, tts]() -> int& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        return result_factory<int&>::get();
+        return value_gen<int&>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto int_ref_res_ex = ex->submit([&counter, tts]() -> int& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        throw costume_exception(3);
-        return result_factory<int&>::get();
+        throw custom_exception(3);
+        return value_gen<int&>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto str_ref_res_val = ex->submit([&counter, tts]() -> std::string& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        return result_factory<std::string&>::get();
+        return value_gen<std::string&>::default_value();
     });
 
     tts = randomizer(10, 100);
     auto str_ref_res_ex = ex->submit([&counter, tts]() -> std::string& {
         std::this_thread::sleep_for(std::chrono::milliseconds(tts));
         counter.fetch_add(1, std::memory_order_relaxed);
-        throw costume_exception(4);
-        return result_factory<std::string&>::get();
+        throw custom_exception(4);
+        return value_gen<std::string&>::default_value();
     });
 
     auto any_done = co_await when_any(std::move(int_res_val),
@@ -262,7 +259,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 1: {
-            test_ready_result_costume_exception(std::move(std::get<1>(any_done.results)), 0);
+            test_ready_result_custom_exception(std::move(std::get<1>(any_done.results)), 0);
             break;
         }
         case 2: {
@@ -270,7 +267,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 3: {
-            test_ready_result_costume_exception(std::move(std::get<3>(any_done.results)), 1);
+            test_ready_result_custom_exception(std::move(std::get<3>(any_done.results)), 1);
             break;
         }
         case 4: {
@@ -278,7 +275,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 5: {
-            test_ready_result_costume_exception(std::move(std::get<5>(any_done.results)), 2);
+            test_ready_result_custom_exception(std::move(std::get<5>(any_done.results)), 2);
             break;
         }
         case 6: {
@@ -286,7 +283,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 7: {
-            test_ready_result_costume_exception(std::move(std::get<7>(any_done.results)), 3);
+            test_ready_result_custom_exception(std::move(std::get<7>(any_done.results)), 3);
             break;
         }
         case 8: {
@@ -294,7 +291,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
             break;
         }
         case 9: {
-            test_ready_result_costume_exception(std::move(std::get<9>(any_done.results)), 4);
+            test_ready_result_custom_exception(std::move(std::get<9>(any_done.results)), 4);
             break;
         }
         default: {
@@ -323,11 +320,14 @@ void concurrencpp::tests::test_when_any_tuple() {
     test_when_any_tuple_impl(ex).get();
 }
 
-void concurrencpp::tests::test_when_any() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester test("when_any test");
 
     test.add_step("when_any(begin, end)", test_when_any_vector);
     test.add_step("when_any(result_types&& ... results)", test_when_any_tuple);
 
     test.launch_test();
+    return 0;
 }

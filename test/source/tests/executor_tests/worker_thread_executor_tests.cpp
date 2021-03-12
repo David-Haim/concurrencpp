@@ -1,10 +1,10 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/object_observer.h"
-#include "tests/test_utils/executor_shutdowner.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
+#include "utils/test_generators.h"
+#include "utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
     void test_worker_thread_executor_name();
@@ -54,11 +54,11 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_method_access() {
     executor->shutdown();
     assert_true(executor->shutdown_requested());
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->enqueue(concurrencpp::task {});
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         concurrencpp::task array[4];
         std::span<concurrencpp::task> span = array;
         executor->enqueue(span);
@@ -294,7 +294,9 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit() {
     test_worker_thread_executor_bulk_submit_inline();
 }
 
-void concurrencpp::tests::test_worker_thread_executor() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("worker_thread_executor test");
 
     tester.add_step("name", test_worker_thread_executor_name);
@@ -306,4 +308,5 @@ void concurrencpp::tests::test_worker_thread_executor() {
     tester.add_step("bulk_submit", test_worker_thread_executor_bulk_submit);
 
     tester.launch_test();
+    return 0;
 }

@@ -46,13 +46,19 @@ void test_matrix(const matrix& mtx0, const matrix& mtx1, const matrix& mtx2) {
             }
 
             if (mtx2[i][j] != res) {
-                std::cerr << "matrix multiplication test failed. expected " << res << " got: " << mtx2[i][j] << "at matrix position[" << i << "," << j << std::endl;
+                std::cerr << "matrix multiplication test failed. expected " << res << " got: " << mtx2[i][j] << "at matrix position["
+                          << i << "," << j << std::endl;
             }
         }
     }
 }
 
-result<double> do_multiply(executor_tag, std::shared_ptr<thread_pool_executor> executor, const matrix& mtx0, const matrix& mtx1, size_t line, size_t col) {
+result<double> do_multiply(executor_tag,
+                           std::shared_ptr<thread_pool_executor> executor,
+                           const matrix& mtx0,
+                           const matrix& mtx1,
+                           size_t line,
+                           size_t col) {
     auto res = 0.0;
     for (size_t i = 0; i < 1024; i++) {
         res += mtx0[line][i] * mtx1[i][col];

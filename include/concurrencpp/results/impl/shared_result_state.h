@@ -15,7 +15,7 @@ namespace concurrencpp::details {
         shared_await_via_context* next = nullptr;
         await_via_context await_context;
 
-        shared_await_via_context(std::shared_ptr<executor> executor) noexcept;
+        shared_await_via_context(const std::shared_ptr<executor>& executor) noexcept;
     };
 }  // namespace concurrencpp::details
 
@@ -77,16 +77,20 @@ namespace concurrencpp::details {
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_lock);
                 if (m_ready) {
+                    read_lock.unlock();
                     return false;
                 }
             }
 
             std::unique_lock<std::shared_mutex> write_lock(m_lock);
             if (m_ready) {
+                write_lock.unlock();
                 return false;
             }
 
             await_impl(write_lock, awaiter);
+            write_lock.unlock();
+
             return true;
         }
 
@@ -102,16 +106,19 @@ namespace concurrencpp::details {
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_lock);
                 if (m_ready) {
+                    read_lock.unlock();
                     return resume_if_ready();
                 }
             }
 
             std::unique_lock<std::shared_mutex> write_lock(m_lock);
             if (m_ready) {
+                write_lock.unlock();
                 return resume_if_ready();
             }
 
             await_via_impl(write_lock, awaiter);
+            write_lock.unlock();
             return true;
         }
 
@@ -119,16 +126,18 @@ namespace concurrencpp::details {
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_lock);
                 if (m_ready) {
+                    read_lock.unlock();
                     return;
                 }
             }
 
-            std::unique_lock<std::shared_mutex> lock(m_lock);
+            std::unique_lock<std::shared_mutex> write_lock(m_lock);
             if (m_ready) {
+                write_lock.unlock();
                 return;
             }
 
-            wait_impl(lock);
+            wait_impl(write_lock);
         }
 
         template<class duration_unit, class ratio>

@@ -12,7 +12,8 @@ int main() {
     return 0;
 }
 
-#include "tests/test_utils/make_result_array.h"
+#include "tests/test_utils/test_generators.h"
+#include "tests/test_utils/test_ready_result.h"
 
 using namespace concurrencpp;
 using namespace std::chrono;
@@ -40,19 +41,19 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     auto int_ex_res_0 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(0);
+        throw tests::custom_exception(0);
         return int();
     });
 
     auto int_ex_res_1 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(1);
+        throw tests::custom_exception(1);
         return int();
     });
 
     auto int_ex_res_2 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(2);
+        throw tests::custom_exception(2);
         return int();
     });
 
@@ -74,19 +75,19 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     auto str_ex_res_0 = te->submit([tp]() -> std::string {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(0);
+        throw tests::custom_exception(0);
         return std::string();
     });
 
     auto str_ex_res_1 = te->submit([tp]() -> std::string {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(1);
+        throw tests::custom_exception(1);
         return std::string();
     });
 
     auto str_ex_res_2 = te->submit([tp]() -> std::string {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(2);
+        throw tests::custom_exception(2);
         return std::string();
     });
 
@@ -105,17 +106,17 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     auto void_ex_res_0 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(0);
+        throw tests::custom_exception(0);
     });
 
     auto void_ex_res_1 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(1);
+        throw tests::custom_exception(1);
     });
 
     auto void_ex_res_2 = te->submit([tp] {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(2);
+        throw tests::custom_exception(2);
     });
 
     // int&
@@ -140,19 +141,19 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     auto int_ref_ex_res_0 = te->submit([tp, &integer0]() -> int& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(0);
+        throw tests::custom_exception(0);
         return integer0;
     });
 
     auto int_ref_ex_res_1 = te->submit([tp, &integer1]() -> int& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(1);
+        throw tests::custom_exception(1);
         return integer1;
     });
 
     auto int_ref_ex_res_2 = te->submit([tp, &integer2]() -> int& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(2);
+        throw tests::custom_exception(2);
         return integer2;
     });
 
@@ -178,19 +179,19 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     auto str_ref_ex_res_0 = te->submit([tp, &string0]() -> std::string& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(0);
+        throw tests::custom_exception(0);
         return string0;
     });
 
     auto str_ref_ex_res_1 = te->submit([tp, &string1]() -> std::string& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(1);
+        throw tests::custom_exception(1);
         return string1;
     });
 
     auto str_ref_ex_res_2 = te->submit([tp, &string2]() -> std::string& {
         std::this_thread::sleep_until(tp);
-        throw tests::costume_exception(2);
+        throw tests::custom_exception(2);
         return string2;
     });
 
@@ -240,41 +241,41 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
     tests::test_ready_result(std::move(std::get<0>(when_all_result)), 0);
     tests::test_ready_result(std::move(std::get<1>(when_all_result)), 1);
     tests::test_ready_result(std::move(std::get<2>(when_all_result)), 2);
-    tests::test_ready_result_costume_exception(std::move(std::get<3>(when_all_result)), 0);
-    tests::test_ready_result_costume_exception(std::move(std::get<4>(when_all_result)), 1);
-    tests::test_ready_result_costume_exception(std::move(std::get<5>(when_all_result)), 2);
+    tests::test_ready_result_custom_exception(std::move(std::get<3>(when_all_result)), 0);
+    tests::test_ready_result_custom_exception(std::move(std::get<4>(when_all_result)), 1);
+    tests::test_ready_result_custom_exception(std::move(std::get<5>(when_all_result)), 2);
 
     // std::string
     tests::test_ready_result(std::move(std::get<6>(when_all_result)), std::string("0"));
     tests::test_ready_result(std::move(std::get<7>(when_all_result)), std::string("1"));
     tests::test_ready_result(std::move(std::get<8>(when_all_result)), std::string("2"));
-    tests::test_ready_result_costume_exception(std::move(std::get<9>(when_all_result)), 0);
-    tests::test_ready_result_costume_exception(std::move(std::get<10>(when_all_result)), 1);
-    tests::test_ready_result_costume_exception(std::move(std::get<11>(when_all_result)), 2);
+    tests::test_ready_result_custom_exception(std::move(std::get<9>(when_all_result)), 0);
+    tests::test_ready_result_custom_exception(std::move(std::get<10>(when_all_result)), 1);
+    tests::test_ready_result_custom_exception(std::move(std::get<11>(when_all_result)), 2);
 
     // void
     tests::test_ready_result(std::move(std::get<12>(when_all_result)));
     tests::test_ready_result(std::move(std::get<13>(when_all_result)));
     tests::test_ready_result(std::move(std::get<14>(when_all_result)));
-    tests::test_ready_result_costume_exception(std::move(std::get<15>(when_all_result)), 0);
-    tests::test_ready_result_costume_exception(std::move(std::get<16>(when_all_result)), 1);
-    tests::test_ready_result_costume_exception(std::move(std::get<17>(when_all_result)), 2);
+    tests::test_ready_result_custom_exception(std::move(std::get<15>(when_all_result)), 0);
+    tests::test_ready_result_custom_exception(std::move(std::get<16>(when_all_result)), 1);
+    tests::test_ready_result_custom_exception(std::move(std::get<17>(when_all_result)), 2);
 
     // size_t&
     tests::test_ready_result(std::move(std::get<18>(when_all_result)), std::ref(integer0));
     tests::test_ready_result(std::move(std::get<19>(when_all_result)), std::ref(integer1));
     tests::test_ready_result(std::move(std::get<20>(when_all_result)), std::ref(integer2));
-    tests::test_ready_result_costume_exception(std::move(std::get<21>(when_all_result)), 0);
-    tests::test_ready_result_costume_exception(std::move(std::get<22>(when_all_result)), 1);
-    tests::test_ready_result_costume_exception(std::move(std::get<23>(when_all_result)), 2);
+    tests::test_ready_result_custom_exception(std::move(std::get<21>(when_all_result)), 0);
+    tests::test_ready_result_custom_exception(std::move(std::get<22>(when_all_result)), 1);
+    tests::test_ready_result_custom_exception(std::move(std::get<23>(when_all_result)), 2);
 
     // std::string&
     tests::test_ready_result(std::move(std::get<24>(when_all_result)), std::ref(string0));
     tests::test_ready_result(std::move(std::get<25>(when_all_result)), std::ref(string1));
     tests::test_ready_result(std::move(std::get<26>(when_all_result)), std::ref(string2));
-    tests::test_ready_result_costume_exception(std::move(std::get<27>(when_all_result)), 0);
-    tests::test_ready_result_costume_exception(std::move(std::get<28>(when_all_result)), 1);
-    tests::test_ready_result_costume_exception(std::move(std::get<29>(when_all_result)), 2);
+    tests::test_ready_result_custom_exception(std::move(std::get<27>(when_all_result)), 0);
+    tests::test_ready_result_custom_exception(std::move(std::get<28>(when_all_result)), 1);
+    tests::test_ready_result_custom_exception(std::move(std::get<29>(when_all_result)), 2);
 
     std::cout << "================================" << std::endl;
 }
@@ -290,8 +291,8 @@ template<class type>
 result<void> test_when_all_vector_val_impl(std::shared_ptr<concurrencpp::thread_executor> te) {
     const auto tp = system_clock::now() + seconds(2);
 
-    tests::converter<type> converter;
-    auto results = tests::make_result_array<type>(1024, tp, te, converter);
+    tests::value_gen<type> converter;
+    auto results = tests::result_gen<type>::make_result_array(1024, tp, te, converter);
 
     std::this_thread::sleep_until(tp);
 
@@ -304,8 +305,8 @@ template<class type>
 result<void> test_when_all_vector_ex_impl(std::shared_ptr<concurrencpp::thread_executor> te) {
     const auto tp = system_clock::now() + seconds(2);
 
-    tests::converter<type> converter;
-    auto results = tests::make_exceptional_array<type>(1024, tp, te, converter);
+    tests::value_gen<type> converter;
+    auto results = tests::result_gen<type>::make_exceptional_array(1024, tp, te, converter);
 
     std::this_thread::sleep_until(tp);
 
@@ -317,16 +318,16 @@ result<void> test_when_all_vector_ex_impl(std::shared_ptr<concurrencpp::thread_e
 void test_when_all_vector(std::shared_ptr<concurrencpp::thread_executor> te) {
     std::cout << "Testing when_all(begin, end)" << std::endl;
 
-    test_when_all_vector_val_impl<size_t>(te).get();
+    test_when_all_vector_val_impl<int>(te).get();
     test_when_all_vector_val_impl<std::string>(te).get();
     test_when_all_vector_val_impl<void>(te).get();
-    test_when_all_vector_val_impl<size_t&>(te).get();
+    test_when_all_vector_val_impl<int&>(te).get();
     test_when_all_vector_val_impl<std::string&>(te).get();
 
-    test_when_all_vector_ex_impl<size_t>(te).get();
+    test_when_all_vector_ex_impl<int>(te).get();
     test_when_all_vector_ex_impl<std::string>(te).get();
     test_when_all_vector_ex_impl<void>(te).get();
-    test_when_all_vector_ex_impl<size_t&>(te).get();
+    test_when_all_vector_ex_impl<int&>(te).get();
     test_when_all_vector_ex_impl<std::string&>(te).get();
 
     std::cout << "================================" << std::endl;

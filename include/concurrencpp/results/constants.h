@@ -6,13 +6,15 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_result_promise_set_exception_error_msg = "result_promise::set_exception() - empty result_promise.";
 
-    inline const char* k_result_promise_set_exception_null_exception_error_msg = "result_promise::set_exception() - exception pointer is null.";
+    inline const char* k_result_promise_set_exception_null_exception_error_msg =
+        "result_promise::set_exception() - exception pointer is null.";
 
     inline const char* k_result_promise_set_from_function_error_msg = "result_promise::set_from_function() - empty result_promise.";
 
     inline const char* k_result_promise_get_result_error_msg = "result_promise::get_result() - empty result_promise.";
 
-    inline const char* k_result_promise_get_result_already_retrieved_error_msg = "result_promise::get_result() - result was already retrieved.";
+    inline const char* k_result_promise_get_result_already_retrieved_error_msg =
+        "result_promise::get_result() - result was already retrieved.";
 
     inline const char* k_result_status_error_msg = "result::status() - result is empty.";
 
@@ -36,7 +38,8 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_result_resolve_via_executor_null_error_msg = "result::resolve_via() - given executor is null.";
 
-    inline const char* k_executor_exception_error_msg = "concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
+    inline const char* k_executor_exception_error_msg =
+        "concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
 
     inline const char* k_make_exceptional_result_exception_null_error_msg = "make_exception_result() - given exception_ptr is null.";
 

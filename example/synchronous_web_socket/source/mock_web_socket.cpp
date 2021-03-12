@@ -24,7 +24,8 @@ namespace mock_web_socket {
         return std::rand() % range + min;
     }
 
-    const std::string cities[] = {"London", "New York City", "Tokyo", "Paris", "Singapore", "Amsterdam", "Seoul", "Berlin", "Hong Kong", "Sydney"};
+    const std::string cities[] =
+        {"London", "New York City", "Tokyo", "Paris", "Singapore", "Amsterdam", "Seoul", "Berlin", "Hong Kong", "Sydney"};
 }  // namespace mock_web_socket
 
 void mock_web_socket::web_socket::open(std::string_view) {

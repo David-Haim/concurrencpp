@@ -39,14 +39,20 @@ namespace concurrencpp {
         details::thread m_worker;
         std::condition_variable m_condition;
         bool m_abort;
+        bool m_idle;
+        const std::chrono::milliseconds m_max_waiting_time;
 
-        void ensure_worker_thread(std::unique_lock<std::mutex>& lock);
+        details::thread ensure_worker_thread(std::unique_lock<std::mutex>& lock);
 
         void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer);
         void remove_timer(timer_ptr existing_timer);
 
         template<class callable_type>
-        timer_ptr make_timer_impl(size_t due_time, size_t frequency, std::shared_ptr<concurrencpp::executor> executor, bool is_oneshot, callable_type&& callable) {
+        timer_ptr make_timer_impl(size_t due_time,
+                                  size_t frequency,
+                                  std::shared_ptr<concurrencpp::executor> executor,
+                                  bool is_oneshot,
+                                  callable_type&& callable) {
             assert(static_cast<bool>(executor));
 
             using decayed_type = typename std::decay_t<callable_type>;
@@ -60,18 +66,23 @@ namespace concurrencpp {
 
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
-                throw errors::timer_queue_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
+                throw errors::runtime_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
             }
 
-            ensure_worker_thread(lock);
+            auto old_thread = ensure_worker_thread(lock);
             add_timer(lock, timer_state);
+
+            if (old_thread.joinable()) {
+                old_thread.join();
+            }
+
             return timer_state;
         }
 
         void work_loop() noexcept;
 
        public:
-        timer_queue() noexcept;
+        timer_queue(std::chrono::milliseconds max_waiting_time) noexcept;
         ~timer_queue() noexcept;
 
         void shutdown() noexcept;
@@ -111,6 +122,8 @@ namespace concurrencpp {
         }
 
         result<void> make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<concurrencpp::executor> executor);
+
+        std::chrono::milliseconds max_worker_idle_time() const noexcept;
     };
 }  // namespace concurrencpp
 

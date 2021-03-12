@@ -1,5 +1,8 @@
-#include "helpers/object_observer.h"
+#include "utils/object_observer.h"
 #include "concurrencpp/concurrencpp.h"
+
+#include <mutex>
+#include <condition_variable>
 
 namespace concurrencpp::tests::details {
     class object_observer_state {

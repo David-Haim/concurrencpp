@@ -1,12 +1,10 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tests/test_utils/test_ready_result.h"
-#include "tests/test_utils/result_factory.h"
-
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/random.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 
 namespace concurrencpp::tests {
     template<class type>
@@ -99,7 +97,7 @@ void concurrencpp::tests::test_result_status_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
         assert_equal(result.status(), result_status::value);
     }
 
@@ -107,7 +105,7 @@ void concurrencpp::tests::test_result_status_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        rp.set_from_function(result_factory<type>::throw_ex);
+        rp.set_from_function(value_gen<type>::throw_ex);
         assert_equal(result.status(), result_status::exception);
     }
 
@@ -115,7 +113,7 @@ void concurrencpp::tests::test_result_status_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
 
         for (size_t i = 0; i < 10; i++) {
             assert_equal(result.status(), result_status::value);
@@ -157,7 +155,7 @@ void concurrencpp::tests::test_result_get_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         auto done_result = get_helper(result);
@@ -180,7 +178,7 @@ void concurrencpp::tests::test_result_get_impl() {
 
         std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+            rp.set_exception(std::make_exception_ptr(custom_exception(id)));
         });
 
         auto done_result = get_helper(result);
@@ -189,7 +187,7 @@ void concurrencpp::tests::test_result_get_impl() {
         assert_false(static_cast<bool>(result));
         assert_bigger_equal(now, unblocking_time);
         assert_smaller(now, unblocking_time + seconds(1));
-        test_ready_result_costume_exception(std::move(done_result), id);
+        test_ready_result_custom_exception(std::move(done_result), id);
 
         thread.join();
     }
@@ -198,7 +196,7 @@ void concurrencpp::tests::test_result_get_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
 
         const auto time_before = high_resolution_clock::now();
         auto done_result = get_helper(result);
@@ -215,7 +213,7 @@ void concurrencpp::tests::test_result_get_impl() {
         auto result = rp.get_result();
         const auto id = 123456789;
 
-        rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
 
         const auto time_before = high_resolution_clock::now();
         auto done_result = get_helper(result);
@@ -224,7 +222,7 @@ void concurrencpp::tests::test_result_get_impl() {
 
         assert_smaller_equal(total_blocking_time, 5);
         assert_false(static_cast<bool>(result));
-        test_ready_result_costume_exception(std::move(done_result), id);
+        test_ready_result_custom_exception(std::move(done_result), id);
     }
 }
 
@@ -255,7 +253,7 @@ void concurrencpp::tests::test_result_wait_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         result.wait();
@@ -277,7 +275,7 @@ void concurrencpp::tests::test_result_wait_impl() {
 
         std::thread thread([rp = std::move(rp), id, unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+            rp.set_exception(std::make_exception_ptr(custom_exception(id)));
         });
 
         result.wait();
@@ -286,7 +284,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         assert_bigger_equal(now, unblocking_time);
         assert_smaller(now, unblocking_time + seconds(1));
 
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
         thread.join();
     }
 
@@ -294,7 +292,7 @@ void concurrencpp::tests::test_result_wait_impl() {
     {
         result_promise<type> rp;
         auto result = rp.get_result();
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
 
         const auto time_before = high_resolution_clock::now();
         result.wait();
@@ -311,7 +309,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         auto result = rp.get_result();
         const auto id = 123456789;
 
-        rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
 
         const auto time_before = high_resolution_clock::now();
         result.wait();
@@ -319,7 +317,7 @@ void concurrencpp::tests::test_result_wait_impl() {
         const auto total_blocking_time = duration_cast<milliseconds>(time_after - time_before).count();
 
         assert_smaller_equal(total_blocking_time, 5);
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
     }
 
     // multiple calls to wait are ok
@@ -330,7 +328,7 @@ void concurrencpp::tests::test_result_wait_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         for (size_t i = 0; i < 10; i++) {
@@ -366,7 +364,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
         result_promise<type> rp;
         auto result = rp.get_result();
 
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
 
         const auto before = high_resolution_clock::now();
         const auto status = result.wait_for(seconds(10));
@@ -384,7 +382,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
         auto result = rp.get_result();
         const size_t id = 123456789;
 
-        rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
 
         const auto before = high_resolution_clock::now();
         const auto status = result.wait_for(seconds(10));
@@ -393,7 +391,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
         assert_smaller_equal(time, 5);
         assert_equal(status, result_status::exception);
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
     }
 
     // if timeout reaches and no value/exception - return status::idle
@@ -419,7 +417,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         result.wait_for(seconds(10));
@@ -440,13 +438,13 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+            rp.set_exception(std::make_exception_ptr(custom_exception(id)));
         });
 
         result.wait_for(seconds(10));
         const auto now = high_resolution_clock::now();
 
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
         assert_bigger_equal(now, unblocking_time);
         assert_smaller(now, unblocking_time + seconds(1));
 
@@ -461,7 +459,7 @@ void concurrencpp::tests::test_result_wait_for_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         for (size_t i = 0; i < 10; i++) {
@@ -497,8 +495,8 @@ void concurrencpp::tests::test_result_wait_until_impl() {
         result_promise<type> rp_idle, rp_val, rp_err;
         result<type> idle_result = rp_idle.get_result(), value_result = rp_val.get_result(), err_result = rp_err.get_result();
 
-        rp_val.set_from_function(result_factory<type>::get);
-        rp_err.set_from_function(result_factory<type>::throw_ex);
+        rp_val.set_from_function(value_gen<type>::default_value);
+        rp_err.set_from_function(value_gen<type>::throw_ex);
 
         const auto now = high_resolution_clock::now();
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -513,7 +511,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
         result_promise<type> rp;
         auto result = rp.get_result();
 
-        rp.set_from_function(result_factory<type>::get);
+        rp.set_from_function(value_gen<type>::default_value);
 
         const auto later = high_resolution_clock::now() + seconds(10);
 
@@ -534,7 +532,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
         auto result = rp.get_result();
         const size_t id = 123456789;
 
-        rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
 
         const auto later = high_resolution_clock::now() + seconds(10);
 
@@ -546,7 +544,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
         assert_smaller_equal(time, 5);
         assert_equal(status, result_status::exception);
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
     }
 
     // if timeout reaches and no value/exception - return status::idle
@@ -571,7 +569,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         result.wait_until(later);
@@ -594,13 +592,13 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time, id]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_exception(std::make_exception_ptr(costume_exception(id)));
+            rp.set_exception(std::make_exception_ptr(custom_exception(id)));
         });
 
         result.wait_until(later);
         const auto now = high_resolution_clock::now();
 
-        test_ready_result_costume_exception(std::move(result), id);
+        test_ready_result_custom_exception(std::move(result), id);
         assert_bigger_equal(now, unblocking_time);
         assert_smaller_equal(now, unblocking_time + seconds(1));
         thread.join();
@@ -614,7 +612,7 @@ void concurrencpp::tests::test_result_wait_until_impl() {
 
         std::thread thread([rp = std::move(rp), unblocking_time]() mutable {
             std::this_thread::sleep_until(unblocking_time);
-            rp.set_from_function(result_factory<type>::get);
+            rp.set_from_function(value_gen<type>::default_value);
         });
 
         for (size_t i = 0; i < 10; i++) {
@@ -652,10 +650,10 @@ void concurrencpp::tests::test_result_assignment_operator_non_empty_to_non_empty
     assert_false(static_cast<bool>(result_1));
     assert_true(static_cast<bool>(result_0));
 
-    rp_0.set_from_function(result_factory<type>::get);
+    rp_0.set_from_function(value_gen<type>::default_value);
     assert_equal(result_0.status(), result_status::idle);
 
-    rp_1.set_from_function(result_factory<type>::get);
+    rp_1.set_from_function(value_gen<type>::default_value);
     test_ready_result(std::move(result_0));
 }
 
@@ -676,7 +674,7 @@ void concurrencpp::tests::test_result_assignment_operator_non_empty_to_empty() {
     assert_true(static_cast<bool>(result_0));
     assert_false(static_cast<bool>(result_1));
 
-    rp_1.set_from_function(result_factory<type>::get);
+    rp_1.set_from_function(value_gen<type>::default_value);
     test_ready_result(std::move(result_0));
 }
 
@@ -711,7 +709,9 @@ void concurrencpp::tests::test_result_assignment_operator() {
     test_result_assignment_operator_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_result() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("result test");
 
     tester.add_step("constructor", test_result_constructor);
@@ -723,4 +723,5 @@ void concurrencpp::tests::test_result() {
     tester.add_step("operator =", test_result_assignment_operator);
 
     tester.launch_test();
+    return 0;
 }

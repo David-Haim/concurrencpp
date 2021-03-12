@@ -14,7 +14,7 @@ namespace concurrencpp::details {
         enum class status { active, idle };
 
         struct alignas(64) padded_flag {
-            std::atomic<status> flag;
+            std::atomic<status> flag {status::active};
         };
 
        private:
@@ -74,6 +74,7 @@ namespace concurrencpp::details {
         void enqueue_foreign(concurrencpp::task& task);
         void enqueue_foreign(std::span<concurrencpp::task> tasks);
         void enqueue_foreign(std::deque<concurrencpp::task>::iterator begin, std::deque<concurrencpp::task>::iterator end);
+        void enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end);
 
         void enqueue_local(concurrencpp::task& task);
         void enqueue_local(std::span<concurrencpp::task> tasks);

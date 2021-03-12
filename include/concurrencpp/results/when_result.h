@@ -33,8 +33,8 @@ namespace concurrencpp::details {
 
        public:
         template<class type>
-        static result_state<type>* get_state(result<type>& result) noexcept {
-            return result.m_state.get();
+        static result_state<type>& get_state(result<type>& result) noexcept {
+            return *result.m_state;
         }
 
         template<class... result_types>
@@ -51,7 +51,9 @@ namespace concurrencpp::details {
     };
 
     template<class... result_types>
-    class when_all_tuple_state final : public when_all_state_base, public std::enable_shared_from_this<when_all_tuple_state<result_types...>> {
+    class when_all_tuple_state final :
+        public when_all_state_base,
+        public std::enable_shared_from_this<when_all_tuple_state<result_types...>> {
 
         using tuple_type = std::tuple<result_types...>;
 
@@ -61,12 +63,13 @@ namespace concurrencpp::details {
 
         template<class type>
         void set_state(result<type>& result) noexcept {
-            auto state_ptr = when_result_helper::get_state(result);
-            state_ptr->when_all(this->shared_from_this());
+            auto& state_ref = when_result_helper::get_state(result);
+            state_ref.when_all(this->shared_from_this());
         }
 
        public:
-        when_all_tuple_state(result_types&&... results) noexcept : m_tuple(std::forward<result_types>(results)...), m_state_ptr(new result_state<tuple_type>()) {
+        when_all_tuple_state(result_types&&... results) noexcept :
+            m_tuple(std::forward<result_types>(results)...), m_state_ptr(new result_state<tuple_type>()) {
             m_counter = sizeof...(result_types);
         }
 
@@ -106,14 +109,15 @@ namespace concurrencpp::details {
 
         template<class given_type>
         void set_state(result<given_type>& result) noexcept {
-            auto state_ptr = when_result_helper::get_state(result);
-            state_ptr->when_all(this->shared_from_this());
+            auto& state_ref = when_result_helper::get_state(result);
+            state_ref.when_all(this->shared_from_this());
         }
 
        public:
         template<class iterator_type>
         when_all_vector_state(iterator_type begin, iterator_type end) :
-            m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)), m_state_ptr(new result_state<std::vector<type>>()) {
+            m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)),
+            m_state_ptr(new result_state<std::vector<type>>()) {
             m_counter = m_vector.size();
         }
 
@@ -153,7 +157,8 @@ namespace concurrencpp {
         when_any_result() noexcept : index(static_cast<size_t>(-1)) {}
 
         template<class... result_types>
-        when_any_result(size_t index, result_types&&... results) noexcept : index(index), results(std::forward<result_types>(results)...) {}
+        when_any_result(size_t index, result_types&&... results) noexcept :
+            index(index), results(std::forward<result_types>(results)...) {}
 
         when_any_result(when_any_result&&) noexcept = default;
         when_any_result& operator=(when_any_result&&) noexcept = default;
@@ -162,7 +167,9 @@ namespace concurrencpp {
 
 namespace concurrencpp::details {
     template<class... result_types>
-    class when_any_tuple_state final : public when_any_state_base, public std::enable_shared_from_this<when_any_tuple_state<result_types...>> {
+    class when_any_tuple_state final :
+        public when_any_state_base,
+        public std::enable_shared_from_this<when_any_tuple_state<result_types...>> {
 
         using tuple_type = std::tuple<result_types...>;
 
@@ -171,13 +178,14 @@ namespace concurrencpp::details {
         producer_result_state_ptr<when_any_result<tuple_type>> m_state_ptr;
 
         template<size_t index>
-        std::pair<when_any_status, size_t> set_state_impl(std::unique_lock<std::recursive_mutex>& lock) noexcept {  // should be called under a lock.
+        std::pair<when_any_status, size_t> set_state_impl(
+            std::unique_lock<std::recursive_mutex>& lock) noexcept {  // should be called under a lock.
             assert(lock.owns_lock());
             (void)lock;
 
             auto& result = std::get<index>(m_results);
-            auto state_ptr = when_result_helper::get_state(result);
-            const auto status = state_ptr->when_any(this->shared_from_this(), index);
+            auto& state_ref = when_result_helper::get_state(result);
+            const auto status = state_ref.when_any(this->shared_from_this(), index);
 
             if (status == when_any_status::result_ready) {
                 return {status, index};
@@ -186,14 +194,15 @@ namespace concurrencpp::details {
             const auto res = set_state_impl<index + 1>(lock);
 
             if (res.first == when_any_status::result_ready) {
-                state_ptr->try_rewind_consumer();
+                state_ref.try_rewind_consumer();
             }
 
             return res;
         }
 
         template<>
-        std::pair<when_any_status, size_t> set_state_impl<sizeof...(result_types)>(std::unique_lock<std::recursive_mutex>& lock) noexcept {
+        std::pair<when_any_status, size_t> set_state_impl<sizeof...(result_types)>(
+            std::unique_lock<std::recursive_mutex>& lock) noexcept {
             (void)lock;
             return {when_any_status::set, static_cast<size_t>(-1)};
         }
@@ -203,8 +212,8 @@ namespace concurrencpp::details {
             assert(lock.owns_lock());
             (void)lock;
             if (index != done_index) {
-                auto core_ptr = when_result_helper::get_state(std::get<index>(m_results));
-                core_ptr->try_rewind_consumer();
+                auto& state_ref = when_result_helper::get_state(std::get<index>(m_results));
+                state_ref.try_rewind_consumer();
             }
 
             unset_state<index + 1>(lock, done_index);
@@ -268,8 +277,8 @@ namespace concurrencpp::details {
 
             for (auto& result : m_results) {
                 assert(static_cast<bool>(result));
-                auto state_ptr = when_result_helper::get_state(result);
-                state_ptr->try_rewind_consumer();
+                auto& state_ref = when_result_helper::get_state(result);
+                state_ref.try_rewind_consumer();
             }
         }
 
@@ -287,7 +296,8 @@ namespace concurrencpp::details {
        public:
         template<class iterator_type>
         when_any_vector_state(iterator_type begin, iterator_type end) :
-            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)), m_state_ptr(new result_state<when_any_result<std::vector<type>>>()) {}
+            m_results(std::make_move_iterator(begin), std::make_move_iterator(end)),
+            m_state_ptr(new result_state<when_any_result<std::vector<type>>>()) {}
 
         void on_result_ready(size_t index) noexcept override {
             if (m_fulfilled.exchange(true, std::memory_order_relaxed)) {
@@ -306,8 +316,8 @@ namespace concurrencpp::details {
                     return;
                 }
 
-                auto state_ptr = when_result_helper::get_state(m_results[i]);
-                const auto res = state_ptr->when_any(this->shared_from_this(), i);
+                auto& state_ref = when_result_helper::get_state(m_results[i]);
+                const auto res = state_ref.when_any(this->shared_from_this(), i);
 
                 if (res == when_any_status::result_ready) {
                     on_result_ready(i);
@@ -329,9 +339,11 @@ namespace concurrencpp {
 
     template<class... result_types>
     result<std::tuple<typename std::decay<result_types>::type...>> when_all(result_types&&... results) {
-        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg, std::forward<result_types>(results)...);
+        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg,
+                                                          std::forward<result_types>(results)...);
 
-        auto when_all_state = std::make_shared<details::when_all_tuple_state<typename std::decay<result_types>::type...>>(std::forward<result_types>(results)...);
+        auto when_all_state = std::make_shared<details::when_all_tuple_state<typename std::decay<result_types>::type...>>(
+            std::forward<result_types>(results)...);
         auto result = when_all_state->get_result();
         when_all_state->set_state();
         return std::move(result);
@@ -356,7 +368,8 @@ namespace concurrencpp {
     template<class... result_types>
     result<when_any_result<std::tuple<result_types...>>> when_any(result_types&&... results) {
         static_assert(sizeof...(result_types) != 0, "concurrencpp::when_any() - the function must accept at least one result object.");
-        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_any_empty_result_error_msg, std::forward<result_types>(results)...);
+        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_any_empty_result_error_msg,
+                                                          std::forward<result_types>(results)...);
 
         auto when_any_state = std::make_shared<details::when_any_tuple_state<result_types...>>(std::forward<result_types>(results)...);
         auto result = when_any_state->get_result();
@@ -365,7 +378,8 @@ namespace concurrencpp {
     }
 
     template<class iterator_type>
-    result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>> when_any(iterator_type begin, iterator_type end) {
+    result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>> when_any(iterator_type begin,
+                                                                                                            iterator_type end) {
         details::when_result_helper::throw_if_empty_range(details::consts::k_when_any_empty_result_error_msg, begin, end);
 
         if (begin == end) {

@@ -9,8 +9,8 @@ namespace concurrencpp {
     class derivable_executor : public executor {
 
        private:
-        concrete_executor_type* self() noexcept {
-            return static_cast<concrete_executor_type*>(this);
+        concrete_executor_type& self() noexcept {
+            return *static_cast<concrete_executor_type*>(this);
         }
 
        public:
