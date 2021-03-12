@@ -250,7 +250,7 @@ namespace concurrencpp {
 
         void clear() noexcept;
 
-        operator bool() const noexcept;
+        explicit operator bool() const noexcept;
 
         template<class callable_type>
         bool contains() const noexcept {
