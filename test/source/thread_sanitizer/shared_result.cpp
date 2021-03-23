@@ -25,8 +25,8 @@ int main() {
     test_shared_result_resolve_via(thread_executor);
 }
 
-#include "tests/test_utils/test_generators.h"
-#include "tests/test_utils/test_ready_result.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 
 using namespace concurrencpp;
 using namespace std::chrono;

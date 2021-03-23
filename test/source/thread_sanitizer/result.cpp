@@ -10,9 +10,6 @@ void test_result_await_via(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_resolve(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_resolve_via(std::shared_ptr<concurrencpp::thread_executor> te);
 
-#include "tests/test_utils/test_generators.h"
-#include "tests/test_utils/test_ready_result.h"
-
 int main() {
     std::cout << "Starting concurrencpp::result test" << std::endl;
 
@@ -28,7 +25,8 @@ int main() {
     test_result_resolve_via(thread_executor);
 }
 
-#include "tests/test_utils/test_generators.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 
 using namespace concurrencpp;
 using namespace std::chrono;

@@ -388,7 +388,7 @@ void concurrencpp::tests::test_timer_cancel_dead_timer_queue() {
     }
 
     timer.cancel();
-    assert_false(timer);
+    assert_false(static_cast<bool>(timer));
 }
 
 void concurrencpp::tests::test_timer_cancel_before_due_time() {
@@ -399,7 +399,7 @@ void concurrencpp::tests::test_timer_cancel_before_due_time() {
     auto timer = timer_queue->make_timer(1s, 1s, ex, observer.get_testing_stub());
     timer.cancel();
 
-    assert_false(timer);
+    assert_false(static_cast<bool>(timer));
 
     std::this_thread::sleep_for(2s);
 
@@ -567,13 +567,13 @@ void concurrencpp::tests::test_timer_delay_object() {
 
 void concurrencpp::tests::test_timer_assignment_operator_empty_to_empty() {
     concurrencpp::timer timer1, timer2;
-    assert_false(timer1);
-    assert_false(timer2);
+    assert_false(static_cast<bool>(timer1));
+    assert_false(static_cast<bool>(timer2));
 
     timer1 = std::move(timer2);
 
-    assert_false(timer1);
-    assert_false(timer2);
+    assert_false(static_cast<bool>(timer1));
+    assert_false(static_cast<bool>(timer2));
 }
 
 void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_non_empty() {
@@ -588,8 +588,8 @@ void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_non_empty(
 
     timer0 = std::move(timer1);
 
-    assert_true(timer0);
-    assert_false(timer1);
+    assert_true(static_cast<bool>(timer0));
+    assert_false(static_cast<bool>(timer1));
 
     assert_true(observer0.wait_destruction_count(1, 20s));
     assert_equal(observer1.get_destruction_count(), static_cast<size_t>(0));
@@ -608,8 +608,8 @@ void concurrencpp::tests::test_timer_assignment_operator_empty_to_non_empty() {
     concurrencpp::timer timer1;
 
     timer0 = std::move(timer1);
-    assert_false(timer0);
-    assert_false(timer1);
+    assert_false(static_cast<bool>(timer0));
+    assert_false(static_cast<bool>(timer1));
 
     assert_true(observer.wait_destruction_count(1, 20s));
 }
@@ -623,8 +623,10 @@ void concurrencpp::tests::test_timer_assignment_operator_non_empty_to_empty() {
     auto timer1 = timer_queue->make_timer(10s, 10s, executor, observer.get_testing_stub());
 
     timer0 = std::move(timer1);
-    assert_false(timer1);
-    assert_true(timer0);
+
+    assert_false(static_cast<bool>(timer1));
+    assert_true(static_cast<bool>(timer0));
+
     assert_equal(timer0.get_due_time(), 10s);
     assert_equal(timer0.get_frequency(), 10s);
     assert_equal(timer0.get_executor(), executor);
@@ -639,7 +641,7 @@ void concurrencpp::tests::test_timer_assignment_operator_assign_to_self() {
 
     timer = std::move(timer);
 
-    assert_true(timer);
+    assert_true(static_cast<bool>(timer));
     assert_equal(timer.get_due_time(), 1s);
     assert_equal(timer.get_frequency(), 1s);
     assert_equal(timer.get_executor(), executor);

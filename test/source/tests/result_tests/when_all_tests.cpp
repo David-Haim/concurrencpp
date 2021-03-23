@@ -63,7 +63,9 @@ void concurrencpp::tests::test_when_all_vector_empty_range() {
     std::vector<result<type>> empty_range;
     auto all = concurrencpp::when_all(empty_range.begin(), empty_range.end());
     assert_equal(all.status(), result_status::value);
-    assert_equal(all.get(), std::vector<result<type>> {});
+
+    const auto all_done = all.get();
+    assert_true(all_done.empty());
 }
 
 template<class type>
