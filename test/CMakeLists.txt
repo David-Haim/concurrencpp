@@ -76,6 +76,8 @@ function(add_test)
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
 
+  set_property(TEST ${test_name} PROPERTY RUN_SERIAL YES)
+
   if(TEST_PROPERTIES)
     set_tests_properties(${test_name} PROPERTIES ${TEST_PROPERTIES})
   endif()
