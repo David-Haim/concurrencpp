@@ -1,5 +1,3 @@
-
-
 # concurrencpp, the C++ concurrency library
 
 ![Latest Release](https://img.shields.io/github/v/release/David-Haim/concurrencpp.svg) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -25,7 +23,7 @@ concurrencpp main advantages are:
     * [Executor types](#executor-types)
     * [Using executors](#using-executors)
     * [`thread_pool_executor` API](#thread_pool_executor-api)
-    * [`manual_executor` API](#thread_pool_executor-api)
+    * [`manual_executor` API](#manual_executor-api)
 * [Result objects](#result-objects)
     * [`result` API](#result-api)
 * [Parallel coroutines](#parallel-coroutines)
@@ -52,6 +50,7 @@ concurrencpp main advantages are:
     * [`task` API](#task-api)
     * [Using a user-defined executor example](#example-using-a-user-defined-executor)
 * [Supported platforms and tools](#supported-platforms-and-tools)
+* [Building, installing and testing](#building-installing-and-testing)
 
 ----
 
@@ -200,13 +199,13 @@ class executor {
 
     /*
         Schedules a task to run in this executor.
-        Throws concurrencpp::errors::executor_shutdown exception if shutdown was called before.
+        Throws concurrencpp::errors::runtime_shutdown exception if shutdown was called before.
     */
     virtual void enqueue(concurrencpp::task task) = 0;
 
     /*
         Schedules a range of tasks to run in this executor.
-        Throws concurrencpp::errors::executor_shutdown exception if shutdown was called before.
+        Throws concurrencpp::errors::runtime_shutdown exception if shutdown was called before.
     */    
     virtual void enqueue(std::span<concurrencpp::task> tasks) = 0;
 
@@ -227,7 +226,7 @@ class executor {
         - Tells underlying threads to exit their work loop and joins them.
         - Destroys unexecuted coroutines.
         - Makes subsequent calls to enqueue, post, submit, bulk_post and
-            bulk_submit to throw concurrencpp::errors::executor_shutdown exception.
+            bulk_submit to throw concurrencpp::errors::runtime_shutdown exception.
         - Makes shutdown_requested return true.
     */
     virtual void shutdown() noexcept = 0;
@@ -235,28 +234,28 @@ class executor {
     /*
         Turns a callable and its arguments into a task object and schedules it to run in this executor using enqueue.
         Arguments are passed to the task by decaying them first.
-         Throws errors::executor_shutdown exception if shutdown has been called before.
+         Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type, class ... argument_types>
     void post(callable_type&& callable, argument_types&& ... arguments);
     
     /*
         Like post, but returns a result object that marshals the asynchronous result.
-        Throws errors::executor_shutdown exception if shutdown has been called before.
+        Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type, class ... argument_types>
     result<type> submit(callable_type&& callable, argument_types&& ... arguments);
 
     /*
         Turns an array of callables into an array of tasks and schedules them to run in this executor using enqueue.
-        Throws errors::executor_shutdown exception if shutdown has been called before.
+        Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type>
     void bulk_post(std::span<callable_type> callable_list);
 
     /*
         Like bulk_post, but returns an array of result objects that marshal the asynchronous results.
-        Throws errors::executor_shutdown exception if shutdown has been called before.
+        Throws errors::runtime_shutdown exception if shutdown has been called before.
     */    
     template<class callable_type>
     std::vector<concurrencpp::result<type>> bulk_submit(std::span<callable_type> callable_list);
@@ -1112,12 +1111,12 @@ Regular timers have four properties that define them:
 4. Frequency - from the time the timer was scheduled to run for the first time, the interval in milliseconds the callable will be scheduled to run periodically, until the timer is destructed or cancelled.
 
 Like other objects in concurrencpp, timers are a move only type that can be empty.
-When a timer is destructed or `timer::cancel` is called, the timer cancels its scheduled but not yet executed tasks. Ongoing tasks are uneffected. The timer callable must be thread safe. It is recommended to set the due time and the frequency of a timer to a granularity of 50 milliseconds.  
+When a timer is destructed or `timer::cancel` is called, the timer cancels its scheduled but not yet executed tasks. Ongoing tasks are uneffected. The timer callable must be thread safe. It is recommended to set the due time and the frequency of timers to a granularity of 50 milliseconds. 
 
 A timer queue is a concurrencpp worker that manages a collection of timers and processes them in just one thread of execution. It is also the agent used to create new timers.
 When a timer deadline (whether it is the timer's due-time or frequency) has reached, the timer queue "fires" the timer by scheduling its callable to run on the associated executor as a task.
 
-Just like executors, timer queues also adhere to the RAII concept. When the runtime object gets out of scope, It shuts down the timer queue, cancelling all pending timers. After a timer queue has been shut down, any subsequent call to `make_timer`, `make_onshot_timer` and `make_delay_object` will throw an `errors::timer_queue_shutdown` exception.
+Just like executors, timer queues also adhere to the RAII concept. When the runtime object gets out of scope, It shuts down the timer queue, cancelling all pending timers. After a timer queue has been shut down, any subsequent call to `make_timer`, `make_onshot_timer` and `make_delay_object` will throw an `errors::runtime_shutdown` exception.
 Applications must not try to shut down timer queues by themselves.
 
 #### `timer_queue` API:
@@ -1132,7 +1131,7 @@ class timer_queue {
         Shuts down this timer_queue:
         Tells the underlying thread of execution to quit and joins it.
         Cancels all pending timers.
-        After this call, invocation of any method besides shutdown and shutdown_requested will throw an errors::timer_queue_shutdown.
+        After this call, invocation of any method besides shutdown and shutdown_requested will throw an errors::runtime_shutdown.
         If shutdown had been called before, this method has no effect.
     */
     void shutdown() noexcept;
@@ -1145,7 +1144,7 @@ class timer_queue {
     /*
         Creates a new running timer where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
-        Throws errors::timer_queue_shutdown if shutdown had been called before.
+        Throws errors::runtime_shutdown if shutdown had been called before.
     */
     template<class callable_type, class ... argumet_types>
     timer make_timer(
@@ -1158,7 +1157,7 @@ class timer_queue {
     /*
         Creates a new one-shot timer where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
-        Throws errors::timer_queue_shutdown if shutdown had been called before.
+        Throws errors::runtime_shutdown if shutdown had been called before.
     */
     template<class callable_type, class ... argumet_types>
     timer make_one_shot_timer(
@@ -1170,7 +1169,7 @@ class timer_queue {
     /*
         Creates a new delay object where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
-        Throws errors::timer_queue_shutdown if shutdown had been called before.
+        Throws errors::runtime_shutdown if shutdown had been called before.
     */
     result<void> make_delay_object(
         std::chrono::milliseconds due_time,
@@ -1346,7 +1345,7 @@ In this example, we created a coroutine (that does not marshal any result or thr
  
 The concurrencpp runtime object is the agent used to acquire, store and create new executors.  
 The runtime must be created as a value type as soon as the main function starts to run.
-When the concurrencpp runtime gets out of scope, it iterates over its stored executors and shuts them down one by one by calling `executor::shutdown`. Executors then exit their inner work loop and any subsequent attempt to schedule a new task will throw a `concurrencpp::executor_shutdown` exception. The runtime also contains the global timer queue used to create timers and delay objects.
+When the concurrencpp runtime gets out of scope, it iterates over its stored executors and shuts them down one by one by calling `executor::shutdown`. Executors then exit their inner work loop and any subsequent attempt to schedule a new task will throw a `concurrencpp::runtime_shutdown` exception. The runtime also contains the global timer queue used to create timers and delay objects.
 Upon destruction, stored executors will destroy unexecuted tasks, and wait for ongoing tasks to finish. If an ongoing task tries to use an executor to spawn new tasks or schedule its own task continuation - an exception will be thrown. In this case, ongoing tasks need to quit as soon as possible, allowing their underlying executors to quit. The timer queue will also be shut down, cancelling all running timers.  With this RAII style of code, no tasks can be processed before the creation of the runtime object, and while/after the runtime gets out of scope.
 This frees concurrent applications from needing to communicate termination messages explicitly. Tasks are free use executors as long as the runtime object is alive.
 
@@ -1435,7 +1434,7 @@ New executors can be created using `runtime::make_executor`. Applications must n
 Another important point is to handle shutdown correctly: `shutdown`, `shutdown_requested` and `enqueue` should all monitor the executor state and behave accordingly when invoked:
 * `shutdown` should tell underlying threads to quit and then join them.
  * `shutdown` might be called multiple times, and the method must handle this scenario by ignoring any subsequent call to `shutdown` after the first invocation.
-* `enqueue` must throw a `concurrencpp::errors::executor_shutdown` exception if `shutdown` had been called before.
+* `enqueue` must throw a `concurrencpp::errors::runtime_shutdown` exception if `shutdown` had been called before.
 
 Implementing an executor is one of the rare cases applications need to work with `concurrencpp::task` class directly. `concurrencpp::task` is a `std::function` like object, but with a few differences.
 Like `std::function`, the task object stores a callable that acts as the asynchronous operation.
@@ -1571,7 +1570,7 @@ public:
 
         std::unique_lock<std::mutex> lock(_lock);
         if (_shutdown_requested) {
-            throw concurrencpp::errors::executor_shutdown("logging executor - executor was shutdown.");
+            throw concurrencpp::errors::runtime_shutdown("logging executor - executor was shutdown.");
         }
 
         _queue.emplace(std::move(task));
@@ -1583,7 +1582,7 @@ public:
 
         std::unique_lock<std::mutex> lock(_lock);
         if (_shutdown_requested) {
-            throw concurrencpp::errors::executor_shutdown("logging executor - executor was shutdown.");
+            throw concurrencpp::errors::runtime_shutdown("logging executor - executor was shutdown.");
         }
 
         for (auto& task : tasks) {
@@ -1636,3 +1635,47 @@ In this example, we created an executor which logs actions like enqueuing a task
 
 * **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
 * **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang (Clang-11 and above)
+* **Tools:** CMake (3.16 and above) 
+
+### Building, installing and testing
+
+##### Building the library on Windows (release mode)
+```cmake
+$ git clone https://github.com/David-Haim/concurrencpp.git
+$ cd concurrencpp
+$ cmake -S . -B build/lib
+$ cmake --build build/lib --config Release
+```
+##### Running the tests on Windows (debug + release mode)
+```cmake
+$ git clone https://github.com/David-Haim/concurrencpp.git
+$ cd concurrencpp
+$ cmake -S test -B build/test
+$ cmake --build build/test
+    <# for release mode: cmake --build build/test --config Release #>
+$ cd build/test
+$ ctest . -V -C Debug
+    <# for release mode: ctest . -V -C Release #>
+```
+##### Building the library on *nix platforms (release mode)
+```cmake
+$ git clone https://github.com/David-Haim/concurrencpp.git
+$ cd concurrencpp
+$ cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/lib
+$ cmake --build build/lib
+    #optional, install the library: sudo cmake --install build/lib
+```
+##### Running the tests on *nix platforms 
+
+With clang, it is also possible to run the tests with TSAN (thread sanitizer) support.
+
+```cmake
+$ git clone https://github.com/David-Haim/concurrencpp.git
+$ cd concurrencpp
+$ cmake -S test -B build/test
+  #for release mode: cmake -DCMAKE_BUILD_TYPE=Release -S test -B build/test
+  #for TSAN mode: cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_THREAD_SANITIZER=Yes -S test -B build/test
+$ cmake --build build/test  
+$ cd build/test
+$ ctest . -V
+```
