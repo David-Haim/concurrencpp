@@ -1,12 +1,9 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tests/test_utils/test_ready_result.h"
-
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/random.h"
-#include "helpers/object_observer.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
+#include "utils/test_ready_result.h"
 
 namespace concurrencpp::tests {
     template<class type>
@@ -25,7 +22,7 @@ void concurrencpp::tests::test_make_ready_result_impl() {
     if constexpr (std::is_same_v<void, type>) {
         result = concurrencpp::make_ready_result<type>();
     } else {
-        result = make_ready_result<type>(result_factory<type>::get());
+        result = make_ready_result<type>(value_gen<type>::default_value());
     }
 
     test_ready_result(std::move(result));
@@ -49,11 +46,11 @@ void concurrencpp::tests::test_make_exceptional_result_impl() {
         concurrencpp::details::consts::k_make_exceptional_result_exception_null_error_msg);
 
     const size_t id = 123456789;
-    auto res0 = make_exceptional_result<type>(costume_exception(id));
-    test_ready_result_costume_exception(std::move(res0), id);
+    auto res0 = make_exceptional_result<type>(custom_exception(id));
+    test_ready_result_custom_exception(std::move(res0), id);
 
-    auto res1 = make_exceptional_result<type>(std::make_exception_ptr(costume_exception(id)));
-    test_ready_result_costume_exception(std::move(res1), id);
+    auto res1 = make_exceptional_result<type>(std::make_exception_ptr(custom_exception(id)));
+    test_ready_result_custom_exception(std::move(res1), id);
 }
 
 void concurrencpp::tests::test_make_exceptional_result() {
@@ -64,11 +61,14 @@ void concurrencpp::tests::test_make_exceptional_result() {
     test_make_exceptional_result_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_make_result() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("make_result test");
 
     tester.add_step("make_ready_result", test_make_ready_result);
     tester.add_step("make_exceptional_result", test_make_exceptional_result);
 
     tester.launch_test();
+    return 0;
 }

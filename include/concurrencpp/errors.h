@@ -33,12 +33,8 @@ namespace concurrencpp::errors {
         result_already_retrieved(const std::string& message) : runtime_error(message) {}
     };
 
-    struct executor_shutdown : public std::runtime_error {
-        executor_shutdown(const std::string& message) : runtime_error(message) {}
-    };
-
-    struct timer_queue_shutdown : public std::runtime_error {
-        timer_queue_shutdown(const std::string& message) : runtime_error(message) {}
+    struct runtime_shutdown : public std::runtime_error {
+        runtime_shutdown(const std::string& message) : runtime_error(message) {}
     };
 }  // namespace concurrencpp::errors
 

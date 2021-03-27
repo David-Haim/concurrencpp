@@ -29,9 +29,9 @@ namespace concurrencpp::details {
         void wait();
         bool await(coroutine_handle<void> caller_handle) noexcept;
         bool await_via(await_via_context& await_ctx, bool force_rescheduling) noexcept;
-        void when_all(std::shared_ptr<when_all_state_base> when_all_state) noexcept;
-        when_any_status when_any(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept;
-        void share_result(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept;
+        void when_all(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept;
+        when_any_status when_any(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept;
+        void share_result(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept;
 
         void try_rewind_consumer() noexcept;
     };
@@ -68,9 +68,9 @@ namespace concurrencpp::details {
             m_producer.build_result(std::forward<argument_types>(arguments)...);
         }
 
-        void set_exception(std::exception_ptr error) noexcept {
+        void set_exception(const std::exception_ptr& error) noexcept {
             assert(error != nullptr);
-            m_producer.build_exception(std::move(error));
+            m_producer.build_exception(error);
         }
 
         // Consumer-side functions
@@ -96,7 +96,8 @@ namespace concurrencpp::details {
             m_consumer.set_wait_context(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
-            const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state, pc_state::consumer_set, std::memory_order_acq_rel);
+            const auto idle_0 =
+                m_pc_state.compare_exchange_strong(expected_idle_state, pc_state::consumer_set, std::memory_order_acq_rel);
 
             if (!idle_0) {
                 assert_done();

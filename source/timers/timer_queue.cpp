@@ -117,7 +117,7 @@ namespace concurrencpp::details {
 
                 if (is_oneshot || cancelled) {
                     m_iterator_mapper.erase(timer_ptr);
-                    continue;  // let the timer die inside the temp_set
+                    continue;  // let the timer die inside temp_set
                 }
 
                 // regular timer, re-insert into the right position
@@ -140,7 +140,8 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
-timer_queue::timer_queue() noexcept : m_atomic_abort(false), m_abort(false) {}
+timer_queue::timer_queue(milliseconds max_waiting_time) noexcept :
+    m_atomic_abort(false), m_abort(false), m_idle(true), m_max_waiting_time(max_waiting_time) {}
 
 timer_queue::~timer_queue() noexcept {
     shutdown();
@@ -171,9 +172,16 @@ void timer_queue::work_loop() noexcept {
     while (true) {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         if (internal_state.empty()) {
-            m_condition.wait(lock, [this] {
+            const auto res = m_condition.wait_for(lock, m_max_waiting_time, [this] {
                 return !m_request_queue.empty() || m_abort;
             });
+
+            if (!res) {
+                m_idle = true;
+                lock.unlock();
+                return;
+            }
+
         } else {
             m_condition.wait_until(lock, next_deadline, [this] {
                 return !m_request_queue.empty() || m_abort;
@@ -219,16 +227,20 @@ void timer_queue::shutdown() noexcept {
     m_worker.join();
 }
 
-void timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
-    (void)lock;
+concurrencpp::details::thread timer_queue::ensure_worker_thread(std::unique_lock<std::mutex>& lock) {
     assert(lock.owns_lock());
-    if (m_worker.joinable()) {
-        return;
+    if (!m_idle) {
+        return {};
     }
+
+    auto old_worker = std::move(m_worker);
 
     m_worker = details::thread("concurrencpp::timer_queue worker", [this] {
         work_loop();
     });
+
+    m_idle = false;
+    return old_worker;
 }
 
 concurrencpp::result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<executor> executor) {
@@ -244,4 +256,8 @@ concurrencpp::result<void> timer_queue::make_delay_object(std::chrono::milliseco
     });
 
     return task;
+}
+
+milliseconds timer_queue::max_worker_idle_time() const noexcept {
+    return m_max_waiting_time;
 }

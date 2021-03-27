@@ -17,7 +17,8 @@ namespace concurrencpp {
         std::atomic_bool m_atomic_abort;
 
         template<class clock_type, class duration_type>
-        static std::chrono::system_clock::time_point to_system_time_point(std::chrono::time_point<clock_type, duration_type> time_point) {
+        static std::chrono::system_clock::time_point to_system_time_point(
+            std::chrono::time_point<clock_type, duration_type> time_point) {
             const auto src_now = clock_type::now();
             const auto dst_now = std::chrono::system_clock::now();
             return dst_now + std::chrono::duration_cast<std::chrono::milliseconds>(time_point - src_now);

@@ -1,7 +1,6 @@
 #ifndef CONCURRENCPP_PRODUCER_CONTEXT_H
 #define CONCURRENCPP_PRODUCER_CONTEXT_H
 
-#include <optional>
 #include <exception>
 
 #include <cassert>
@@ -10,178 +9,251 @@ namespace concurrencpp::details {
     template<class type>
     class producer_context {
 
-       private:
-        std::optional<type> m_result;
-        std::exception_ptr m_exception;
+        union storage {
+            type object;
+            std::exception_ptr exception;
 
-        void assert_state() const noexcept {
-            assert((!m_result.has_value() && !static_cast<bool>(m_exception)) || (m_result.has_value() != static_cast<bool>(m_exception)));
-        }
+            storage() noexcept {}
+            ~storage() noexcept {}
+        };
+
+       private:
+        storage m_storage;
+        result_status m_status = result_status::idle;
 
        public:
-        producer_context& operator=(producer_context&& rhs) noexcept = default;
+        ~producer_context() noexcept {
+            switch (m_status) {
+                case result_status::value: {
+                    m_storage.object.~type();
+                    break;
+                }
+
+                case result_status::exception: {
+                    m_storage.exception.~exception_ptr();
+                    break;
+                }
+
+                case result_status::idle: {
+                    break;
+                }
+
+                default: {
+                    assert(false);
+                }
+            }
+        }
+
+        producer_context& operator=(producer_context&& rhs) noexcept {
+            assert(m_status == result_status::idle);
+            m_status = std::exchange(rhs.m_status, result_status::idle);
+
+            switch (m_status) {
+                case result_status::value: {
+                    new (std::addressof(m_storage.object)) type(std::move(rhs.m_storage.object));
+                    rhs.m_storage.object.~type();
+                    break;
+                }
+
+                case result_status::exception: {
+                    new (std::addressof(m_storage.exception)) std::exception_ptr(rhs.m_storage.exception);
+                    rhs.m_storage.exception.~exception_ptr();
+                    break;
+                }
+
+                case result_status::idle: {
+                    break;
+                }
+
+                default: {
+                    assert(false);
+                }
+            }
+
+            return *this;
+        }
 
         template<class... argument_types>
         void build_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
-            assert(!m_result.has_value());
-            assert(!static_cast<bool>(m_exception));
-            m_result.emplace(std::forward<argument_types>(arguments)...);
+            assert(m_status == result_status::idle);
+            new (std::addressof(m_storage.object)) type(std::forward<argument_types>(arguments)...);
+            m_status = result_status::value;
         }
 
         void build_exception(const std::exception_ptr& exception) noexcept {
-            assert(!m_result.has_value());
-            assert(!static_cast<bool>(m_exception));
-            m_exception = exception;
+            assert(m_status == result_status::idle);
+            new (std::addressof(m_storage.exception)) std::exception_ptr(exception);
+            m_status = result_status::exception;
         }
 
         result_status status() const noexcept {
-            assert_state();
-
-            if (m_result.has_value()) {
-                return result_status::value;
-            }
-
-            if (static_cast<bool>(m_exception)) {
-                return result_status::exception;
-            }
-
-            return result_status::idle;
+            return m_status;
         }
 
         type get() {
-            assert_state();
-
-            if (m_result.has_value()) {
-                return std::move(m_result.value());
-            }
-
-            assert(static_cast<bool>(m_exception));
-            std::rethrow_exception(m_exception);
+            return std::move(get_ref());
         }
 
         type& get_ref() {
-            assert_state();
-
-            if (m_result.has_value()) {
-                return m_result.value();
+            assert(m_status != result_status::idle);
+            if (m_status == result_status::value) {
+                return m_storage.object;
             }
 
-            assert(static_cast<bool>(m_exception));
-            std::rethrow_exception(m_exception);
+            assert(m_status == result_status::exception);
+            assert(static_cast<bool>(m_storage.exception));
+            std::rethrow_exception(m_storage.exception);
         }
     };
 
     template<>
     class producer_context<void> {
 
-       private:
-        std::exception_ptr m_exception;
-        bool m_ready = false;
+        union storage {
+            std::exception_ptr exception;
 
-        void assert_state() const noexcept {
-            assert((!m_ready && !static_cast<bool>(m_exception)) || (m_ready != static_cast<bool>(m_exception)));
-        }
+            storage() noexcept {}
+            ~storage() noexcept {}
+        };
+
+       private:
+        storage m_storage;
+        result_status m_status = result_status::idle;
 
        public:
-        producer_context& operator=(producer_context&& rhs) noexcept = default;
+        ~producer_context() noexcept {
+            if (m_status == result_status::exception) {
+                m_storage.exception.~exception_ptr();
+            }
+        }
+
+        producer_context& operator=(producer_context&& rhs) noexcept {
+            assert(m_status == result_status::idle);
+            m_status = std::exchange(rhs.m_status, result_status::idle);
+
+            if (m_status == result_status::exception) {
+                new (std::addressof(m_storage.exception)) std::exception_ptr(rhs.m_storage.exception);
+                rhs.m_storage.exception.~exception_ptr();
+            }
+
+            return *this;
+        }
 
         void build_result() noexcept {
-            assert(!m_ready);
-            assert(!static_cast<bool>(m_exception));
-            m_ready = true;
+            assert(m_status == result_status::idle);
+            m_status = result_status::value;
         }
 
         void build_exception(const std::exception_ptr& exception) noexcept {
-            assert(!m_ready);
-            assert(!static_cast<bool>(m_exception));
-            m_exception = exception;
+            assert(m_status == result_status::idle);
+            new (std::addressof(m_storage.exception)) std::exception_ptr(exception);
+            m_status = result_status::exception;
         }
 
         result_status status() const noexcept {
-            assert_state();
-
-            if (m_ready) {
-                return result_status::value;
-            }
-
-            if (static_cast<bool>(m_exception)) {
-                return result_status::exception;
-            }
-
-            return result_status::idle;
+            return m_status;
         }
 
         void get() const {
-            assert_state();
-
-            if (m_ready) {
-                return;
-            }
-
-            assert(static_cast<bool>(m_exception));
-            std::rethrow_exception(m_exception);
+            get_ref();
         }
 
         void get_ref() const {
-            return get();
+            assert(m_status != result_status::idle);
+            if (m_status == result_status::exception) {
+                assert(static_cast<bool>(m_storage.exception));
+                std::rethrow_exception(m_storage.exception);
+            }
         }
     };
 
     template<class type>
     class producer_context<type&> {
 
-       private:
-        type* m_pointer = nullptr;
-        std::exception_ptr m_exception;
+        union storage {
+            type* pointer;
+            std::exception_ptr exception;
 
-        void assert_state() const noexcept {
-            assert((m_pointer == nullptr && !static_cast<bool>(m_exception)) || ((m_pointer != nullptr) || static_cast<bool>(m_exception)));
-        }
+            storage() noexcept {}
+            ~storage() noexcept {}
+        };
+
+       private:
+        storage m_storage;
+        result_status m_status = result_status::idle;
 
        public:
-        producer_context& operator=(producer_context&& rhs) noexcept = default;
+        ~producer_context() noexcept {
+            if (m_status == result_status::exception) {
+                m_storage.exception.~exception_ptr();
+            }
+        }
+
+        producer_context& operator=(producer_context&& rhs) noexcept {
+            assert(m_status == result_status::idle);
+            m_status = std::exchange(rhs.m_status, result_status::idle);
+
+            switch (m_status) {
+                case result_status::value: {
+                    m_storage.pointer = rhs.m_storage.pointer;
+                    break;
+                }
+
+                case result_status::exception: {
+                    new (std::addressof(m_storage.exception)) std::exception_ptr(rhs.m_storage.exception);
+                    rhs.m_storage.exception.~exception_ptr();
+                    break;
+                }
+
+                case result_status::idle: {
+                    break;
+                }
+
+                default: {
+                    assert(false);
+                }
+            }
+
+            return *this;
+        }
 
         void build_result(type& reference) noexcept {
-            assert(m_pointer == nullptr);
-            assert(!static_cast<bool>(m_exception));
-            assert(reinterpret_cast<size_t>(std::addressof(reference)) % alignof(type) == 0);
-            m_pointer = std::addressof(reference);
+            assert(m_status == result_status::idle);
+
+            auto pointer = std::addressof(reference);
+            assert(pointer != nullptr);
+            assert(reinterpret_cast<size_t>(pointer) % alignof(type) == 0);
+
+            m_storage.pointer = pointer;
+            m_status = result_status::value;
         }
 
         void build_exception(const std::exception_ptr& exception) noexcept {
-            assert(m_pointer == nullptr);
-            assert(!static_cast<bool>(m_exception));
-            m_exception = exception;
+            assert(m_status == result_status::idle);
+            new (std::addressof(m_storage.exception)) std::exception_ptr(exception);
+            m_status = result_status::exception;
         }
 
         result_status status() const noexcept {
-            assert_state();
-
-            if (m_pointer != nullptr) {
-                return result_status::value;
-            }
-
-            if (static_cast<bool>(m_exception)) {
-                return result_status::exception;
-            }
-
-            return result_status::idle;
+            return m_status;
         }
 
         type& get() const {
-            assert_state();
-
-            if (m_pointer != nullptr) {
-                assert(reinterpret_cast<size_t>(m_pointer) % alignof(type) == 0);
-                return *m_pointer;
-            }
-
-            assert(static_cast<bool>(m_exception));
-            std::rethrow_exception(m_exception);
+            return get_ref();
         }
 
         type& get_ref() const {
-            return get();
+            assert(m_status != result_status::idle);
+
+            if (m_status == result_status::value) {
+                assert(m_storage.pointer != nullptr);
+                assert(reinterpret_cast<size_t>(m_storage.pointer) % alignof(type) == 0);
+                return *m_storage.pointer;
+            }
+
+            assert(m_status == result_status::exception);
+            assert(static_cast<bool>(m_storage.exception));
+            std::rethrow_exception(m_storage.exception);
         }
     };
 }  // namespace concurrencpp::details

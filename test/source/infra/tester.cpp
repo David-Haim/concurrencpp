@@ -1,4 +1,4 @@
-#include "tester/tester.h"
+#include "infra/tester.h"
 
 #include <chrono>
 
@@ -27,7 +27,6 @@ void tester::add_step(const char* step_name, std::function<void()> callable) {
 }
 
 void tester::launch_test() noexcept {
-    const auto test_start_time = system_clock::now();
     printf("Test started: %s\n", m_test_name);
 
     for (auto& test_step : m_steps) {
@@ -38,6 +37,5 @@ void tester::launch_test() noexcept {
         }
     }
 
-    const auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
-    printf("Test ended (%lldms).\n____________________\n", elapsed_time);
+    printf("Test ended.\n____________________\n");
 }

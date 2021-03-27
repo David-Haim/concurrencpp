@@ -47,7 +47,7 @@ namespace concurrencpp {
         result(const result& rhs) = delete;
         result& operator=(const result& rhs) = delete;
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return static_cast<bool>(m_state);
         }
 
@@ -118,7 +118,8 @@ namespace concurrencpp {
 
         static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
 
-        static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
+        static_assert(valid_result_type_v,
+                      "concurrencpp::result_promise<type> - <<type>> should be now-throw-move constructable or void.");
 
        private:
         details::producer_result_state_ptr<type> m_state;
@@ -163,6 +164,9 @@ namespace concurrencpp {
             return *this;
         }
 
+        result_promise(const result_promise&) = delete;
+        result_promise& operator=(const result_promise&) = delete;
+
         explicit operator bool() const noexcept {
             return static_cast<bool>(m_state);
         }
@@ -193,8 +197,9 @@ namespace concurrencpp {
         void set_from_function(callable_type&& callable, argument_types&&... args) noexcept {
             constexpr auto is_invokable = std::is_invocable_r_v<type, callable_type, argument_types...>;
 
-            static_assert(is_invokable,
-                          "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
+            static_assert(
+                is_invokable,
+                "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
 
             throw_if_empty(details::consts::k_result_promise_set_from_function_error_msg);
             m_state->from_callable(details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));

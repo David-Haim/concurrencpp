@@ -1,9 +1,8 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/object_observer.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
 
 #include <array>
 
@@ -653,7 +652,9 @@ void concurrencpp::tests::test_task_assignment_operator() {
     test_task_assignment_operator_to_self();
 }
 
-void concurrencpp::tests::test_task() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("task test");
 
     tester.add_step("constructor", test_task_constructor);
@@ -664,4 +665,5 @@ void concurrencpp::tests::test_task() {
     tester.add_step("operator =", test_task_assignment_operator);
 
     tester.launch_test();
+    return 0;
 }

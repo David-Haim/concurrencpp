@@ -1,12 +1,10 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/object_observer.h"
-#include "tests/test_utils/test_ready_result.h"
-
-//#include <string>
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 
 namespace concurrencpp::tests {
     template<class type>
@@ -205,11 +203,11 @@ void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tup
 }
 
 void concurrencpp::tests::test_result_promise_set_value() {
-    const auto expected_int_result = result_factory<int>::get();
+    const auto expected_int_result = value_gen<int>::default_value();
     auto int_tuple = std::make_tuple(expected_int_result);
     test_result_promise_set_value_impl<int>(int_tuple);
 
-    const auto expected_str_result = result_factory<std::string>::get();
+    const auto expected_str_result = value_gen<std::string>::default_value();
     const auto modified_str_result = std::string("  ") + expected_str_result + " ";
     auto str_tuple = std::make_tuple(modified_str_result, 2, expected_str_result.size());
     test_result_promise_set_value_impl<std::string>(str_tuple);
@@ -217,11 +215,11 @@ void concurrencpp::tests::test_result_promise_set_value() {
     std::tuple<> empty_tuple;
     test_result_promise_set_value_impl<void>(empty_tuple);
 
-    auto& expected_int_ref_result = result_factory<int&>::get();
+    auto& expected_int_ref_result = value_gen<int&>::default_value();
     std::tuple<int&> int_ref_tuple = {expected_int_ref_result};
     test_result_promise_set_value_impl<int&>(int_ref_tuple);
 
-    auto& expected_str_ref_result = result_factory<std::string&>::get();
+    auto& expected_str_ref_result = value_gen<std::string&>::default_value();
     std::tuple<std::string&> str_ref_tuple = {expected_str_ref_result};
     test_result_promise_set_value_impl<std::string&>(str_ref_tuple);
 }
@@ -254,10 +252,10 @@ void concurrencpp::tests::test_result_promise_set_exception_impl() {
 
         std::thread thread([result = std::move(result), id]() mutable {
             result.wait();
-            test_ready_result_costume_exception(std::move(result), id);
+            test_ready_result_custom_exception(std::move(result), id);
         });
 
-        rp.set_exception(std::make_exception_ptr<costume_exception>(id));
+        rp.set_exception(std::make_exception_ptr<custom_exception>(id));
         assert_false(static_cast<bool>(rp));
 
         thread.join();
@@ -276,7 +274,7 @@ template<class type>
 void concurrencpp::tests::test_result_promise_set_from_function_value_impl() {
     result_promise<type> rp;
     auto result = rp.get_result();
-    rp.set_from_function(result_factory<type>::get);
+    rp.set_from_function(value_gen<type>::default_value);
     test_ready_result(std::move(result));
 }
 
@@ -287,14 +285,14 @@ void concurrencpp::tests::test_result_promise_set_from_function_exception_impl()
     const auto id = 123456789;
 
     rp.set_from_function([id]() -> decltype(auto) {
-        throw costume_exception(id);
-        return result_factory<type>::get();
+        throw custom_exception(id);
+        return value_gen<type>::default_value();
     });
 
     assert_false(static_cast<bool>(rp));
     assert_true(static_cast<bool>(result));
     assert_equal(result.status(), result_status::exception);
-    test_ready_result_costume_exception(std::move(result), id);
+    test_ready_result_custom_exception(std::move(result), id);
 }
 
 void concurrencpp::tests::test_result_promise_set_from_function() {
@@ -404,7 +402,9 @@ void concurrencpp::tests::test_rp_assignment_operator() {
     test_rp_assignment_operator_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_result_promise() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("result_promise test");
 
     tester.add_step("constructor", test_result_promise_constructor);
@@ -416,4 +416,5 @@ void concurrencpp::tests::test_result_promise() {
     tester.add_step("operator =", test_rp_assignment_operator);
 
     tester.launch_test();
+    return 0;
 }

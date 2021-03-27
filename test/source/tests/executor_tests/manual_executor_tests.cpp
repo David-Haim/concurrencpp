@@ -1,10 +1,10 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tester/tester.h"
-#include "helpers/assertions.h"
-#include "helpers/object_observer.h"
-#include "tests/test_utils/executor_shutdowner.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
+#include "utils/object_observer.h"
+#include "utils/test_generators.h"
+#include "utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
     void test_manual_executor_name();
@@ -69,65 +69,65 @@ void concurrencpp::tests::test_manual_executor_shutdown_method_access() {
     executor->shutdown();
     assert_true(executor->shutdown_requested());
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->enqueue(concurrencpp::task {});
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         concurrencpp::task array[4];
         std::span<concurrencpp::task> span = array;
         executor->enqueue(span);
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->clear();
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop_once();
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop_once_for(milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop_once_until(high_resolution_clock::now() + milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop(100);
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop_for(100, milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->loop_until(100, high_resolution_clock::now() + milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_task();
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_task_for(milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_task_until(high_resolution_clock::now() + milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_tasks(8);
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_tasks_for(8, milliseconds(100));
     });
 
-    assert_throws<concurrencpp::errors::executor_shutdown>([executor] {
+    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
         executor->wait_for_tasks_until(8, high_resolution_clock::now() + milliseconds(100));
     });
 }
@@ -599,7 +599,7 @@ void concurrencpp::tests::test_manual_executor_loop_once_for() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->loop_once_for(seconds(10));
         });
 
@@ -679,7 +679,7 @@ void concurrencpp::tests::test_manual_executor_loop_once_until() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             const auto max_looping_time_point = high_resolution_clock::now() + seconds(10);
             executor->loop_once_until(max_looping_time_point);
         });
@@ -829,7 +829,7 @@ void concurrencpp::tests::test_manual_executor_loop_for() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->loop_for(100, seconds(10));
         });
 
@@ -914,7 +914,7 @@ void concurrencpp::tests::test_manual_executor_loop_until() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->loop_until(100, high_resolution_clock::now() + seconds(10));
         });
 
@@ -1007,7 +1007,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_task() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_task();
         });
 
@@ -1087,7 +1087,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_task_for() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_task_for(seconds(10));
         });
 
@@ -1163,7 +1163,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_task_until() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_task_until(high_resolution_clock::now() + seconds(10));
         });
 
@@ -1243,7 +1243,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_tasks() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_tasks(task_count);
         });
 
@@ -1342,7 +1342,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_tasks_for() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_tasks_for(task_count, seconds(10));
         });
 
@@ -1440,7 +1440,7 @@ void concurrencpp::tests::test_manual_executor_wait_for_tasks_until() {
             executor->shutdown();
         });
 
-        assert_throws<errors::executor_shutdown>([executor] {
+        assert_throws<errors::runtime_shutdown>([executor] {
             executor->wait_for_tasks_until(task_count, high_resolution_clock::now() + seconds(10));
         });
 
@@ -1453,7 +1453,9 @@ void concurrencpp::tests::test_manual_executor_wait_for_tasks_until() {
     }
 }
 
-void concurrencpp::tests::test_manual_executor() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("manual_executor test");
 
     tester.add_step("name", test_manual_executor_name);
@@ -1478,4 +1480,5 @@ void concurrencpp::tests::test_manual_executor() {
     tester.add_step("clear", test_manual_executor_clear);
 
     tester.launch_test();
+    return 0;
 }

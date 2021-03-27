@@ -25,10 +25,12 @@ namespace concurrencpp::details {
 namespace concurrencpp {
     struct runtime_options {
         size_t max_cpu_threads;
-        std::chrono::milliseconds max_cpu_thread_waiting_time;
+        std::chrono::milliseconds max_thread_pool_executor_waiting_time;
 
         size_t max_background_threads;
-        std::chrono::milliseconds max_background_thread_waiting_time;
+        std::chrono::milliseconds max_background_executor_waiting_time;
+
+        std::chrono::milliseconds max_timer_queue_waiting_time;
 
         runtime_options() noexcept;
 
@@ -68,13 +70,15 @@ namespace concurrencpp {
 
         template<class executor_type, class... argument_types>
         std::shared_ptr<executor_type> make_executor(argument_types&&... arguments) {
-            static_assert(std::is_base_of_v<concurrencpp::executor, executor_type>,
-                          "concurrencpp::runtime::make_executor - <<executor_type>> is not a derived class of concurrencpp::executor.");
+            static_assert(
+                std::is_base_of_v<concurrencpp::executor, executor_type>,
+                "concurrencpp::runtime::make_executor - <<executor_type>> is not a derived class of concurrencpp::executor.");
 
             static_assert(std::is_constructible_v<executor_type, argument_types...>,
                           "concurrencpp::runtime::make_executor - can not build <<executor_type>> from <<argument_types...>>.");
 
-            static_assert(!std::is_abstract_v<executor_type>, "concurrencpp::runtime::make_executor - <<executor_type>> is an abstract class.");
+            static_assert(!std::is_abstract_v<executor_type>,
+                          "concurrencpp::runtime::make_executor - <<executor_type>> is an abstract class.");
 
             auto executor = std::make_shared<executor_type>(std::forward<argument_types>(arguments)...);
             m_registered_executors.register_executor(executor);

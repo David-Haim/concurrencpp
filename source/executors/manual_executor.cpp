@@ -4,12 +4,13 @@
 using concurrencpp::manual_executor;
 
 manual_executor::manual_executor() :
-    derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {}
+    derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {
+}
 
 void manual_executor::enqueue(concurrencpp::task task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     m_tasks.emplace_back(std::move(task));
@@ -21,7 +22,7 @@ void manual_executor::enqueue(concurrencpp::task task) {
 void manual_executor::enqueue(std::span<concurrencpp::task> tasks) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     m_tasks.insert(m_tasks.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
@@ -73,7 +74,7 @@ size_t manual_executor::loop_impl(size_t max_count) {
     }
 
     if (shutdown_requested()) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     return executed;
@@ -120,7 +121,7 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
     }
 
     if (shutdown_requested()) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     return executed;
@@ -129,7 +130,7 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
 void manual_executor::wait_for_tasks_impl(size_t count) {
     if (count == 0) {
         if (shutdown_requested()) {
-            details::throw_executor_shutdown_exception(name);
+            details::throw_runtime_shutdown_exception(name);
         }
         return;
     }
@@ -140,7 +141,7 @@ void manual_executor::wait_for_tasks_impl(size_t count) {
     });
 
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     assert(m_tasks.size() >= count);
@@ -155,7 +156,7 @@ size_t manual_executor::wait_for_tasks_impl(size_t count, std::chrono::time_poin
     });
 
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     return m_tasks.size();
@@ -192,7 +193,7 @@ size_t manual_executor::loop_for(size_t max_count, std::chrono::milliseconds max
 size_t manual_executor::clear() {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_executor_shutdown_exception(name);
+        details::throw_runtime_shutdown_exception(name);
     }
 
     const auto tasks = std::move(m_tasks);

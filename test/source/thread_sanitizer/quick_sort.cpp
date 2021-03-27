@@ -3,7 +3,11 @@
 #include <algorithm>
 #include <iostream>
 
-concurrencpp::result<void> quick_sort(concurrencpp::executor_tag, std::shared_ptr<concurrencpp::thread_pool_executor> tp, int* a, int lo, int hi);
+concurrencpp::result<void> quick_sort(concurrencpp::executor_tag,
+                                      std::shared_ptr<concurrencpp::thread_pool_executor> tp,
+                                      int* a,
+                                      int lo,
+                                      int hi);
 
 int main() {
     std::cout << "Starting parallel quick sort test" << std::endl;

@@ -44,8 +44,11 @@ namespace concurrencpp {
         const bool m_force_rescheduling;
 
        public:
-        via_awaitable(details::consumer_result_state_ptr<type> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept :
-            details::awaitable_base<type>(std::move(state)), m_await_context(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
+        via_awaitable(details::consumer_result_state_ptr<type> state,
+                      std::shared_ptr<concurrencpp::executor> executor,
+                      bool force_rescheduling) noexcept :
+            details::awaitable_base<type>(std::move(state)),
+            m_await_context(executor), m_force_rescheduling(force_rescheduling) {}
 
         bool await_suspend(details::coroutine_handle<void> caller_handle) {
             assert(static_cast<bool>(this->m_state));
@@ -88,8 +91,11 @@ namespace concurrencpp {
         const bool m_force_rescheduling;
 
        public:
-        resolve_via_awaitable(details::consumer_result_state_ptr<type> state, std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling) noexcept :
-            details::awaitable_base<type>(std::move(state)), m_await_context(std::move(executor)), m_force_rescheduling(force_rescheduling) {}
+        resolve_via_awaitable(details::consumer_result_state_ptr<type> state,
+                              std::shared_ptr<concurrencpp::executor> executor,
+                              bool force_rescheduling) noexcept :
+            details::awaitable_base<type>(std::move(state)),
+            m_await_context(executor), m_force_rescheduling(force_rescheduling) {}
 
         bool await_suspend(details::coroutine_handle<void> caller_handle) {
             assert(static_cast<bool>(this->m_state));

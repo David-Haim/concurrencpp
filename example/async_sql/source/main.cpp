@@ -54,7 +54,8 @@ result<std::shared_ptr<db_connection>> connect_async() {
         result_promise<std::shared_ptr<db_connection>> m_result_promise;
 
        public:
-        connection_callback(result_promise<std::shared_ptr<db_connection>> result_promise) noexcept : m_result_promise(std::move(result_promise)) {}
+        connection_callback(result_promise<std::shared_ptr<db_connection>> result_promise) noexcept :
+            m_result_promise(std::move(result_promise)) {}
 
         void on_connection(std::exception_ptr error, std::shared_ptr<db_connection> connection) override {
             if (error) {

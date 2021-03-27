@@ -20,7 +20,12 @@ namespace concurrencpp::details {
     }
 
     template<class callable_type>
-    auto bind_with_try_catch(callable_type&& callable) {
+    auto&& bind_with_try_catch_impl(std::true_type /*is_noexcept*/, callable_type&& callable) {
+        return std::forward<callable_type>(callable);
+    }
+
+    template<class callable_type>
+    auto bind_with_try_catch_impl(std::false_type /*is_noexcept*/, callable_type&& callable) {
         return [callable = std::forward<callable_type>(callable)]() mutable noexcept {
             try {
                 callable();
@@ -30,16 +35,15 @@ namespace concurrencpp::details {
         };  // no arguments to bind
     }
 
+    template<class callable_type>
+    auto bind_with_try_catch(callable_type&& callable) {
+        using is_noexcept = typename std::is_nothrow_invocable<callable_type>::type;
+        return bind_with_try_catch_impl(is_noexcept {}, std::forward<callable_type>(callable));
+    }
+
     template<class callable_type, class... argument_types>
     auto bind_with_try_catch(callable_type&& callable, argument_types&&... arguments) {
-        return [callable = std::forward<callable_type>(callable),
-                tuple = std::make_tuple(std::forward<argument_types>(arguments)...)]() mutable noexcept -> decltype(auto) {
-            try {
-                return std::apply(callable, tuple);
-            } catch (...) {
-                // do nothing
-            }
-        };
+        return bind_with_try_catch(bind(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...));
     }
 }  // namespace concurrencpp::details
 

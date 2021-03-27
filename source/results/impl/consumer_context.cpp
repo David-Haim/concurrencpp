@@ -126,7 +126,7 @@ void wait_context::notify() noexcept {
  * when_any_context
  */
 
-when_any_context::when_any_context(std::shared_ptr<when_any_state_base> when_any_state, size_t index) noexcept :
+when_any_context::when_any_context(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept :
     m_when_any_state(std::move(when_any_state)), m_index(index) {}
 
 void when_any_context::operator()() const noexcept {
@@ -201,28 +201,28 @@ void consumer_context::set_await_via_context(await_via_context& await_ctx) noexc
     storage::build(m_storage.await_via_ctx, std::addressof(await_ctx));
 }
 
-void consumer_context::set_wait_context(std::shared_ptr<wait_context> wait_ctx) noexcept {
+void consumer_context::set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::wait;
-    storage::build(m_storage.wait_ctx, std::move(wait_ctx));
+    storage::build(m_storage.wait_ctx, wait_ctx);
 }
 
-void consumer_context::set_when_all_context(std::shared_ptr<when_all_state_base> when_all_state) noexcept {
+void consumer_context::set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_all;
-    storage::build(m_storage.when_all_ctx, std::move(when_all_state));
+    storage::build(m_storage.when_all_ctx, when_all_state);
 }
 
-void consumer_context::set_when_any_context(std::shared_ptr<when_any_state_base> when_any_ctx, size_t index) noexcept {
+void consumer_context::set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
-    storage::build(m_storage.when_any_ctx, std::move(when_any_ctx), index);
+    storage::build(m_storage.when_any_ctx, when_any_ctx, index);
 }
 
-void consumer_context::set_shared_context(std::weak_ptr<shared_result_state_base> shared_result_state) noexcept {
+void consumer_context::set_shared_context(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::shared;
-    storage::build(m_storage.shared_ctx, std::move(shared_result_state));
+    storage::build(m_storage.shared_ctx, shared_result_state);
 }
 
 void consumer_context::resume_consumer() const noexcept {

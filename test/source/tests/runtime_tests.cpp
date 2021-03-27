@@ -1,8 +1,7 @@
 #include "concurrencpp/concurrencpp.h"
-#include "tests/all_tests.h"
 
-#include "tester/tester.h"
-#include "helpers/assertions.h"
+#include "infra/tester.h"
+#include "infra/assertions.h"
 
 namespace concurrencpp::tests {
     void test_runtime_constructor();
@@ -36,10 +35,10 @@ namespace concurrencpp::tests {
 void concurrencpp::tests::test_runtime_constructor() {
     concurrencpp::runtime_options opts;
     opts.max_cpu_threads = 3;
-    opts.max_cpu_thread_waiting_time = std::chrono::milliseconds(12345);
+    opts.max_thread_pool_executor_waiting_time = std::chrono::milliseconds(12345);
 
     opts.max_background_threads = 7;
-    opts.max_background_thread_waiting_time = std::chrono::milliseconds(54321);
+    opts.max_background_executor_waiting_time = std::chrono::milliseconds(54321);
 
     concurrencpp::runtime runtime(opts);
     auto dummy_ex = runtime.make_executor<dummy_executor>("dummy_executor", 1, 4.4f);
@@ -56,9 +55,9 @@ void concurrencpp::tests::test_runtime_constructor() {
     assert_false(dummy_ex->shutdown_requested());
 
     assert_equal(runtime.thread_pool_executor()->max_concurrency_level(), opts.max_cpu_threads);
-    assert_equal(runtime.thread_pool_executor()->max_worker_idle_time(), opts.max_cpu_thread_waiting_time);
+    assert_equal(runtime.thread_pool_executor()->max_worker_idle_time(), opts.max_thread_pool_executor_waiting_time);
     assert_equal(runtime.background_executor()->max_concurrency_level(), opts.max_background_threads);
-    assert_equal(runtime.background_executor()->max_worker_idle_time(), opts.max_background_thread_waiting_time);
+    assert_equal(runtime.background_executor()->max_worker_idle_time(), opts.max_background_executor_waiting_time);
 }
 
 void concurrencpp::tests::test_runtime_destructor() {
@@ -87,7 +86,9 @@ void concurrencpp::tests::test_runtime_version() {
     assert_equal(std::get<2>(version), concurrencpp::details::consts::k_concurrencpp_version_revision);
 }
 
-void concurrencpp::tests::test_runtime() {
+using namespace concurrencpp::tests;
+
+int main() {
     tester tester("runtime test");
 
     tester.add_step("constructor", test_runtime_constructor);
@@ -95,4 +96,5 @@ void concurrencpp::tests::test_runtime() {
     tester.add_step("version", test_runtime_version);
 
     tester.launch_test();
+    return 0;
 }

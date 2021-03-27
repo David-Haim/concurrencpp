@@ -25,26 +25,27 @@ int main() {
     test_result_resolve_via(thread_executor);
 }
 
-#include "tests/test_utils/make_result_array.h"
+#include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 
 using namespace concurrencpp;
 using namespace std::chrono;
 
 namespace concurrencpp::tests {
-    template<class type, class method_functor, class converter_type>
-    void test_result_method_val(std::shared_ptr<thread_executor> te, method_functor&& tested_method, converter_type converter) {
+    template<class type, class method_functor>
+    void test_result_method_val(std::shared_ptr<thread_executor> te, method_functor&& tested_method, value_gen<type> converter) {
         const auto tp = system_clock::now() + seconds(2);
-        auto results = make_result_array<type>(1024, tp, te, converter);
+        auto results = result_gen<type>::make_result_array(1024, tp, te, converter);
 
         std::this_thread::sleep_until(tp);
 
         test_result_array(std::move(results), tested_method, converter);
     }
 
-    template<class type, class method_functor, class converter_type>
-    void test_result_method_ex(std::shared_ptr<thread_executor> te, method_functor&& tested_method, converter_type converter) {
+    template<class type, class method_functor>
+    void test_result_method_ex(std::shared_ptr<thread_executor> te, method_functor&& tested_method, value_gen<type> converter) {
         const auto tp = system_clock::now() + seconds(2);
-        auto results = make_exceptional_array<type>(1024, tp, te, converter);
+        auto results = result_gen<type>::make_exceptional_array(1024, tp, te, converter);
 
         std::this_thread::sleep_until(tp);
 
@@ -155,19 +156,18 @@ namespace concurrencpp::tests {
 
     template<class tested_method>
     void test_result_method(std::shared_ptr<thread_executor> te, tested_method&& method) {
-        tests::test_result_method_val<size_t>(te, method, converter<size_t> {});
-        tests::test_result_method_val<std::string>(te, method, converter<std::string> {});
-        tests::test_result_method_val<void>(te, method, converter<void> {});
-        tests::test_result_method_val<size_t&>(te, method, converter<size_t&> {});
-        tests::test_result_method_val<std::string&>(te, method, converter<std::string&> {});
+        tests::test_result_method_val<int>(te, method, value_gen<int> {});
+        tests::test_result_method_val<std::string>(te, method, value_gen<std::string> {});
+        tests::test_result_method_val<void>(te, method, value_gen<void> {});
+        tests::test_result_method_val<int&>(te, method, value_gen<int&> {});
+        tests::test_result_method_val<std::string&>(te, method, value_gen<std::string&> {});
 
-        tests::test_result_method_ex<size_t>(te, method, converter<size_t> {});
-        tests::test_result_method_ex<std::string>(te, method, converter<std::string> {});
-        tests::test_result_method_ex<void>(te, method, converter<void> {});
-        tests::test_result_method_ex<size_t&>(te, method, converter<size_t&> {});
-        tests::test_result_method_ex<std::string&>(te, method, converter<std::string&> {});
+        tests::test_result_method_ex<int>(te, method, value_gen<int> {});
+        tests::test_result_method_ex<std::string>(te, method, value_gen<std::string> {});
+        tests::test_result_method_ex<void>(te, method, value_gen<void> {});
+        tests::test_result_method_ex<int&>(te, method, value_gen<int&> {});
+        tests::test_result_method_ex<std::string&>(te, method, value_gen<std::string&> {});
     }
-
 }  // namespace concurrencpp::tests
 
 void test_result_get(std::shared_ptr<thread_executor> te) {

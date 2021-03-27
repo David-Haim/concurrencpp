@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_RESULT_TEST_EXECUTORS_H
 #define CONCURRENCPP_RESULT_TEST_EXECUTORS_H
 
-#include "concurrencpp/concurrencpp.h"
+#include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp::tests {
     struct executor_enqueue_exception {};

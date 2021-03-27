@@ -16,8 +16,8 @@ timer_state_base::timer_state_base(size_t due_time,
                                    std::weak_ptr<concurrencpp::timer_queue> timer_queue,
                                    bool is_oneshot) noexcept :
     m_timer_queue(std::move(timer_queue)),
-    m_executor(std::move(executor)), m_due_time(due_time), m_frequency(frequency), m_deadline(make_deadline(milliseconds(due_time))), m_cancelled(false),
-    m_is_oneshot(is_oneshot) {
+    m_executor(std::move(executor)), m_due_time(due_time), m_frequency(frequency), m_deadline(make_deadline(milliseconds(due_time))),
+    m_cancelled(false), m_is_oneshot(is_oneshot) {
     assert(static_cast<bool>(m_executor));
 }
 
