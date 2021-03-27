@@ -1,8 +1,6 @@
 #ifndef CONCURRENCPP_PRODUCER_CONTEXT_H
 #define CONCURRENCPP_PRODUCER_CONTEXT_H
 
-#include "concurrencpp/results/result_fwd_declerations.h"
-
 #include <exception>
 
 #include <cassert>

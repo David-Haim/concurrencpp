@@ -45,8 +45,7 @@ set(test_headers
         include/utils/executor_shutdowner.h
         include/utils/test_generators.h
         include/utils/throwing_executor.h
-        include/utils/test_ready_result.h
-        include/utils/test_ready_lazy_result.h)
+        include/utils/test_ready_result.h)
 
 # add_test(NAME <name> PATH <path> [PROPERTIES ...])
 #
@@ -97,8 +96,6 @@ add_test(NAME result_tests PATH source/tests/result_tests/result_tests.cpp)
 add_test(NAME result_resolving_tests PATH source/tests/result_tests/result_resolve_tests.cpp)
 add_test(NAME result_awaiting_tests PATH source/tests/result_tests/result_await_tests.cpp)
 
-add_test(NAME lazy_result_tests PATH source/tests/result_tests/lazy_result_tests.cpp)
-
 add_test(NAME shared_result_tests PATH source/tests/result_tests/shared_result_tests.cpp)
 add_test(NAME shared_result_resolving_tests PATH source/tests/result_tests/shared_result_resolve_tests.cpp)
 add_test(NAME shared_result_awaiting_tests PATH source/tests/result_tests/shared_result_await_tests.cpp)
@@ -107,7 +104,6 @@ add_test(NAME make_result_tests PATH source/tests/result_tests/make_result_tests
 add_test(NAME result_promise_tests PATH source/tests/result_tests/result_promise_tests.cpp)
 add_test(NAME when_all_tests PATH source/tests/result_tests/when_all_tests.cpp)
 add_test(NAME when_any_tests PATH source/tests/result_tests/when_any_tests.cpp)
-add_test(NAME resume_on PATH source/tests/result_tests/resume_on_tests.cpp)
 
 add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
 add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)
@@ -125,6 +121,5 @@ add_test(NAME tsan_shared_result_tests PATH source/thread_sanitizer/shared_resul
 add_test(NAME tsan_when_all_tests PATH source/thread_sanitizer/when_all.cpp)
 add_test(NAME tsan_when_any_tests PATH source/thread_sanitizer/when_any.cpp)
 add_test(NAME tsan_fibonacci PATH source/thread_sanitizer/fibonacci.cpp)
-add_test(NAME tsan_lazy_fibonacci PATH source/thread_sanitizer/lazy_fibonacci.cpp)
 add_test(NAME tsan_quick_sort PATH source/thread_sanitizer/quick_sort.cpp)
 add_test(NAME tsan_matrix_multiplication PATH source/thread_sanitizer/matrix_multiplication.cpp)

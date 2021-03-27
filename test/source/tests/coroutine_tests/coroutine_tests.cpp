@@ -22,23 +22,8 @@ namespace concurrencpp::tests {
     void test_recursive_coroutines_impl();
     void test_recursive_coroutines();
 
-    template<class result_type>
-    result_type test_combo_coroutine_impl(std::shared_ptr<thread_executor> ex, const bool terminate_by_exception);
-
+    result<void> test_combo_coroutine_impl(std::shared_ptr<thread_executor> ex, const bool terminate_by_exception);
     void test_combo_coroutine();
-
-    template<class type>
-    lazy_result<type> lazy_recursive_coroutine(std::shared_ptr<thread_executor> ex,
-                                               const size_t cur_depth,
-                                               const size_t max_depth,
-                                               const bool terminate_by_exception);
-
-    template<class type>
-    void test_lazy_recursive_coroutines_impl();
-    void test_lazy_recursive_coroutines();
-
-    void test_lazy_combo_coroutine();
-
 }  // namespace concurrencpp::tests
 
 template<class type>
@@ -89,8 +74,7 @@ void concurrencpp::tests::test_recursive_coroutines() {
     test_recursive_coroutines_impl<std::string&>();
 }
 
-template<class result_type>
-result_type concurrencpp::tests::test_combo_coroutine_impl(std::shared_ptr<thread_executor> ex, const bool terminate_by_exception) {
+result<void> concurrencpp::tests::test_combo_coroutine_impl(std::shared_ptr<thread_executor> ex, const bool terminate_by_exception) {
     auto int_result = co_await ex->submit([] {
         return value_gen<int>::default_value();
     });
@@ -128,7 +112,7 @@ void concurrencpp::tests::test_combo_coroutine() {
     {
         auto te = std::make_shared<concurrencpp::thread_executor>();
         executor_shutdowner es(te);
-        auto res = test_combo_coroutine_impl<result<void>>(te, false);
+        auto res = test_combo_coroutine_impl(te, false);
         res.wait();
         test_ready_result(std::move(res));
     }
@@ -137,76 +121,7 @@ void concurrencpp::tests::test_combo_coroutine() {
     {
         auto te = std::make_shared<concurrencpp::thread_executor>();
         executor_shutdowner es(te);
-        auto res = test_combo_coroutine_impl<result<void>>(te, true);
-        res.wait();
-        test_ready_result_custom_exception(std::move(res), 1234);
-    }
-}
-
-template<class type>
-concurrencpp::lazy_result<type> concurrencpp::tests::lazy_recursive_coroutine(std::shared_ptr<thread_executor> ex,
-                                                                              const size_t cur_depth,
-                                                                              const size_t max_depth,
-                                                                              const bool terminate_by_exception) {
-    co_await concurrencpp::resume_on(ex);
-
-    if (cur_depth < max_depth) {
-        co_return co_await lazy_recursive_coroutine<type>(ex, cur_depth + 1, max_depth, terminate_by_exception);
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-    if (terminate_by_exception) {
-        throw custom_exception(1234);
-    }
-
-    co_return value_gen<type>::default_value();
-}
-
-template<class type>
-void concurrencpp::tests::test_lazy_recursive_coroutines_impl() {
-    // value
-    {
-        auto ex = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(ex);
-        auto result = lazy_recursive_coroutine<type>(ex, 0, 20, false).run();
-        result.wait();
-        test_ready_result(std::move(result));
-    }
-
-    // exception
-    {
-        auto ex = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(ex);
-        auto result = lazy_recursive_coroutine<type>(ex, 0, 20, true).run();
-        result.wait();
-        test_ready_result_custom_exception(std::move(result), 1234);
-    }
-}
-
-void concurrencpp::tests::test_lazy_recursive_coroutines() {
-    test_lazy_recursive_coroutines_impl<int>();
-    test_lazy_recursive_coroutines_impl<std::string>();
-    test_lazy_recursive_coroutines_impl<void>();
-    test_lazy_recursive_coroutines_impl<int&>();
-    test_lazy_recursive_coroutines_impl<std::string&>();
-}
-
-void concurrencpp::tests::test_lazy_combo_coroutine() {
-    // value
-    {
-        auto te = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(te);
-        auto res = test_combo_coroutine_impl<lazy_result<void>>(te, false).run();
-        res.wait();
-        test_ready_result(std::move(res));
-    }
-
-    // exception
-    {
-        auto te = std::make_shared<concurrencpp::thread_executor>();
-        executor_shutdowner es(te);
-        auto res = test_combo_coroutine_impl<lazy_result<void>>(te, true).run();
+        auto res = test_combo_coroutine_impl(te, true);
         res.wait();
         test_ready_result_custom_exception(std::move(res), 1234);
     }
@@ -219,8 +134,6 @@ int main() {
 
     tester.add_step("recursive coroutines", test_recursive_coroutines);
     tester.add_step("combo coroutine", test_combo_coroutine);
-    tester.add_step("lazy recursive coroutines", test_lazy_recursive_coroutines);
-    tester.add_step("lazy combo coroutine", test_lazy_combo_coroutine);
 
     tester.launch_test();
     return 0;

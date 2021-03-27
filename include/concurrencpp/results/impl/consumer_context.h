@@ -57,7 +57,8 @@ namespace concurrencpp::details {
         coroutine_handle<void> m_coro_handle;
 
        public:
-        when_any_context(coroutine_handle<void> coro_handle) noexcept;
+        when_any_context(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept;
+        when_any_context(const when_any_context&) noexcept = default;
 
         bool fulfilled() const noexcept;
         result_state_base* completed_result() const noexcept;
@@ -99,8 +100,11 @@ namespace concurrencpp::details {
         void resume_consumer(result_state_base* self) const noexcept;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
+        void set_await_via_context(await_via_context& await_ctx) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
-        void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
+        void set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept;
+        void set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept;
+        void set_shared_context(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept;
     };
 }  // namespace concurrencpp::details
 

@@ -20,10 +20,6 @@ namespace concurrencpp::details::consts {
     inline const char* k_result_promise_get_result_already_retrieved_error_msg =
         "result_promise::get_result() - result was already retrieved.";
 
-    /*
-     * result
-     */
-
     inline const char* k_result_status_error_msg = "result::status() - result is empty.";
 
     inline const char* k_result_get_error_msg = "result::get() - result is empty.";
@@ -43,9 +39,8 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - Associated task was interrupted abnormally";
 
-    /*
-     * when_xxx
-     */
+    inline const char* k_executor_exception_error_msg =
+        "concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
 
     inline const char* k_make_exceptional_result_exception_null_error_msg = "make_exception_result() - given exception_ptr is null.";
 
