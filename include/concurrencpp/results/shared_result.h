@@ -102,29 +102,9 @@ namespace concurrencpp {
             return shared_awaitable<type> {m_state};
         }
 
-        auto await_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_shared_result_await_via_error_msg);
-
-            if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_shared_result_await_via_executor_null_error_msg);
-            }
-
-            return shared_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};
-        }
-
         auto resolve() {
             throw_if_empty(details::consts::k_shared_result_resolve_error_msg);
             return shared_resolve_awaitable<type> {m_state};
-        }
-
-        auto resolve_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_shared_result_resolve_via_error_msg);
-
-            if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_shared_result_resolve_via_executor_null_error_msg);
-            }
-
-            return shared_resolve_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};
         }
     };
 }  // namespace concurrencpp

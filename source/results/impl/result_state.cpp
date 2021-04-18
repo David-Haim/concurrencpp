@@ -1,7 +1,6 @@
 #include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/impl/shared_result_state.h"
 
-using concurrencpp::details::await_via_context;
 using concurrencpp::details::result_state_base;
 
 void result_state_base::assert_done() const noexcept {
@@ -45,36 +44,6 @@ bool result_state_base::await(coroutine_handle<void> caller_handle) noexcept {
     }
 
     return idle;  // if idle = true, suspend
-}
-
-bool result_state_base::await_via_ready(await_via_context& await_ctx, bool force_rescheduling) noexcept {
-    assert_done();
-
-    if (!force_rescheduling) {
-        return false;  // resume caller.
-    }
-
-    await_ctx();
-    return true;
-}
-
-bool result_state_base::await_via(await_via_context& await_ctx, bool force_rescheduling) noexcept {
-    const auto state = m_pc_state.load(std::memory_order_acquire);
-    if (state == pc_state::producer_done) {
-        return await_via_ready(await_ctx, force_rescheduling);
-    }
-
-    m_consumer.set_await_via_context(await_ctx);
-
-    auto expected_state = pc_state::idle;
-    const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
-
-    if (idle) {
-        return true;
-    }
-
-    // the result is available
-    return await_via_ready(await_ctx, force_rescheduling);
 }
 
 void result_state_base::when_all(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept {

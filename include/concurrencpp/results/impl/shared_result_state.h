@@ -10,13 +10,6 @@ namespace concurrencpp::details {
         shared_await_context* next = nullptr;
         coroutine_handle<void> caller_handle;
     };
-
-    struct shared_await_via_context {
-        shared_await_via_context* next = nullptr;
-        await_via_context await_context;
-
-        shared_await_via_context(const std::shared_ptr<executor>& executor) noexcept;
-    };
 }  // namespace concurrencpp::details
 
 namespace concurrencpp::details {
@@ -25,12 +18,10 @@ namespace concurrencpp::details {
        protected:
         mutable std::shared_mutex m_lock;
         shared_await_context* m_awaiters = nullptr;
-        shared_await_via_context* m_via_awaiters = nullptr;
         std::condition_variable_any m_condition;
         bool m_ready = false;
 
         void await_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_context& awaiter) noexcept;
-        void await_via_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_via_context& awaiter) noexcept;
         void wait_impl(std::unique_lock<std::shared_mutex>& write_lock) noexcept;
         bool wait_for_impl(std::unique_lock<std::shared_mutex>& write_lock, std::chrono::milliseconds ms) noexcept;
 
@@ -91,34 +82,6 @@ namespace concurrencpp::details {
             await_impl(write_lock, awaiter);
             write_lock.unlock();
 
-            return true;
-        }
-
-        bool await_via(shared_await_via_context& awaiter, const bool force_rescheduling) noexcept {
-            auto resume_if_ready = [&awaiter, force_rescheduling]() mutable {
-                if (force_rescheduling) {
-                    awaiter.await_context();
-                }
-
-                return force_rescheduling;
-            };
-
-            {
-                std::shared_lock<std::shared_mutex> read_lock(m_lock);
-                if (m_ready) {
-                    read_lock.unlock();
-                    return resume_if_ready();
-                }
-            }
-
-            std::unique_lock<std::shared_mutex> write_lock(m_lock);
-            if (m_ready) {
-                write_lock.unlock();
-                return resume_if_ready();
-            }
-
-            await_via_impl(write_lock, awaiter);
-            write_lock.unlock();
             return true;
         }
 

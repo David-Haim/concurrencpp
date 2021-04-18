@@ -6,7 +6,14 @@ namespace concurrencpp {
 
     template<class type>
     class result;
+
     template<class type>
+    class lazy_result;
+
+	template<class type>
+    class shared_result;
+
+	template<class type>
     class result_promise;
 
     class runtime;

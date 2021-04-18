@@ -21,6 +21,10 @@ namespace concurrencpp::tests {
     void test_initialy_rescheduled_result_promise_value();
     void test_initialy_rescheduled_result_promise_exception();
     void test_initialy_rescheduled_result_promise();
+
+    void test_lazy_result_promise_value();
+    void test_lazy_result_promise_exception();
+    void test_lazy_result_promise();
 }  // namespace concurrencpp::tests
 
 using worker_ptr = std::shared_ptr<concurrencpp::worker_thread_executor>;
@@ -362,6 +366,81 @@ void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
     test_initialy_rescheduled_result_promise_exception();
 }
 
+namespace concurrencpp::tests {
+    lazy_result<std::pair<int, std::string>> lazy_result_coro(worker_ptr w0,
+                                                              worker_ptr w1,
+                                                              worker_ptr w2,
+                                                              worker_ptr w3,
+                                                              testing_stub stub,
+                                                              const bool terminate_by_exception) {
+        int i = 0;
+        std::string s = "";
+
+        co_await w0->submit([] {
+        });
+
+        ++i;
+        s += "a";
+
+        co_await w1->submit([] {
+        });
+
+        ++i;
+        s += "a";
+
+        co_await w2->submit([] {
+        });
+
+        ++i;
+        s += "a";
+
+        co_await w3->submit([] {
+        });
+
+        if (terminate_by_exception) {
+            throw custom_exception(1234);
+        }
+
+        co_return std::make_pair(i, s);
+    }
+}  // namespace concurrencpp::tests
+
+void concurrencpp::tests::test_lazy_result_promise_value() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+    auto [i, s] = lazy_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), false).run().get();
+
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
+
+    assert_equal(i, 3);
+    assert_equal(s, "aaa");
+
+    shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_lazy_result_promise_exception() {
+    worker_ptr workers[4];
+    init_workers(workers);
+
+    object_observer observer;
+
+    auto result = lazy_result_coro(workers[0], workers[1], workers[2], workers[3], observer.get_testing_stub(), true).run();
+
+    result.wait();
+    test_ready_result_custom_exception(std::move(result), 1234);
+
+    assert_true(observer.wait_destruction_count(1, std::chrono::seconds(10)));
+
+    shutdown_workers(workers);
+}
+
+void concurrencpp::tests::test_lazy_result_promise() {
+    test_lazy_result_promise_value();
+    test_lazy_result_promise_exception();
+}
+
 using namespace concurrencpp::tests;
 
 int main() {
@@ -371,6 +450,7 @@ int main() {
     tester.add_step("initialy_resumed_result_promise", test_initialy_resumed_result_promise);
     tester.add_step("initialy_rescheduled_null_result_promise", test_initialy_rescheduled_null_result_promise);
     tester.add_step("initialy_rescheduled_result_promise", test_initialy_rescheduled_result_promise);
+    tester.add_step("lazy_coroutine_promise", test_lazy_result_promise);
 
     tester.launch_test();
 

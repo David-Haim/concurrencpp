@@ -15,14 +15,20 @@ namespace concurrencpp {
     class shared_result;
 
     template<class type>
+    class lazy_result;
+
+    template<class type>
     class result_promise;
 
     template<class type>
     class awaitable;
+
     template<class type>
     class via_awaitable;
+
     template<class type>
     class resolve_awaitable;
+
     template<class type>
     class resolve_via_awaitable;
 
@@ -41,6 +47,9 @@ namespace concurrencpp::details {
 
     template<class type>
     class shared_result_state;
+
+    template<class type>
+    class lazy_result_state;
 
     struct executor_bulk_tag {};
 

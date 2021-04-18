@@ -6,9 +6,7 @@ void test_result_get(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_wait(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_wait_for(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_await(std::shared_ptr<concurrencpp::thread_executor> te);
-void test_result_await_via(std::shared_ptr<concurrencpp::thread_executor> te);
 void test_result_resolve(std::shared_ptr<concurrencpp::thread_executor> te);
-void test_result_resolve_via(std::shared_ptr<concurrencpp::thread_executor> te);
 
 int main() {
     std::cout << "Starting concurrencpp::result test" << std::endl;
@@ -20,9 +18,7 @@ int main() {
     test_result_wait(thread_executor);
     test_result_wait_for(thread_executor);
     test_result_await(thread_executor);
-    test_result_await_via(thread_executor);
     test_result_resolve(thread_executor);
-    test_result_resolve_via(thread_executor);
 }
 
 #include "utils/test_generators.h"
@@ -97,27 +93,6 @@ namespace concurrencpp::tests {
         }
     };
 
-    class await_via_method {
-
-       private:
-        std::shared_ptr<thread_executor> m_executor;
-
-        template<class type>
-        result<type> await_task(result<type> res) {
-            co_return co_await res.await_via(m_executor, true);
-        }
-
-       public:
-        await_via_method(std::shared_ptr<thread_executor> executor) noexcept : m_executor(std::move(executor)) {}
-
-        template<class type>
-        result<type> operator()(result<type> res) {
-            auto wrapper_res = await_task(std::move(res));
-            wrapper_res.wait();
-            return std::move(wrapper_res);
-        }
-    };
-
     class resolve_method {
 
        private:
@@ -127,26 +102,6 @@ namespace concurrencpp::tests {
         }
 
        public:
-        template<class type>
-        result<type> operator()(result<type> res) {
-            auto wrapper_res = await_task(std::move(res));
-            return wrapper_res.get();
-        }
-    };
-
-    class resolve_via_method {
-
-       private:
-        std::shared_ptr<thread_executor> m_executor;
-
-        template<class type>
-        result<result<type>> await_task(result<type> res) {
-            co_return co_await res.resolve_via(m_executor, true);
-        }
-
-       public:
-        resolve_via_method(std::shared_ptr<thread_executor> executor) noexcept : m_executor(std::move(executor)) {}
-
         template<class type>
         result<type> operator()(result<type> res) {
             auto wrapper_res = await_task(std::move(res));
@@ -202,26 +157,10 @@ void test_result_await(std::shared_ptr<thread_executor> te) {
     std::cout << "================================" << std::endl;
 }
 
-void test_result_await_via(std::shared_ptr<thread_executor> te) {
-    std::cout << "Testing result::await_via()" << std::endl;
-
-    tests::test_result_method(te, tests::await_via_method {te});
-
-    std::cout << "================================" << std::endl;
-}
-
 void test_result_resolve(std::shared_ptr<concurrencpp::thread_executor> te) {
     std::cout << "Testing result::resolve()" << std::endl;
 
     tests::test_result_method(te, tests::resolve_method {});
-
-    std::cout << "================================" << std::endl;
-}
-
-void test_result_resolve_via(std::shared_ptr<concurrencpp::thread_executor> te) {
-    std::cout << "Testing result::resolve_via()" << std::endl;
-
-    tests::test_result_method(te, tests::resolve_via_method {te});
 
     std::cout << "================================" << std::endl;
 }
