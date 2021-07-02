@@ -5,6 +5,7 @@
 #include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/impl/lazy_result_state.h"
+#include "concurrencpp/results/impl/return_value_struct.h"
 
 #include <vector>
 
@@ -110,23 +111,6 @@ namespace concurrencpp::details {
 
         void unhandled_exception() const noexcept {}
         void return_void() const noexcept {}
-    };
-
-    template<class derived_type, class type>
-    struct return_value_struct {
-        template<class return_type>
-        void return_value(return_type&& value) {
-            auto self = static_cast<derived_type*>(this);
-            self->set_result(std::forward<return_type>(value));
-        }
-    };
-
-    template<class derived_type>
-    struct return_value_struct<derived_type, void> {
-        void return_void() noexcept {
-            auto self = static_cast<derived_type*>(this);
-            self->set_result();
-        }
     };
 
     struct result_publisher : public suspend_always {

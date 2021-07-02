@@ -1,5 +1,4 @@
 #include "concurrencpp/results/impl/consumer_context.h"
-#include "concurrencpp/results/impl/shared_result_state.h"
 
 #include "concurrencpp/executors/executor.h"
 
@@ -140,11 +139,6 @@ void consumer_context::clear() noexcept {
             storage::destroy(m_storage.when_any_ctx);
             return;
         }
-
-        case consumer_status::shared: {
-            storage::destroy(m_storage.shared_ctx);
-            return;
-        }
     }
 
     assert(false);
@@ -172,12 +166,6 @@ void consumer_context::set_when_any_context(const std::shared_ptr<when_any_state
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
     storage::build(m_storage.when_any_ctx, when_any_ctx, index);
-}
-
-void consumer_context::set_shared_context(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::shared;
-    storage::build(m_storage.shared_ctx, shared_result_state);
 }
 
 void consumer_context::resume_consumer() const noexcept {
@@ -208,15 +196,6 @@ void consumer_context::resume_consumer() const noexcept {
         case consumer_status::when_any: {
             const auto when_any_ctx = m_storage.when_any_ctx;
             return when_any_ctx();
-        }
-
-        case consumer_status::shared: {
-            const auto shared_state = m_storage.shared_ctx.lock();
-            if (static_cast<bool>(shared_state)) {
-                shared_state->on_result_ready();
-            }
-
-            return;
         }
     }
 
