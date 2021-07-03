@@ -31,10 +31,27 @@ namespace concurrencpp::details {
             throw_if_empty_impl(error_message, std::forward<result_types>(results)...);
         }
 
+        template<class type>
+        static result_state_base* get_state_base(result<type>& result) noexcept {
+            return result.m_state.get();
+        }
+
+        template<std::size_t... is, typename tuple_type>
+        static result_state_base* at_impl(std::index_sequence<is...>, tuple_type& tuple, size_t n) noexcept {
+            result_state_base* bases[] = {get_state_base(std::get<is>(tuple))...};
+            return bases[n];
+        }
+
        public:
         template<class type>
         static result_state<type>& get_state(result<type>& result) noexcept {
             return *result.m_state;
+        }
+
+        template<typename tuple_type>
+        static result_state_base* at(tuple_type& tuple, size_t n) noexcept {
+            auto seq = std::make_index_sequence<std::tuple_size<tuple_type>::value>();
+            return at_impl(seq, tuple, n);
         }
 
         template<class... result_types>
@@ -48,103 +65,25 @@ namespace concurrencpp::details {
                 throw_if_empty_single(error_message, *begin);
             }
         }
-    };
 
-    template<class... result_types>
-    class when_all_tuple_state final :
-        public when_all_state_base,
-        public std::enable_shared_from_this<when_all_tuple_state<result_types...>> {
+        class when_all_awaitable {
 
-        using tuple_type = std::tuple<result_types...>;
+           private:
+            result_state_base& m_state;
 
-       private:
-        tuple_type m_tuple;
-        producer_result_state_ptr<tuple_type> m_state_ptr;
+           public:
+            when_all_awaitable(result_state_base& state) noexcept : m_state(state) {}
 
-        template<class type>
-        void set_state(result<type>& result) noexcept {
-            auto& state_ref = when_result_helper::get_state(result);
-            state_ref.when_all(this->shared_from_this());
-        }
-
-       public:
-        when_all_tuple_state(result_types&&... results) noexcept :
-            m_tuple(std::forward<result_types>(results)...), m_state_ptr(new result_state<tuple_type>()) {
-            m_counter = sizeof...(result_types);
-        }
-
-        void set_state() noexcept {
-            std::unique_lock<std::recursive_mutex> lock(m_lock);
-            std::apply(
-                [this](auto&... result) {
-                    (this->set_state(result), ...);
-                },
-                m_tuple);
-        }
-
-        void on_result_ready() noexcept override {
-            if (m_counter.fetch_sub(1, std::memory_order_acq_rel) != 1) {
-                return;
+            bool await_ready() const noexcept {
+                return false;
             }
 
-            std::unique_lock<std::recursive_mutex> lock(m_lock);
-            auto state = std::move(m_state_ptr);
-            auto tuple = std::move(m_tuple);
-            lock.unlock();
-
-            state->set_result(std::move(tuple));
-        }
-
-        result<tuple_type> get_result() noexcept {
-            return {m_state_ptr.get()};
-        }
-    };
-
-    template<class type>
-    class when_all_vector_state final : public when_all_state_base, public std::enable_shared_from_this<when_all_vector_state<type>> {
-
-       private:
-        std::vector<type> m_vector;
-        producer_result_state_ptr<std::vector<type>> m_state_ptr;
-
-        template<class given_type>
-        void set_state(result<given_type>& result) noexcept {
-            auto& state_ref = when_result_helper::get_state(result);
-            state_ref.when_all(this->shared_from_this());
-        }
-
-       public:
-        template<class iterator_type>
-        when_all_vector_state(iterator_type begin, iterator_type end) :
-            m_vector(std::make_move_iterator(begin), std::make_move_iterator(end)),
-            m_state_ptr(new result_state<std::vector<type>>()) {
-            m_counter = m_vector.size();
-        }
-
-        void set_state() noexcept {
-            std::unique_lock<std::recursive_mutex> lock(m_lock);
-            for (auto& result : m_vector) {
-                set_state(result);
-            }
-            lock.unlock();
-        }
-
-        void on_result_ready() noexcept override {
-            if (m_counter.fetch_sub(1, std::memory_order_acq_rel) != 1) {
-                return;
+            bool await_suspend(std::coroutine_handle<void> coro_handle) noexcept {
+                return m_state.await(coro_handle);
             }
 
-            std::unique_lock<std::recursive_mutex> lock(m_lock);
-            auto state = std::move(m_state_ptr);
-            auto vector = std::move(m_vector);
-            lock.unlock();
-
-            state->set_result(std::move(vector));
-        }
-
-        result<std::vector<type>> get_result() noexcept {
-            return {m_state_ptr.get()};
-        }
+            void await_resume() const noexcept {}
+        };
     };
 }  // namespace concurrencpp::details
 
@@ -332,6 +271,38 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
+namespace concurrencpp::details {
+    template<class... result_types>
+    result<std::tuple<typename std::decay<result_types>::type...>> when_all_impl(result_types&&... results) {
+        std::tuple<typename std::decay<result_types>::type...> tuple = std::make_tuple(std::forward<result_types>(results)...);
+
+        for (size_t i = 0; i < std::tuple_size_v<decltype(tuple)>; i++) {
+            auto state_ptr = when_result_helper::at(tuple, i);
+            co_await when_result_helper::when_all_awaitable {*state_ptr};
+        }
+
+        co_return std::move(tuple);
+    }
+
+    template<class iterator_type>
+    result<std::vector<typename std::iterator_traits<iterator_type>::value_type>> when_all_impl(iterator_type begin,
+                                                                                                iterator_type end) {
+        using type = typename std::iterator_traits<iterator_type>::value_type;
+
+        if (begin == end) {
+            co_return std::vector<type> {};
+        }
+
+        std::vector<type> vector {std::make_move_iterator(begin), std::make_move_iterator(end)};
+
+        for (auto& result : vector) {
+            result = co_await result.resolve();
+        }
+
+        co_return std::move(vector);
+    }
+}  // namespace concurrencpp::details
+
 namespace concurrencpp {
     inline result<std::tuple<>> when_all() {
         return make_ready_result<std::tuple<>>();
@@ -341,28 +312,14 @@ namespace concurrencpp {
     result<std::tuple<typename std::decay<result_types>::type...>> when_all(result_types&&... results) {
         details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg,
                                                           std::forward<result_types>(results)...);
-
-        auto when_all_state = std::make_shared<details::when_all_tuple_state<typename std::decay<result_types>::type...>>(
-            std::forward<result_types>(results)...);
-        auto result = when_all_state->get_result();
-        when_all_state->set_state();
-        return std::move(result);
+        return details::when_all_impl(std::forward<result_types>(results)...);
     }
 
     template<class iterator_type>
     result<std::vector<typename std::iterator_traits<iterator_type>::value_type>> when_all(iterator_type begin, iterator_type end) {
         details::when_result_helper::throw_if_empty_range(details::consts::k_when_all_empty_result_error_msg, begin, end);
 
-        using type = typename std::iterator_traits<iterator_type>::value_type;
-
-        if (begin == end) {
-            return make_ready_result<std::vector<type>>();
-        }
-
-        auto when_all_state = std::make_shared<details::when_all_vector_state<type>>(begin, end);
-        auto result = when_all_state->get_result();
-        when_all_state->set_state();
-        return std::move(result);
+        return details::when_all_impl(begin, end);
     }
 
     template<class... result_types>

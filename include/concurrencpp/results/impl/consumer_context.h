@@ -50,17 +50,6 @@ namespace concurrencpp::details {
         void notify() noexcept;
     };
 
-    class when_all_state_base {
-
-       protected:
-        std::atomic_size_t m_counter;
-        std::recursive_mutex m_lock;
-
-       public:
-        virtual ~when_all_state_base() noexcept = default;
-        virtual void on_result_ready() noexcept = 0;
-    };
-
     class when_any_state_base {
 
        protected:
@@ -93,7 +82,6 @@ namespace concurrencpp::details {
         union storage {
             coroutine_handle<void> caller_handle;
             std::shared_ptr<wait_context> wait_ctx;
-            std::shared_ptr<when_all_state_base> when_all_ctx;
             when_any_context when_any_ctx;
 
             template<class type, class... argument_type>
@@ -122,7 +110,6 @@ namespace concurrencpp::details {
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
-        void set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept;
         void set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept;
     };
 }  // namespace concurrencpp::details

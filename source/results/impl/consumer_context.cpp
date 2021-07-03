@@ -130,11 +130,6 @@ void consumer_context::clear() noexcept {
             return;
         }
 
-        case consumer_status::when_all: {
-            storage::destroy(m_storage.when_all_ctx);
-            return;
-        }
-
         case consumer_status::when_any: {
             storage::destroy(m_storage.when_any_ctx);
             return;
@@ -154,12 +149,6 @@ void consumer_context::set_wait_context(const std::shared_ptr<wait_context>& wai
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::wait;
     storage::build(m_storage.wait_ctx, wait_ctx);
-}
-
-void consumer_context::set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::when_all;
-    storage::build(m_storage.when_all_ctx, when_all_state);
 }
 
 void consumer_context::set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept {
@@ -185,12 +174,6 @@ void consumer_context::resume_consumer() const noexcept {
             const auto wait_ctx = m_storage.wait_ctx;
             assert(static_cast<bool>(wait_ctx));
             return wait_ctx->notify();
-        }
-
-        case consumer_status::when_all: {
-            const auto when_all_ctx = m_storage.when_all_ctx;
-            assert(static_cast<bool>(when_all_ctx));
-            return when_all_ctx->on_result_ready();
         }
 
         case consumer_status::when_any: {
