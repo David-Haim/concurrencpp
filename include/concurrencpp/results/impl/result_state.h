@@ -25,7 +25,7 @@ namespace concurrencpp::details {
        public:
         void wait();
         bool await(coroutine_handle<void> caller_handle) noexcept;
-        when_any_status when_any(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept;
+        pc_state when_any(const std::shared_ptr<when_any_promise>& when_any_state) noexcept;
 
         void try_rewind_consumer() noexcept;
     };
@@ -156,7 +156,7 @@ namespace concurrencpp::details {
             }
         }
 
-        void complete_producer(coroutine_handle<void> done_handle = {}) noexcept {
+        void complete_producer(result_state_base* self /*for when_any*/, coroutine_handle<void> done_handle = {}) noexcept {
             m_done_handle = done_handle;
 
             const auto state_before = this->m_pc_state.exchange(pc_state::producer_done, std::memory_order_acq_rel);
@@ -164,7 +164,7 @@ namespace concurrencpp::details {
 
             switch (state_before) {
                 case pc_state::consumer_set: {
-                    m_consumer.resume_consumer();
+                    m_consumer.resume_consumer(self);
                     return;
                 }
 
@@ -213,7 +213,7 @@ namespace concurrencpp::details {
     struct producer_result_state_deleter {
         void operator()(result_state<type>* state_ptr) {
             assert(state_ptr != nullptr);
-            state_ptr->complete_producer();
+            state_ptr->complete_producer(state_ptr);
         }
     };
 

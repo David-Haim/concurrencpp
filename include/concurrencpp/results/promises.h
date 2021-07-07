@@ -141,7 +141,7 @@ namespace concurrencpp::details {
         }
 
         void complete_producer(coroutine_handle<void> done_handle) noexcept {
-            this->m_result_state.complete_producer(done_handle);
+            this->m_result_state.complete_producer(&m_result_state, done_handle);
         }
 
         result_publisher final_suspend() const noexcept {

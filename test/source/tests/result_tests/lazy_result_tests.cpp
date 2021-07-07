@@ -305,7 +305,7 @@ namespace concurrencpp::tests {
 
         auto done_result = co_await proxy_result.resolve();
 
-    	const auto thread_id_after = thread::get_current_virtual_id();
+        const auto thread_id_after = thread::get_current_virtual_id();
 
         assert_true(started);
         test_ready_lazy_result_custom_exception(std::move(done_result), id);

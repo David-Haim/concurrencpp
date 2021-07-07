@@ -186,7 +186,6 @@ namespace concurrencpp::tests {
 
 }  // namespace concurrencpp::tests
 
-
 template<class type>
 void concurrencpp::tests::test_shared_result_await_impl() {
     // empty result throws

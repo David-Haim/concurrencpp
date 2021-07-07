@@ -50,39 +50,29 @@ namespace concurrencpp::details {
         void notify() noexcept;
     };
 
-    class when_any_state_base {
-
-       protected:
-        std::atomic_bool m_fulfilled = false;
-        std::recursive_mutex m_lock;
-
-       public:
-        virtual ~when_any_state_base() noexcept = default;
-        virtual void on_result_ready(size_t) noexcept = 0;
-    };
-
-    class when_any_context {
-
+    class when_any_promise {
        private:
-        std::shared_ptr<when_any_state_base> m_when_any_state;
-        size_t m_index;
+        std::atomic_bool m_fulfilled = false;
+        result_state_base* m_completed_result = nullptr;
+        coroutine_handle<void> m_coro_handle;
 
        public:
-        when_any_context(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept;
-        when_any_context(const when_any_context&) noexcept = default;
+        when_any_promise(coroutine_handle<void> coro_handle) noexcept;
 
-        void operator()() const noexcept;
+        bool fulfilled() const noexcept;
+        result_state_base* completed_result() const noexcept;
+        void try_resume(result_state_base* completed_result) noexcept;
     };
 
     class consumer_context {
 
        private:
-        enum class consumer_status { idle, await, wait, when_all, when_any };
+        enum class consumer_status { idle, await, wait, when_any };
 
         union storage {
             coroutine_handle<void> caller_handle;
             std::shared_ptr<wait_context> wait_ctx;
-            when_any_context when_any_ctx;
+            std::shared_ptr<when_any_promise> when_any_ctx;
 
             template<class type, class... argument_type>
             static void build(type& o, argument_type&&... arguments) noexcept {
@@ -106,11 +96,11 @@ namespace concurrencpp::details {
         ~consumer_context() noexcept;
 
         void clear() noexcept;
-        void resume_consumer() const noexcept;
+        void resume_consumer(result_state_base* self) const noexcept;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
-        void set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept;
+        void set_when_any_context(const std::shared_ptr<when_any_promise>& when_any_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
 

@@ -17,17 +17,14 @@ namespace concurrencpp::tests {
         co_await concurrencpp::resume_on(executor);
     }
 
-    result<void> ptr_test_coroutine(std::span<std::shared_ptr<concurrencpp::executor>> executors, std::unordered_set<size_t>& set)
-    {
-        for (auto& executor : executors)
-        {
+    result<void> ptr_test_coroutine(std::span<std::shared_ptr<concurrencpp::executor>> executors, std::unordered_set<size_t>& set) {
+        for (auto& executor : executors) {
             co_await concurrencpp::resume_on(executor);
             set.insert(::concurrencpp::details::thread::get_current_virtual_id());
         }
     }
 
-     result<void> ref_test_coroutine(std::span<concurrencpp::executor*> executors,
-                                    std::unordered_set<size_t>& set) {
+    result<void> ref_test_coroutine(std::span<concurrencpp::executor*> executors, std::unordered_set<size_t>& set) {
         for (auto executor : executors) {
             co_await concurrencpp::resume_on(*executor);
             set.insert(::concurrencpp::details::thread::get_current_virtual_id());
@@ -35,11 +32,12 @@ namespace concurrencpp::tests {
     }
 }  // namespace concurrencpp::tests
 
-void concurrencpp::tests::test_resume_on_shared_ptr()
-{
-    assert_throws_with_error_message<std::invalid_argument>([] {
-        null_ptr_test_coroutine({}).get();
-    }, concurrencpp::details::consts::k_resume_on_null_exception_err_msg);
+void concurrencpp::tests::test_resume_on_shared_ptr() {
+    assert_throws_with_error_message<std::invalid_argument>(
+        [] {
+            null_ptr_test_coroutine({}).get();
+        },
+        concurrencpp::details::consts::k_resume_on_null_exception_err_msg);
 
     concurrencpp::runtime runtime;
     std::shared_ptr<concurrencpp::executor> executors[4];
@@ -49,10 +47,10 @@ void concurrencpp::tests::test_resume_on_shared_ptr()
     executors[2] = runtime.make_worker_thread_executor();
     executors[3] = runtime.make_worker_thread_executor();
 
-	std::unordered_set<size_t> set;
+    std::unordered_set<size_t> set;
     ptr_test_coroutine(executors, set).get();
 
-	assert_equal(set.size(), std::size(executors));
+    assert_equal(set.size(), std::size(executors));
 }
 
 void concurrencpp::tests::test_resume_on_ref() {

@@ -46,26 +46,22 @@ bool result_state_base::await(coroutine_handle<void> caller_handle) noexcept {
     return idle;  // if idle = true, suspend
 }
 
-concurrencpp::details::when_any_status result_state_base::when_any(const std::shared_ptr<when_any_state_base>& when_any_state,
-                                                                   size_t index) noexcept {
+result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<when_any_promise>& when_any_state) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
-        return when_any_status::result_ready;
+        return state;
     }
 
-    m_consumer.set_when_any_context(when_any_state, index);
+    m_consumer.set_when_any_context(when_any_state);
 
     auto expected_state = pc_state::idle;
     const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
 
-    if (idle) {
-        return when_any_status::set;
+    if (!idle) {
+        assert_done();
     }
 
-    // no need to continue the iteration of when_any, we've found a ready task.
-    // tell all predecessors to rewind their state.
-    assert_done();
-    return when_any_status::result_ready;
+    return state;
 }
 
 void result_state_base::try_rewind_consumer() noexcept {

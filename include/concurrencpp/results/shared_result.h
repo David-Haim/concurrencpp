@@ -12,8 +12,7 @@ namespace concurrencpp {
        private:
         std::shared_ptr<details::shared_result_state<type>> m_state;
 
-        static shared_result<type> make_shared_result(details::shared_result_tag, result<type> result)
-        {
+        static shared_result<type> make_shared_result(details::shared_result_tag, result<type> result) {
             co_return co_await result;
         }
 
@@ -29,12 +28,10 @@ namespace concurrencpp {
 
         shared_result(std::shared_ptr<details::shared_result_state<type>> state) noexcept : m_state(std::move(state)) {}
 
-		shared_result(result<type> rhs)
-        {
-	        if (!static_cast<bool>(rhs))
-	        {
+        shared_result(result<type> rhs) {
+            if (!static_cast<bool>(rhs)) {
                 return;
-	        }
+            }
 
             *this = make_shared_result({}, std::move(rhs));
         }

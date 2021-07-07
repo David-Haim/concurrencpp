@@ -25,7 +25,7 @@ namespace concurrencpp::tests {
     template<class result_type>
     result_type test_combo_coroutine_impl(std::shared_ptr<thread_executor> ex, const bool terminate_by_exception);
 
-	void test_combo_coroutine();
+    void test_combo_coroutine();
 
     template<class type>
     lazy_result<type> lazy_recursive_coroutine(std::shared_ptr<thread_executor> ex,
@@ -163,7 +163,7 @@ concurrencpp::lazy_result<type> concurrencpp::tests::lazy_recursive_coroutine(st
     co_return value_gen<type>::default_value();
 }
 
-template <class type>
+template<class type>
 void concurrencpp::tests::test_lazy_recursive_coroutines_impl() {
     // value
     {
@@ -184,8 +184,7 @@ void concurrencpp::tests::test_lazy_recursive_coroutines_impl() {
     }
 }
 
-void concurrencpp::tests::test_lazy_recursive_coroutines()
-{
+void concurrencpp::tests::test_lazy_recursive_coroutines() {
     test_lazy_recursive_coroutines_impl<int>();
     test_lazy_recursive_coroutines_impl<std::string>();
     test_lazy_recursive_coroutines_impl<void>();
