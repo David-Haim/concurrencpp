@@ -82,7 +82,7 @@ namespace concurrencpp::details {
         class when_any_awaitable {
 
            private:
-            std::shared_ptr<when_any_promise> m_promise;
+            std::shared_ptr<when_any_context> m_promise;
             result_types& m_results;
 
             template<class type>
@@ -113,7 +113,7 @@ namespace concurrencpp::details {
             }
 
             void await_suspend(coroutine_handle<void> coro_handle) {
-                m_promise = std::make_shared<when_any_promise>(coro_handle);
+                m_promise = std::make_shared<when_any_context>(coro_handle);
 
                 const auto range_length = size(m_results);
                 for (size_t i = 0; i < range_length; i++) {

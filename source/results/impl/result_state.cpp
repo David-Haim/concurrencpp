@@ -46,7 +46,7 @@ bool result_state_base::await(coroutine_handle<void> caller_handle) noexcept {
     return idle;  // if idle = true, suspend
 }
 
-result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<when_any_promise>& when_any_state) noexcept {
+result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
         return state;

@@ -50,14 +50,14 @@ namespace concurrencpp::details {
         void notify() noexcept;
     };
 
-    class when_any_promise {
+    class when_any_context {
        private:
         std::atomic_bool m_fulfilled = false;
         result_state_base* m_completed_result = nullptr;
         coroutine_handle<void> m_coro_handle;
 
        public:
-        when_any_promise(coroutine_handle<void> coro_handle) noexcept;
+        when_any_context(coroutine_handle<void> coro_handle) noexcept;
 
         bool fulfilled() const noexcept;
         result_state_base* completed_result() const noexcept;
@@ -72,7 +72,7 @@ namespace concurrencpp::details {
         union storage {
             coroutine_handle<void> caller_handle;
             std::shared_ptr<wait_context> wait_ctx;
-            std::shared_ptr<when_any_promise> when_any_ctx;
+            std::shared_ptr<when_any_context> when_any_ctx;
 
             template<class type, class... argument_type>
             static void build(type& o, argument_type&&... arguments) noexcept {
@@ -100,7 +100,7 @@ namespace concurrencpp::details {
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
-        void set_when_any_context(const std::shared_ptr<when_any_promise>& when_any_ctx) noexcept;
+        void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
 

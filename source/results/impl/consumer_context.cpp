@@ -4,7 +4,7 @@
 
 using concurrencpp::details::await_context;
 using concurrencpp::details::wait_context;
-using concurrencpp::details::when_any_promise;
+using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
 using concurrencpp::details::await_via_functor;
 
@@ -93,9 +93,9 @@ void wait_context::notify() noexcept {
  * when_any_context
  */
 
-when_any_promise::when_any_promise(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
+when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
 
-void when_any_promise::try_resume(result_state_base* completed_result) noexcept {
+void when_any_context::try_resume(result_state_base* completed_result) noexcept {
     assert(completed_result != nullptr);
 
     const auto already_resumed = m_fulfilled.exchange(true, std::memory_order_acq_rel);
@@ -110,11 +110,11 @@ void when_any_promise::try_resume(result_state_base* completed_result) noexcept 
     m_coro_handle();
 }
 
-bool when_any_promise::fulfilled() const noexcept {
-    return m_fulfilled.load(std::memory_order_acq_rel);
+bool when_any_context::fulfilled() const noexcept {
+    return m_fulfilled.load(std::memory_order_acquire);
 }
 
-concurrencpp::details::result_state_base* when_any_promise::completed_result() const noexcept {
+concurrencpp::details::result_state_base* when_any_context::completed_result() const noexcept {
     assert(m_completed_result != nullptr);
     return m_completed_result;
 }
@@ -166,7 +166,7 @@ void consumer_context::set_wait_context(const std::shared_ptr<wait_context>& wai
     storage::build(m_storage.wait_ctx, wait_ctx);
 }
 
-void consumer_context::set_when_any_context(const std::shared_ptr<when_any_promise>& when_any_ctx) noexcept {
+void consumer_context::set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
     storage::build(m_storage.when_any_ctx, when_any_ctx);

@@ -25,7 +25,7 @@ namespace concurrencpp::details {
        public:
         void wait();
         bool await(coroutine_handle<void> caller_handle) noexcept;
-        pc_state when_any(const std::shared_ptr<when_any_promise>& when_any_state) noexcept;
+        pc_state when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept;
 
         void try_rewind_consumer() noexcept;
     };
