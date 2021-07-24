@@ -89,8 +89,8 @@ namespace concurrencpp::details {
         }
 
         static constexpr vtable make_vtable() noexcept {
-            void (*move_destroy_fn)(void* src, void* dst) noexcept;
-            void (*destroy_fn)(void* target) noexcept;
+            void (*move_destroy_fn)(void* src, void* dst) noexcept = nullptr;
+            void (*destroy_fn)(void* target) noexcept = nullptr;
 
             if constexpr (std::is_trivially_copy_constructible_v<callable_type> && std::is_trivially_destructible_v<callable_type>) {
                 move_destroy_fn = nullptr;
