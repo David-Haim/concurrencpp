@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.1.1
+        VERSION 0.1.2
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -52,15 +52,19 @@ set(concurrencpp_headers
         include/concurrencpp/results/impl/producer_context.h
         include/concurrencpp/results/impl/result_state.h
         include/concurrencpp/results/impl/shared_result_state.h
+        include/concurrencpp/results/impl/lazy_result_state.h
         include/concurrencpp/results/constants.h
         include/concurrencpp/results/make_result.h
         include/concurrencpp/results/promises.h
         include/concurrencpp/results/result.h
+        include/concurrencpp/results/lazy_result.h
+        include/concurrencpp/results/lazy_result_awaitable.h
         include/concurrencpp/results/shared_result.h
         include/concurrencpp/results/result_awaitable.h
         include/concurrencpp/results/shared_result_awaitable.h
         include/concurrencpp/results/result_fwd_declerations.h
         include/concurrencpp/results/when_result.h
+        include/concurrencpp/results/resume_on.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/thread.h

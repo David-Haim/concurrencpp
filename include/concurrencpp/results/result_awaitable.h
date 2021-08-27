@@ -37,34 +37,6 @@ namespace concurrencpp {
     };
 
     template<class type>
-    class via_awaitable : public details::awaitable_base<type> {
-
-       private:
-        details::await_via_context m_await_context;
-        const bool m_force_rescheduling;
-
-       public:
-        via_awaitable(details::consumer_result_state_ptr<type> state,
-                      std::shared_ptr<concurrencpp::executor> executor,
-                      bool force_rescheduling) noexcept :
-            details::awaitable_base<type>(std::move(state)),
-            m_await_context(executor), m_force_rescheduling(force_rescheduling) {}
-
-        bool await_suspend(details::coroutine_handle<void> caller_handle) {
-            assert(static_cast<bool>(this->m_state));
-
-            m_await_context.set_coro_handle(caller_handle);
-            return this->m_state->await_via(m_await_context, m_force_rescheduling);
-        }
-
-        type await_resume() {
-            auto state = std::move(this->m_state);
-            m_await_context.throw_if_interrupted();
-            return state->get();
-        }
-    };
-
-    template<class type>
     class resolve_awaitable : public details::awaitable_base<type> {
 
        public:
@@ -80,34 +52,6 @@ namespace concurrencpp {
 
         result<type> await_resume() {
             return result<type>(std::move(this->m_state));
-        }
-    };
-
-    template<class type>
-    class resolve_via_awaitable : public details::awaitable_base<type> {
-
-       private:
-        details::await_via_context m_await_context;
-        const bool m_force_rescheduling;
-
-       public:
-        resolve_via_awaitable(details::consumer_result_state_ptr<type> state,
-                              std::shared_ptr<concurrencpp::executor> executor,
-                              bool force_rescheduling) noexcept :
-            details::awaitable_base<type>(std::move(state)),
-            m_await_context(executor), m_force_rescheduling(force_rescheduling) {}
-
-        bool await_suspend(details::coroutine_handle<void> caller_handle) {
-            assert(static_cast<bool>(this->m_state));
-
-            m_await_context.set_coro_handle(caller_handle);
-            return this->m_state->await_via(m_await_context, m_force_rescheduling);
-        }
-
-        result<type> await_resume() {
-            auto state = std::move(this->m_state);
-            m_await_context.throw_if_interrupted();
-            return result<type>(std::move(state));
         }
     };
 }  // namespace concurrencpp

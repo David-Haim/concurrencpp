@@ -5,15 +5,6 @@
 #include "concurrencpp/results/shared_result_awaitable.h"
 #include "concurrencpp/results/impl/shared_result_state.h"
 
-namespace concurrencpp::details {
-    struct shared_result_helper {
-        template<class type>
-        static consumer_result_state_ptr<type> get_state(result<type>& result) noexcept {
-            return std::move(result.m_state);
-        }
-    };
-}  // namespace concurrencpp::details
-
 namespace concurrencpp {
     template<class type>
     class shared_result {
@@ -21,12 +12,14 @@ namespace concurrencpp {
        private:
         std::shared_ptr<details::shared_result_state<type>> m_state;
 
-        void throw_if_empty(const char* message) const {
-            if (static_cast<bool>(m_state)) {
-                return;
-            }
+        static shared_result<type> make_shared_result(details::shared_result_tag, result<type> result) {
+            co_return co_await result;
+        }
 
-            throw errors::empty_result(message);
+        void throw_if_empty(const char* message) const {
+            if (!static_cast<bool>(m_state)) {
+                throw errors::empty_result(message);
+            }
         }
 
        public:
@@ -40,10 +33,7 @@ namespace concurrencpp {
                 return;
             }
 
-            auto result_state = details::shared_result_helper::get_state(rhs);
-            auto result_state_ptr = result_state.get();
-            m_state = std::make_shared<details::shared_result_state<type>>(std::move(result_state));
-            result_state_ptr->share_result(m_state);
+            *this = make_shared_result({}, std::move(rhs));
         }
 
         shared_result(const shared_result& rhs) noexcept = default;
@@ -102,29 +92,9 @@ namespace concurrencpp {
             return shared_awaitable<type> {m_state};
         }
 
-        auto await_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_shared_result_await_via_error_msg);
-
-            if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_shared_result_await_via_executor_null_error_msg);
-            }
-
-            return shared_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};
-        }
-
         auto resolve() {
             throw_if_empty(details::consts::k_shared_result_resolve_error_msg);
             return shared_resolve_awaitable<type> {m_state};
-        }
-
-        auto resolve_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true) {
-            throw_if_empty(details::consts::k_shared_result_resolve_via_error_msg);
-
-            if (!static_cast<bool>(executor)) {
-                throw std::invalid_argument(details::consts::k_shared_result_resolve_via_executor_null_error_msg);
-            }
-
-            return shared_resolve_via_awaitable<type> {m_state, std::move(executor), force_rescheduling};
         }
     };
 }  // namespace concurrencpp

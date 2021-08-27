@@ -1,80 +1,47 @@
 #include "concurrencpp/results/impl/consumer_context.h"
-#include "concurrencpp/results/impl/shared_result_state.h"
 
 #include "concurrencpp/executors/executor.h"
 
-using concurrencpp::details::await_via_context;
+using concurrencpp::details::await_context;
 using concurrencpp::details::wait_context;
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
 using concurrencpp::details::await_via_functor;
 
 /*
- * await_via_context
+ * await_context
  */
 
-void await_via_context::await_context::resume() noexcept {
-    assert(static_cast<bool>(handle));
-    assert(!handle.done());
-    handle();
+void await_context::resume() noexcept {
+    assert(static_cast<bool>(m_caller_handle));
+    assert(!m_caller_handle.done());
+    m_caller_handle();
 }
 
-void await_via_context::await_context::set_coro_handle(coroutine_handle<void> coro_handle) noexcept {
-    assert(!static_cast<bool>(handle));
+void await_context::set_coro_handle(coroutine_handle<void> coro_handle) noexcept {
+    assert(!static_cast<bool>(m_caller_handle));
     assert(static_cast<bool>(coro_handle));
     assert(!coro_handle.done());
-    handle = coro_handle;
+    m_caller_handle = coro_handle;
 }
 
-void await_via_context::await_context::set_interrupt(const std::exception_ptr& interrupt) noexcept {
-    assert(interrupt_exception == nullptr);
+void await_context::set_interrupt(const std::exception_ptr& interrupt) noexcept {
+    assert(m_interrupt_exception == nullptr);
     assert(static_cast<bool>(interrupt));
-    interrupt_exception = interrupt;
+    m_interrupt_exception = interrupt;
 }
 
-void await_via_context::await_context::throw_if_interrupted() const {
-    if (interrupt_exception != nullptr) {
-        std::rethrow_exception(interrupt_exception);
+void await_context::throw_if_interrupted() const {
+    if (m_interrupt_exception != nullptr) {
+        std::rethrow_exception(m_interrupt_exception);
     }
-}
-
-await_via_context::await_via_context(const std::shared_ptr<executor>& executor) noexcept : m_executor(executor) {}
-
-void await_via_context::resume() noexcept {
-    m_await_ctx.resume();
-}
-
-void await_via_context::operator()() noexcept {
-    try {
-        m_executor->enqueue(get_functor());
-    } catch (...) {
-        // If an exception is thrown, the task destructor sets an interrupt exception
-        // on the await_context and resumes the coroutine, causing a broken_task exception to be thrown.
-        // this is why we don't let this exception propagate, as it wil cause the coroutine to be resumed twice (UB)
-    }
-}
-
-void await_via_context::set_coro_handle(coroutine_handle<void> coro_handle) noexcept {
-    m_await_ctx.set_coro_handle(coro_handle);
-}
-
-void await_via_context::set_interrupt(const std::exception_ptr& interrupt) noexcept {
-    m_await_ctx.set_interrupt(interrupt);
-}
-
-void await_via_context::throw_if_interrupted() const {
-    m_await_ctx.throw_if_interrupted();
-}
-
-await_via_functor await_via_context::get_functor() noexcept {
-    return {&m_await_ctx};
 }
 
 /*
  * await_via_functor
  */
 
-await_via_functor::await_via_functor(await_via_context::await_context* ctx) noexcept : m_ctx(ctx) {}
+await_via_functor::await_via_functor(await_context* ctx) noexcept : m_ctx(ctx) {}
 
 await_via_functor::await_via_functor(await_via_functor&& rhs) noexcept : m_ctx(rhs.m_ctx) {
     rhs.m_ctx = nullptr;
@@ -126,22 +93,35 @@ void wait_context::notify() noexcept {
  * when_any_context
  */
 
-when_any_context::when_any_context(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept :
-    m_when_any_state(std::move(when_any_state)), m_index(index) {}
+when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
 
-void when_any_context::operator()() const noexcept {
-    const auto when_any_state = m_when_any_state;
-    const auto index = m_index;
+void when_any_context::try_resume(result_state_base* completed_result) noexcept {
+    assert(completed_result != nullptr);
 
-    assert(static_cast<bool>(when_any_state));
-    when_any_state->on_result_ready(index);
+    const auto already_resumed = m_fulfilled.exchange(true, std::memory_order_acq_rel);
+    if (already_resumed) {
+        return;
+    }
+
+    assert(m_completed_result == nullptr);
+    m_completed_result = completed_result;
+
+    assert(static_cast<bool>(m_coro_handle));
+    m_coro_handle();
+}
+
+bool when_any_context::fulfilled() const noexcept {
+    return m_fulfilled.load(std::memory_order_acquire);
+}
+
+concurrencpp::details::result_state_base* when_any_context::completed_result() const noexcept {
+    assert(m_completed_result != nullptr);
+    return m_completed_result;
 }
 
 /*
  * consumer_context
  */
-
-consumer_context::consumer_context() noexcept : m_status(consumer_status::idle) {}
 
 consumer_context::~consumer_context() noexcept {
     clear();
@@ -160,28 +140,13 @@ void consumer_context::clear() noexcept {
             return;
         }
 
-        case consumer_status::await_via: {
-            storage::destroy(m_storage.await_via_ctx);
-            return;
-        }
-
         case consumer_status::wait: {
             storage::destroy(m_storage.wait_ctx);
             return;
         }
 
-        case consumer_status::when_all: {
-            storage::destroy(m_storage.when_all_ctx);
-            return;
-        }
-
         case consumer_status::when_any: {
             storage::destroy(m_storage.when_any_ctx);
-            return;
-        }
-
-        case consumer_status::shared: {
-            storage::destroy(m_storage.shared_ctx);
             return;
         }
     }
@@ -195,37 +160,19 @@ void consumer_context::set_await_handle(coroutine_handle<void> caller_handle) no
     storage::build(m_storage.caller_handle, caller_handle);
 }
 
-void consumer_context::set_await_via_context(await_via_context& await_ctx) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::await_via;
-    storage::build(m_storage.await_via_ctx, std::addressof(await_ctx));
-}
-
 void consumer_context::set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::wait;
     storage::build(m_storage.wait_ctx, wait_ctx);
 }
 
-void consumer_context::set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::when_all;
-    storage::build(m_storage.when_all_ctx, when_all_state);
-}
-
-void consumer_context::set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept {
+void consumer_context::set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
-    storage::build(m_storage.when_any_ctx, when_any_ctx, index);
+    storage::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
-void consumer_context::set_shared_context(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::shared;
-    storage::build(m_storage.shared_ctx, shared_result_state);
-}
-
-void consumer_context::resume_consumer() const noexcept {
+void consumer_context::resume_consumer(result_state_base* self) const noexcept {
     switch (m_status) {
         case consumer_status::idle: {
             return;
@@ -238,36 +185,15 @@ void consumer_context::resume_consumer() const noexcept {
             return caller_handle();
         }
 
-        case consumer_status::await_via: {
-            const auto await_via_ctx_ptr = m_storage.await_via_ctx;
-            assert(await_via_ctx_ptr != nullptr);
-            return (*await_via_ctx_ptr)();
-        }
-
         case consumer_status::wait: {
             const auto wait_ctx = m_storage.wait_ctx;
             assert(static_cast<bool>(wait_ctx));
             return wait_ctx->notify();
         }
 
-        case consumer_status::when_all: {
-            const auto when_all_ctx = m_storage.when_all_ctx;
-            assert(static_cast<bool>(when_all_ctx));
-            return when_all_ctx->on_result_ready();
-        }
-
         case consumer_status::when_any: {
             const auto when_any_ctx = m_storage.when_any_ctx;
-            return when_any_ctx();
-        }
-
-        case consumer_status::shared: {
-            const auto shared_state = m_storage.shared_ctx.lock();
-            if (static_cast<bool>(shared_state)) {
-                shared_state->on_result_ready();
-            }
-
-            return;
+            return when_any_ctx->try_resume(self);
         }
     }
 

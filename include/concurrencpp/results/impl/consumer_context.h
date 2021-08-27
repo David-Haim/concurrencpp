@@ -8,53 +8,28 @@
 #include <condition_variable>
 
 namespace concurrencpp::details {
-    class await_via_functor;
-
-    class await_via_context {
-
-       public:
-        class await_context {
-
-           private:
-            coroutine_handle<void> handle;
-            std::exception_ptr interrupt_exception;
-
-           public:
-            void resume() noexcept;
-
-            void set_coro_handle(coroutine_handle<void> coro_handle) noexcept;
-            void set_interrupt(const std::exception_ptr& interrupt) noexcept;
-
-            void throw_if_interrupted() const;
-        };
+    class await_context {
 
        private:
-        await_context m_await_ctx;
-        std::shared_ptr<executor> m_executor;
+        coroutine_handle<void> m_caller_handle;
+        std::exception_ptr m_interrupt_exception;
 
        public:
-        await_via_context() noexcept = default;
-        await_via_context(const std::shared_ptr<executor>& executor) noexcept;
-
-        void operator()() noexcept;
-
         void resume() noexcept;
 
         void set_coro_handle(coroutine_handle<void> coro_handle) noexcept;
         void set_interrupt(const std::exception_ptr& interrupt) noexcept;
 
         void throw_if_interrupted() const;
-
-        await_via_functor get_functor() noexcept;
     };
 
     class await_via_functor {
 
        private:
-        await_via_context::await_context* m_ctx;
+        await_context* m_ctx;
 
        public:
-        await_via_functor(await_via_context::await_context* ctx) noexcept;
+        await_via_functor(await_context* ctx) noexcept;
         await_via_functor(await_via_functor&& rhs) noexcept;
         ~await_via_functor() noexcept;
 
@@ -75,54 +50,29 @@ namespace concurrencpp::details {
         void notify() noexcept;
     };
 
-    class when_all_state_base {
-
-       protected:
-        std::atomic_size_t m_counter;
-        std::recursive_mutex m_lock;
-
-       public:
-        virtual ~when_all_state_base() noexcept = default;
-        virtual void on_result_ready() noexcept = 0;
-    };
-
-    class when_any_state_base {
-
-       protected:
-        std::atomic_bool m_fulfilled = false;
-        std::recursive_mutex m_lock;
-
-       public:
-        virtual ~when_any_state_base() noexcept = default;
-        virtual void on_result_ready(size_t) noexcept = 0;
-    };
-
     class when_any_context {
-
        private:
-        std::shared_ptr<when_any_state_base> m_when_any_state;
-        size_t m_index;
+        std::atomic_bool m_fulfilled = false;
+        result_state_base* m_completed_result = nullptr;
+        coroutine_handle<void> m_coro_handle;
 
        public:
-        when_any_context(const std::shared_ptr<when_any_state_base>& when_any_state, size_t index) noexcept;
-        when_any_context(const when_any_context&) noexcept = default;
+        when_any_context(coroutine_handle<void> coro_handle) noexcept;
 
-        void operator()() const noexcept;
+        bool fulfilled() const noexcept;
+        result_state_base* completed_result() const noexcept;
+        void try_resume(result_state_base* completed_result) noexcept;
     };
 
     class consumer_context {
 
        private:
-        enum class consumer_status { idle, await, await_via, wait, when_all, when_any, shared };
+        enum class consumer_status { idle, await, wait, when_any };
 
         union storage {
-            int idle;
             coroutine_handle<void> caller_handle;
-            await_via_context* await_via_ctx;
             std::shared_ptr<wait_context> wait_ctx;
-            std::shared_ptr<when_all_state_base> when_all_ctx;
-            when_any_context when_any_ctx;
-            std::weak_ptr<shared_result_state_base> shared_ctx;
+            std::shared_ptr<when_any_context> when_any_ctx;
 
             template<class type, class... argument_type>
             static void build(type& o, argument_type&&... arguments) noexcept {
@@ -134,27 +84,23 @@ namespace concurrencpp::details {
                 o.~type();
             }
 
-            storage() noexcept : idle() {}
+            storage() noexcept {}
             ~storage() noexcept {}
         };
 
        private:
-        consumer_status m_status;
+        consumer_status m_status = consumer_status::idle;
         storage m_storage;
 
        public:
-        consumer_context() noexcept;
         ~consumer_context() noexcept;
 
         void clear() noexcept;
-        void resume_consumer() const noexcept;
+        void resume_consumer(result_state_base* self) const noexcept;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
-        void set_await_via_context(await_via_context& await_ctx) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
-        void set_when_all_context(const std::shared_ptr<when_all_state_base>& when_all_state) noexcept;
-        void set_when_any_context(const std::shared_ptr<when_any_state_base>& when_any_ctx, size_t index) noexcept;
-        void set_shared_context(const std::weak_ptr<shared_result_state_base>& shared_result_state) noexcept;
+        void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
 

@@ -2,20 +2,8 @@
 
 using concurrencpp::details::shared_result_state_base;
 
-/*
- * shared_await_via_context
- */
-
-concurrencpp::details::shared_await_via_context::shared_await_via_context(
-    const std::shared_ptr<concurrencpp::executor>& executor) noexcept :
-    await_context(executor) {}
-
-/*
- * shared_result_state_base
- */
-
-void shared_result_state_base::await_impl(std::unique_lock<std::shared_mutex>& write_lock, shared_await_context& awaiter) noexcept {
-    assert(write_lock.owns_lock());
+void shared_result_state_base::await_impl(std::unique_lock<std::mutex>& lock, shared_await_context& awaiter) noexcept {
+    assert(lock.owns_lock());
 
     if (m_awaiters == nullptr) {
         m_awaiters = &awaiter;
@@ -26,53 +14,78 @@ void shared_result_state_base::await_impl(std::unique_lock<std::shared_mutex>& w
     m_awaiters = &awaiter;
 }
 
-void shared_result_state_base::await_via_impl(std::unique_lock<std::shared_mutex>& write_lock,
-                                              shared_await_via_context& awaiter) noexcept {
-    if (m_via_awaiters == nullptr) {
-        m_via_awaiters = &awaiter;
-        return;
-    }
-
-    awaiter.next = m_via_awaiters;
-    m_via_awaiters = &awaiter;
-}
-
-void shared_result_state_base::wait_impl(std::unique_lock<std::shared_mutex>& lock) noexcept {
+void shared_result_state_base::wait_impl(std::unique_lock<std::mutex>& lock) noexcept {
     assert(lock.owns_lock());
-    m_condition.wait(lock, [this] {
-        return m_ready;
-    });
-}
 
-bool shared_result_state_base::wait_for_impl(std::unique_lock<std::shared_mutex>& write_lock, std::chrono::milliseconds ms) noexcept {
-    assert(write_lock.owns_lock());
-    return m_condition.wait_for(write_lock, ms, [this] {
-        return m_ready;
-    });
-}
-
-void shared_result_state_base::notify_all(std::unique_lock<std::shared_mutex>& write_lock) noexcept {
-    assert(write_lock.owns_lock());
-
-    m_ready = true;
-    shared_await_context* awaiters = std::exchange(m_awaiters, nullptr);
-    shared_await_via_context* via_awaiters = std::exchange(m_via_awaiters, nullptr);
-    write_lock.unlock();
-
-    // unblock waiters
-    m_condition.notify_all();
-
-    // unblock awaiters that want to be resumed by an executor
-    while (via_awaiters != nullptr) {
-        const auto next = via_awaiters->next;
-        via_awaiters->await_context();
-        via_awaiters = next;
+    if (!m_condition.has_value()) {
+        m_condition.emplace();
     }
 
-    // unblock synchronous awaiters
+    m_condition.value().wait(lock, [this] {
+        return m_ready.load(std::memory_order_relaxed);
+    });
+}
+
+bool shared_result_state_base::wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms) noexcept {
+    assert(lock.owns_lock());
+
+    if (!m_condition.has_value()) {
+        m_condition.emplace();
+    }
+
+    return m_condition.value().wait_for(lock, ms, [this] {
+        return m_ready.load(std::memory_order_relaxed);
+    });
+}
+
+void shared_result_state_base::complete_producer() noexcept {
+    shared_await_context* awaiters;
+
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        awaiters = std::exchange(m_awaiters, nullptr);
+        m_ready.store(true, std::memory_order_release);
+
+        if (m_condition.has_value()) {
+            m_condition.value().notify_all();
+        }
+    }
+
     while (awaiters != nullptr) {
         const auto next = awaiters->next;
         awaiters->caller_handle();
         awaiters = next;
+    }
+}
+
+bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
+    if (m_ready.load(std::memory_order_acquire)) {
+        return false;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        if (m_ready.load(std::memory_order_acquire)) {
+            return false;
+        }
+
+        await_impl(lock, awaiter);
+    }
+
+    return true;
+}
+
+void shared_result_state_base::wait() noexcept {
+    if (m_ready.load(std::memory_order_acquire)) {
+        return;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        if (m_ready.load(std::memory_order_acquire)) {
+            return;
+        }
+
+        wait_impl(lock);
     }
 }

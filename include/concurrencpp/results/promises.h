@@ -4,6 +4,8 @@
 #include "concurrencpp/task.h"
 #include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/results/impl/result_state.h"
+#include "concurrencpp/results/impl/lazy_result_state.h"
+#include "concurrencpp/results/impl/return_value_struct.h"
 
 #include <vector>
 
@@ -19,11 +21,11 @@ namespace concurrencpp::details {
     class initial_scheduling_awaiter : public suspend_always {
 
        private:
-        await_via_context m_await_via_context;
+        await_context m_await_context;
 
        public:
         void await_suspend(coroutine_handle<void> handle) {
-            m_await_via_context.set_coro_handle(handle);
+            m_await_context.set_coro_handle(handle);
 
             auto& per_thread_data = coroutine_per_thread_data::s_tl_per_thread_data;
             auto executor_base_ptr = std::exchange(per_thread_data.executor, nullptr);
@@ -31,12 +33,12 @@ namespace concurrencpp::details {
             assert(executor_base_ptr != nullptr);
             assert(dynamic_cast<executor_type*>(executor_base_ptr) != nullptr);
 
-            auto executor_ptr = static_cast<executor_type*>(executor_base_ptr);
-            executor_ptr->enqueue(m_await_via_context.get_functor());
+            auto& executor = *static_cast<executor_type*>(executor_base_ptr);
+            executor.template post<await_via_functor>(&m_await_context);
         }
 
         void await_resume() const {
-            m_await_via_context.throw_if_interrupted();
+            m_await_context.throw_if_interrupted();
         }
     };
 
@@ -46,7 +48,7 @@ namespace concurrencpp::details {
     class initial_accumulating_awaiter : public suspend_always {
 
        private:
-        await_via_context m_await_via_context;
+        await_context m_await_context;
 
        public:
         void await_suspend(coroutine_handle<void> handle) noexcept;
@@ -111,23 +113,6 @@ namespace concurrencpp::details {
         void return_void() const noexcept {}
     };
 
-    template<class derived_type, class type>
-    struct return_value_struct {
-        template<class return_type>
-        void return_value(return_type&& value) {
-            auto self = static_cast<derived_type*>(this);
-            self->set_result(std::forward<return_type>(value));
-        }
-    };
-
-    template<class derived_type>
-    struct return_value_struct<derived_type, void> {
-        void return_void() noexcept {
-            auto self = static_cast<derived_type*>(this);
-            self->set_result();
-        }
-    };
-
     struct result_publisher : public suspend_always {
         template<class promise_type>
         void await_suspend(coroutine_handle<promise_type> handle) const noexcept {
@@ -156,13 +141,16 @@ namespace concurrencpp::details {
         }
 
         void complete_producer(coroutine_handle<void> done_handle) noexcept {
-            this->m_result_state.complete_producer(done_handle);
+            this->m_result_state.complete_producer(&m_result_state, done_handle);
         }
 
         result_publisher final_suspend() const noexcept {
             return {};
         }
     };
+
+    template<class type>
+    struct lazy_promise : lazy_result_state<type>, public return_value_struct<lazy_promise<type>, type> {};
 
     struct initialy_resumed_null_result_promise : public initialy_resumed_promise, public null_result_promise {};
 
@@ -253,6 +241,13 @@ namespace std::experimental {
                             arguments...> {
         using promise_type = concurrencpp::details::bulk_result_promise<type>;
     };
+
+    // Lazy
+    template<class type, class... arguments>
+    struct coroutine_traits<::concurrencpp::lazy_result<type>, arguments...> {
+        using promise_type = concurrencpp::details::lazy_promise<type>;
+    };
+
 }  // namespace std::experimental
 
 #endif
