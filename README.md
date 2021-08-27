@@ -25,7 +25,10 @@ concurrencpp main advantages are:
     * [`thread_pool_executor` API](#thread_pool_executor-api)
     * [`manual_executor` API](#manual_executor-api)
 * [Result objects](#result-objects)
+	* [`result` type](#result-type)
     * [`result` API](#result-api)
+	* [`lazy_result` type](#lazy_result-type)
+    * [`lazy_result` API](#lazy_result-api)
 * [Parallel coroutines](#parallel-coroutines)
     * [Parallel Fibonacci example](#parallel-fibonacci-example)
 * [Result-promises](#result-promises)
@@ -34,8 +37,12 @@ concurrencpp main advantages are:
 * [Shared result objects](#shared-result-objects)
     * [`shared_result` API](#shared_result-api)
     * [`shared_result` example](#shared_result-example)
-* [Summery: using tasks and coroutines](#summery-using-tasks-and-coroutines)
-* [Result auxiliary functions](#result-auxiliary-functions)
+* [Utility functions](#utility-functions)
+    * [`make_ready_result`](#make_ready_result-function)
+    * [`make_exceptional_result`](#make_exceptional_result-function)
+    * [`when_all`](#when_all-function)
+    * [`when_any`](#when_any-function)
+    * [`resume_on`](#resume_on-function)
 * [Timers and Timer queues](#timers-and-timer-queues)
     * [`timer_queue` API](#timer_queue-api)
     * [`timer` API](#timer-api)
@@ -62,7 +69,7 @@ While tasks specify *what* actions have to be executed, *executors* are worker-o
 
 Tasks communicate with each other using *result objects*. A result object is an asynchronous pipe that pass the asynchronous result of one task to another ongoing-task. Results can be awaited and resolved in a non-blocking manner.
 
-These 3 concepts - the task, the executor and the associated result are the building blocks of concurrencpp. Executors run tasks that communicate with each-other by sending results through result-objects. Tasks, executors and result objects work together symbiotically to produce concurrent code which is fast and clean.
+These three concepts - the task, the executor and the associated result are the building blocks of concurrencpp. Executors run tasks that communicate with each-other by sending results through result-objects. Tasks, executors and result objects work together symbiotically to produce concurrent code which is fast and clean.
 
 concurrencpp is built around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user-defined executors. Executors are used to create and schedule tasks to run, and they might return a `result` object that can be used to marshal the asynchronous result to another task that acts as its consumer.
 When the runtime is destroyed, it iterates over every stored executor and calls its `shutdown` method. Every executor then exits gracefully. Unscheduled tasks are destroyed, and attempts to create new tasks will throw an exception.
@@ -159,18 +166,24 @@ main prints the number of even numbers and the program terminates gracefully.
 
 ###  Tasks
 Every big or complex operation can be broken down to smaller and chainable steps.
-Tasks are asynchronous operations implementing those computational steps. Tasks can run anywhere with the help of executors. While tasks can be created from regular callables (such as functors and lambdas), Tasks are mostly used with coroutines, which allow smooth suspension and resumption. In concurrencpp, the task concept is represented by the `concurrencpp::task` class. Although the task concept is central to concurrenpp, applications will rarely have to create and manipulate task objects themselves, as task objects are created and scheduled by the runtime with no external help.   
+Tasks are asynchronous operations implementing those computational steps. Tasks can run anywhere with the help of executors. While tasks can be created from regular callables (such as functors and lambdas), Tasks are mostly used with coroutines, which allow smooth suspension and resumption. In concurrencpp, the task concept is represented by the `concurrencpp::task` class. Although the task concept is central to concurrenpp, applications will rarely have to create and manipulate task objects themselves, as task objects are created and scheduled by the runtime with no external help.  
 
 ####  concurrencpp coroutines
 
-concurrencpp allows applications to produce and consume coroutines as the main way of creating tasks. concurrencpp coroutines are eager and start to run the moment they are invoked (as opposed to lazy coroutines, which start to run only when `co_await`ed). concurrencpp coroutines can return any of `concurrencpp::result` or `concurrencpp::null_result`.
+concurrencpp allows applications to produce and consume coroutines as the main way of creating tasks. concurrencpp supports both eager and lazy tasks.
 
-`concurrencpp::result` tells the coroutine to marshal the returned value or the thrown exception while `concurrencpp::null_result` tells the coroutine to drop and ignore any of them.
+Eager tasks start to run the moment they are invoked. This type of execution is recommended when applications need to fire an asynchronous action and consume its result later on (fire and consume later), or completely ignore the asynchronous result (fire and forget).
  
-When a function returns any of `concurrencpp::result` or `concurrencpp::null_result`and contains at least one `co_await` or `co_return` in it's body, the function is a concurrencpp coroutine. Every valid concurrencpp coroutine is a valid task. In our count-even example above, `count_even` is such a coroutine. We first spawned `count_even`, then inside it the threadpool executor spawned more child tasks (that are created from regular callables),  that were eventually joined using `co_await`.
+Eager tasks can return  `result` or `null_result`. `result` return type tells the coroutine to marshal the returned value or the thrown exception (fire and consume later)  while `null_result` return type tells the coroutine to drop and ignore any of them (fire and forget).
 
-Coroutines can start to run synchronously, in the caller thread. This kind of coroutines is called "regular coroutines".
-Concurrencpp coroutines can also start to run in parallel, inside a given executor, this kind of coroutines is called "parallel coroutines".
+Eager coroutines can start to run synchronously, in the caller thread. This kind of coroutines is called "regular coroutines".
+Concurrencpp eager coroutines can also start to run in parallel, inside a given executor, this kind of coroutines is called "parallel coroutines".
+  
+ Lazy tasks, on the other hand, start to run only when `co_await`ed. This type of tasks is recommended when the result of the task is meant to be consumed immediately after creating the task. Lazy tasks, being deferred, are a bit more optimized for the case of immediate-consumption, as they do not need special thread-synchronization in order  to marshal the asynchronous result back to its consumer. The compiler might also optimize away some memory allocations needed to form the underlying coroutine promise. It is not possible to fire a lazy task and execute something else meanwhile  - the firing of a lazy-callee coroutine necessarily means the suspension of the caller-coroutine. The caller coroutine will only be resumed when the lazy-callee coroutine completes. Lazy tasks can only return `lazy_result`.  
+
+Lazy tasks can be converted to eager tasks by calling  `lazy_result::run`. This method runs the lazy task inline and returns a `result` object that monitors the newly started task. If developers are unsure which result type to use, they are encouraged to use lazy results, as they can be converted to regular (eager) results if needed.  
+
+When a function returns any of `lazy_result`, `result` or `null_result`and contains at least one `co_await` or `co_return` in its body, the function is a concurrencpp coroutine. Every valid concurrencpp coroutine is a valid task. In our count-even example above, `count_even` is such a coroutine. We first spawned `count_even`, then inside it the threadpool executor spawned more child tasks (that are created from regular callables),  that were eventually joined using `co_await`.
 
 ### Executors
 
@@ -300,7 +313,7 @@ In many cases, applications are not interested in the asynchronous value or exce
 
 #### `thread_pool_executor` API
 
-Aside from `post`, `submit`, `bulk_post` and `bulk_submit`, the `thread_pool_executor`  provides additional methods.  
+Aside from `post`, `submit`, `bulk_post` and `bulk_submit`, the `thread_pool_executor`  provides these additional methods.  
 
 ```cpp
 class thread_pool_executor {
@@ -315,7 +328,7 @@ class thread_pool_executor {
 ```
 #### `manual_executor` API
 
-Aside from `post`, `submit`, `bulk_post` and `bulk_submit`, the `manual_executor`  provides additional methods.
+Aside from `post`, `submit`, `bulk_post` and `bulk_submit`, the `manual_executor`  provides these additional methods.
 
 ```cpp
 class manual_executor {
@@ -463,40 +476,36 @@ class manual_executor {
         
 };
 ```
-
 ### Result objects
 
-Asynchronous values and exceptions can be consumed using the concurrencpp result objects.
-A result object is a pipe for the asynchronous result, like `std::future`.
-When a task finishes execution, it either returns a valid value or throws an exception.
-In either case, this asynchronous result is marshaled to the consumer of the result object.
-The result status therefore, varies from `idle` (the asynchronous result or exception aren't ready yet) to `value` (the task terminated by returning a valid value) to `exception` (the task terminated by throwing an exception).  
+Asynchronous values and exceptions can be consumed using concurrencpp result objects. The `result` type represents the asynchronous result of an eager task while `lazy_result` represents the deferred result of a lazy task. 
 
-Result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be empty and attempts to call any method other than `operator bool` and `operator = ` will throw.
-After the asynchronous result has been pulled out of the result object (by calling `get`, `await` or `await_via`), the result object becomes empty. Emptiness can be tested with `operator bool`.
+When a task (eager or lazy) completes, it either returns a valid value or throws an exception. In either case, this asynchronous result is marshaled to the consumer of the result object.
 
-Results can be polled, waited, awaited or resolved.
+`result` objects form asymmetric coroutines - the execution of a caller-coroutine is not effected by the execution of a callee-coroutine, both coroutines can run independently. Only when consuming the result of the callee-coroutine, the caller-coroutine might be suspended awaiting the callee to complete. Up until that point both coroutines run independently. The callee-coroutine runs whether its result is consumed or not. 
 
-Result objects can be polled for their status by calling `result::status`.
+`lazy_result` objects form symmetric coroutines - execution of a callee-coroutine happens only after the suspension of the caller-coroutine. When awaiting a lazy result, the current coroutine is suspended and the lazy task associated with the lazy result starts to run. After the callee-coroutine completes and yields a result, the caller-coroutine is resumed. If a lazy result is not consumed, its associated lazy task never starts to run. 
 
-Results can be waited by calling any of `result::wait`, `result::wait_for`, `result::wait_until` or `result::get`.
-Waiting a result is a blocking operation (in the case the asynchronous result is not ready), and will suspend the entire thread of execution waiting for the asynchronous result to become available. Waiting operations are generally discouraged and only allowed in root-level tasks or in contexts which allow it, like blocking the main thread waiting for the rest of the application to finish gracefully, or using `concurrencpp::blocking_executor` or `concurrencpp::thread_executor`.
+All result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be empty and attempts to call any method other than `operator bool` and `operator = ` will throw.
 
-Awaiting a result means to suspend the current coroutine until the asynchronous result is ready. If a valid value was returned from the associated task, it is returned from the result object. If the associated task throws an exception, it is re-thrown.
+After the asynchronous result has been pulled out of the result object (for example, by calling `get` or `operator co_await`), the result object becomes empty. Emptiness can be tested with `operator bool`.
+
+Awaiting a result means to suspend the current coroutine until the result object is ready. If a valid value was returned from the associated task, it is returned from the result object. If the associated task throws an exception, it is re-thrown.
 At the moment of awaiting, if the result is already ready, the current coroutine resumes immediately. Otherwise, it is resumed by the thread that sets the asynchronous result or exception.
 
-The behavior of awaiting result objects can be further fine tuned by using `await_via`.
-This method accepts an executor and a boolean flag (`force_rescheduling`).
-If, at the moment of awaiting, the result is already ready, the behavior depends on the value of `force_rescheduling`.
-If `force_rescheduling` is true, the current coroutine is forcefully suspended and resumed inside the given executor.
-If `force_rescheduling` is false, the current coroutine is resumed immediately in the calling thread.
-If the asynchronous result is not ready at the moment of awaiting, the current coroutine resumes after the result is set, by scheduling it to run in the given executor.
-
-Resolving a result is similar to awaiting it. The different is that the `co_await` expression will return the result object itself,
+Resolving a result is similar to awaiting it. The difference is that the `co_await` expression will return the result object itself,
 in a non empty form, in a ready state. The asynchronous result can then be pulled by using `get` or `co_await`.
-Just like `await_via`, `resolve_via` fine tunes the control flow of the coroutine by passing an executor and a flag suggesting how to behave when the result is already ready.
 
-Awaiting a result object by using `co_await` (and by doing so, turning the current function/task into a coroutine as well) is the preferred way of consuming result objects, as it does not block underlying threads.
+Every result object has a status indicating the state of the asynchronous result.
+The result status varies from `result_status::idle` (the asynchronous result or exception haven't been produced yet) to `result_status::value` (the associated task terminated gracefully by returning a valid value) to `result_status::exception` (the task terminated by throwing an exception).  The status can be queried by calling  `(lazy_)result::status`. 
+
+#### `result` type
+
+The `result` type represents the result of an ongoing, asynchronous task, similar to `std::future`. 
+
+Aside from awaiting and resolving result-objects, they can also be waited for by calling any of `result::wait`, `result::wait_for`, `result::wait_until` or `result::get`. Waiting for a result to finish is a blocking operation (in the case the asynchronous result is not ready), and will suspend the entire thread of execution waiting for the asynchronous result to become available. Waiting operations are generally discouraged and only allowed in root-level tasks or in contexts which allow it, like blocking the main thread waiting for the rest of the application to finish gracefully, or using `concurrencpp::blocking_executor` or `concurrencpp::thread_executor`.
+
+Awaiting result objects by using `co_await` (and by doing so, turning the current function/task into a coroutine as well) is the preferred way of consuming result objects, as it does not block underlying threads.
 
 #### `result` API
     
@@ -531,7 +540,7 @@ class result{
 
     /*
         Queries the status of *this.
-        The return value is any of result_status::idle, result_status::value or result_status::exception.
+        The returned value is any of result_status::idle, result_status::value or result_status::exception.
         Throws concurrencpp::errors::empty_result if *this is empty.        
     */
     result_status status() const;
@@ -575,50 +584,92 @@ class result{
     auto operator co_await();
 
     /*
-        Returns an awaitable used to await this result.
-        If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
-        by scheduling the current coroutine via executor.
-        If the result is already ready - the behaviour depends on the value of force_rescheduling:
-            If force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via executor.
-            If force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
-        In either way, after resuming, if the result is a valid value, it is returned.
-        Otherwise, operator co_await rethrows the asynchronous exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
-        Throws std::invalid_argument if executor is null.
-        If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.    
-    */
-    auto await_via(
-        std::shared_ptr<concurrencpp::executor> executor,
-        bool force_rescheduling = true);
-
-    /*
         Returns an awaitable used to resolve this result.
         After co_await expression finishes, *this is returned in a non-empty form, in a ready state.
         Throws concurrencpp::errors::empty_result if *this is empty.
     */    
     auto resolve();
+};
+```
+#### `lazy_result` type
 
-    /*
-        Returns an awaitable used to resolve this result.
+A lazy result object represents the result of a deferred lazy task. 
+
+`lazy_result` has the responsibility of both starting the associated lazy task and marshaling its deferred result back to its consumer. 
+When awaited or resolved, the lazy result suspends the current coroutine and starts the associated lazy task. when the associated task completes, its asynchronous value is marshaled to the caller task, which is then resumed. 
+
+Sometimes, an API might return a lazy result, but applications need its associated task to run eagerly (without suspending the caller task). In this case, lazy tasks can be converted to eager tasks by calling  `run` on its associated lazy result. In this case, the associated task will start to run inline, without suspending the caller task. The original lazy result is emptied and a valid `result` object that monitors the newly started task will be returned instead.
+
+#### `lazy_result` API
+
+```cpp
+class lazy_result {
+	/*
+        Creates an empty lazy result that isn't associated with any task.
+	*/
+	lazy_result() noexcept = default;
+
+	/*
+        Moves the content of rhs to *this. After this call, rhs is empty.
+	*/
+	lazy_result(lazy_result&& rhs) noexcept;
+
+	/*
+		Destroys the result. If not empty, the destructor destroys the associated task without resuming it.
+	*/
+	~lazy_result() noexcept;
+
+	/*
+        Moves the content of rhs to *this. After this call, rhs is empty. Returns *this.
+		If *this is not empty, then operator= destroys the associated task without resuming it.
+	*/
+	lazy_result& operator=(lazy_result&& rhs) noexcept;
+
+	/*
+		Returns true if this is a non-empty result.
+		Applications must not use this object if this->operator bool() is false.
+	*/
+	explicit operator bool() const noexcept;
+
+	/*
+		Queries the status of *this.
+		The returned value is any of result_status::idle, result_status::value or result_status::exception.
+		Throws concurrencpp::errors::empty_result if *this is empty.  
+	*/
+	result_status status() const;
+
+	/*
+		Returns an awaitable used to start the associated task and await this result.
+        If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
         If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
-        by scheduling the current coroutine via executor.
-        If the result is already ready - the behaviour depends on the value of force_rescheduling:
-            If force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via executor.
-            If force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
-        In either way, after resuming, *this is returned in a non-empty form and guaranteed that its status is not result_status::idle.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
-        Throws std::invalid_argument if executor is null.
-        If this result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.                    
-    */
-    auto resolve_via(
-        std::shared_ptr<concurrencpp::executor> executor,
-        bool force_rescheduling = true);
+        by the thread which had set the asynchronous value or exception.
+        In either way, after resuming, if the result is a valid value, it is returned.
+        Otherwise, operator co_await rethrows the asynchronous exception.
+        Throws concurrencpp::errors::empty_result if *this is empty.   
+	*/
+	auto operator co_await();
+
+	/*
+		Returns an awaitable used to start the associated task and resolve this result.
+		If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
+		If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready, by the thread which had set the asynchronous value or exception.
+		After co_await expression finishes, *this is returned in a non-empty form, in a ready state.	
+		Throws concurrencpp::errors::empty_result if *this is empty.
+	*/
+	auto resolve();
+
+	/*
+		Runs the associated task inline and returns a result object that monitors the newly started task.
+		After this call, *this is empty. 
+		Throws concurrencpp::errors::empty_result if *this is empty.
+	*/
+	result<type> run();
 };
 ```
 
 ###  Parallel coroutines
 
-Regular coroutines start to run synchronously in the calling thread of execution. Execution might shift to another thread of execution if the coroutine undergoes a rescheduling, for example by awaiting an unready result object inside it.
+Regular eager coroutines start to run synchronously in the calling thread of execution. Execution might shift to another thread of execution if the coroutine undergoes a rescheduling, for example by awaiting an unready result object inside it.
 concurrencpp also provides parallel coroutines, which start to run inside a given executor, not in the invoking thread of execution. This style of scheduling coroutines is especially helpful when writing parallel algorithms, recursive algorithms and concurrent algorithms that use the fork-join model.
 
 Every parallel coroutine must meet the following preconditions:
@@ -764,7 +815,7 @@ class result_promise {
     /*
         Sets a value by constructing <<type>> from arguments... in-place.
         Makes the associated result object become ready - tasks waiting for it to become ready are unblocked.
-        Suspended tasks are resumed either inline or via the executor that was provided by calling result::await_via or result::resolve_via.
+        Suspended tasks are resumed inline.
         After this call, *this becomes empty.
         If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.
     */
@@ -774,7 +825,7 @@ class result_promise {
     /*
         Sets an exception.
         Makes the associated result object become ready - tasks waiting for it to become ready are unblocked.
-        Suspended tasks are resumed either inline or via the executor that was provided by calling result::await_via or result::resolve_via.
+        Suspended tasks are resumed inline.
         After this call, *this becomes empty.
         If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.
         If exception_ptr is null, an std::invalid_argument exception is thrown.
@@ -922,44 +973,13 @@ class share_result {
         Throws concurrencpp::errors::empty_result if *this is empty.                            
     */
     auto operator co_await();
-
-    
-    /*
-        Returns an awaitable used to await this shared-result.
-        If the shared-result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
-        by scheduling the current coroutine via executor.
-        If the result is already ready - the behaviour depends on the value of force_rescheduling:
-            If force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via executor.
-            If force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
-        In either way, after resuming, if the result is a valid value, a reference to it is returned.
-        Otherwise, operator co_await rethrows the asynchronous exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
-        Throws std::invalid_argument if executor is null.
-        If this shared-result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.    
-    */
-    auto await_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true);
-
-    
+  
     /*
         Returns an awaitable used to resolve this shared-result.
         After co_await expression finishes, *this is returned in a non-empty form, in a ready state.
         Throws concurrencpp::errors::empty_result if *this is empty.
     */    
     auto resolve();
-
-    /*
-        Returns an awaitable used to resolve this shared-result.
-        If the shared-result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
-        by scheduling the current coroutine via executor.
-        If the result is already ready - the behaviour depends on the value of force_rescheduling:
-            If force_rescheduling = true, then the current coroutine is forcefully suspended and resumed via executor.
-            If force_rescheduling = false, then the current coroutine resumes immediately in the calling thread of execution.
-        In either way, after resuming, *this is returned in a non-empty form and guaranteed that its status is not result_status::idle.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
-        Throws std::invalid_argument if executor is null.
-        If this shared-result is ready and force_rescheduling=true, throws any exception that executor::enqueue may throw.                    
-    */
-    auto resolve_via(std::shared_ptr<concurrencpp::executor> executor, bool force_rescheduling = true);
 };
 ```
 
@@ -974,7 +994,8 @@ concurrencpp::result<void> consume_shared_result(concurrencpp::shared_result<int
     std::shared_ptr<concurrencpp::executor> resume_executor) {
     std::cout << "Awaiting shared_result to have a value" << std::endl;
 
-    const auto& async_value = co_await shared_result.await_via(resume_executor);
+    const auto& async_value = co_await shared_result;
+    concurrencpp::resume_on(resume_executor);
 
     std::cout << "In thread id " << std::this_thread::get_id() << ", got: " << async_value << ", memory address: " << &async_value << std::endl;
 }
@@ -1003,34 +1024,34 @@ int main() {
 }
 ```
 
+### Utility functions
 
-###  Summery: using tasks and coroutines
-
-A task is an asynchronous operation implementing an asynchronous computational step. Tasks are created by using one of the executor methods or by invoking a concurrencpp coroutine. Tasks might return a result object that is used to consume the asynchronous value or exception the task had produced.  When used correctly, result objects don't block, this way we can chain tasks together, creating a bigger, asynchronous flow graph that never blocks.
-
-A concurrencpp coroutine is a C++ suspendable function. It is eager, meaning it starts to run the moment it is invoked.
-It returns one of `concurrencpp::result` / `concurrencpp::null_result` and contains any of `co_await` or `co_return` in its body. Parallel coroutines are a special kind of coroutines that start run in another thread, by passing a `concurrencpp::executor_tag` and an instance of a valid concurrencpp executor as the first arguments.
-
-### Result auxiliary functions
-
-For completeness, concurrencpp provides helper functions that help manipulate result objects:
+#### `make_ready_result` function
+`make_ready_result` creates a ready result object from given arguments. Awaiting such result will cause the current coroutine to resume immediately.  `get` and `operator co_await` will return the constructed value. 
 
 ```cpp
 /*
     Creates a ready result object by building <<type>> from arguments&&... in-place.
+    Might throw any exception that the constructor of type(std::forward<argument_types>(arguments)...) might throw.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class type, class ... argument_types>
 result<type> make_ready_result(argument_types&& ... arguments);
 
 /*
     An overload for void type.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 result<void> make_ready_result();
-
+```
+#### `make_exceptional_result` function
+`make_exceptional_result` creates a ready result object from a given exception. Awaiting such result will cause the current coroutine to resume immediately.  `get` and `operator co_await` will re-throw the given exception.
+```cpp
 /*
     Creates a ready result object from an exception pointer.
-    The returned result object will re-throw exception_ptr when calling get, await or await_via.
+    The returned result object will re-throw exception_ptr when calling get or await.
     Throws std::invalid_argument if exception_ptr is null.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class type>
 result<type> make_exceptional_result(std::exception_ptr exception_ptr);
@@ -1038,14 +1059,21 @@ result<type> make_exceptional_result(std::exception_ptr exception_ptr);
 /*
     Overload. Similar to make_exceptional_result(std::exception_ptr),
     but gets an exception object directly.
+    Might throw any exception that the constructor of exception_type(std::move(exception)) might throw.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class type, class exception_type>
 result<type> make_exceptional_result(exception_type exception);
- 
+```
+#### `when_all` function
+`when_all` is a utility function that creates a result object which becomes ready when all input results are completed. Awaiting the result returns all input-result objects in a ready state, ready to be consumed.
+
+```cpp 
 /*
     Creates a result object that becomes ready when all the input results become ready.
     Passed result objects are emptied and returned as a tuple.
     Throws std::invalid_argument if any of the passed result objects is empty.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class ... result_types>
 result<std::tuple<typename std::decay<result_types>::type...>>
@@ -1056,6 +1084,7 @@ result<std::tuple<typename std::decay<result_types>::type...>>
     Passed result objects are emptied and returned as a vector.
     If begin == end, the function returns immediately with an empty vector.
     Throws std::invalid_argument if any of the passed result objects is empty.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class iterator_type>
 result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>
@@ -1063,9 +1092,15 @@ result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>
 
 /*
     Overload. Returns a ready result object that doesn't monitor any asynchronous result.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 result<std::tuple<>> when_all();
+```
+#### `when_any` function
 
+`when_any` is a utility function that creates a result object which becomes ready when at least one input result is completed. Awaiting the result will return a helper struct containing all input-result objects plus the index of the completed task. It could be that by the time of consuming the ready result, other results might have already completed asynchronously. Applications can call `when_any` repeatedly in order to consume ready results as they complete until all results are consumed. 
+
+```cpp
 /*
     Helper struct returned from when_any.
     index is the position of the ready result in results sequence.
@@ -1095,6 +1130,16 @@ result<when_any_result<std::tuple<result_types...>>>
 template<class iterator_type>
 result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
    when_any(iterator_type begin, iterator_type end);
+```
+
+#### `resume_on` function
+`resume_on` returns an awaitable that suspends the current coroutine and resumes it inside given `executor`. This is an important function that makes sure a coroutine is running in the right executor. For example, applications might schedule a background task using the `background_executor` and await the returned result object. In this case, the awaiting coroutine will be resumed inside the background executor. A call to `resume_on` with another cpu-bound executor makes sure that cpu-bound lines of code will not run on the background executor once the background task is completed. 
+```cpp
+/*
+	Returns an awaitable that suspends the current coroutine and resumes it inside executor
+*/
+template<class executor_type>
+auto resume_on(std::shared_ptr<executor_type> executor);
 ```
 
 ### Timers and Timer queues
@@ -1677,5 +1722,5 @@ $ cmake -S test -B build/test
   #for TSAN mode: cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_THREAD_SANITIZER=Yes -S test -B build/test
 $ cmake --build build/test  
 $ cd build/test
-$ ctest . -V
+$ ctest .
 ```
