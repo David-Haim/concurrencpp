@@ -28,6 +28,7 @@ set(concurrencpp_sources
         source/results/impl/shared_result_state.cpp
         source/results/promises.cpp
         source/runtime/runtime.cpp
+        source/threads/binary_semaphore.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
         source/timers/timer_queue.cpp)
@@ -67,6 +68,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/resume_on.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
+        include/concurrencpp/threads/binary_semaphore.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h

@@ -2,11 +2,11 @@
 #define CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
 #include <mutex>
-#include <semaphore>
 
 namespace concurrencpp::details {
     class idle_worker_set {
@@ -49,7 +49,7 @@ namespace concurrencpp::details {
         const std::string m_worker_name;
         alignas(64) std::mutex m_lock;
         std::deque<task> m_public_queue;
-        std::binary_semaphore m_semaphore;
+        binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
         std::atomic_bool m_event_found;
