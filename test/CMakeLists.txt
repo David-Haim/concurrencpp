@@ -107,7 +107,7 @@ add_test(NAME make_result_tests PATH source/tests/result_tests/make_result_tests
 add_test(NAME result_promise_tests PATH source/tests/result_tests/result_promise_tests.cpp)
 add_test(NAME when_all_tests PATH source/tests/result_tests/when_all_tests.cpp)
 add_test(NAME when_any_tests PATH source/tests/result_tests/when_any_tests.cpp)
-add_test(NAME resume_on PATH source/tests/result_tests/resume_on_tests.cpp)
+add_test(NAME resume_on_tests PATH source/tests/result_tests/resume_on_tests.cpp)
 
 add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
 add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)

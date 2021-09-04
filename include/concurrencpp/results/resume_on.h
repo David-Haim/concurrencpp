@@ -4,6 +4,8 @@
 #include "concurrencpp/executors/executor.h"
 #include "concurrencpp/results/impl/consumer_context.h"
 
+#include <type_traits>
+
 namespace concurrencpp::details {
     template<class executor_type>
     class resume_on_awaitable : public suspend_always {
@@ -23,7 +25,12 @@ namespace concurrencpp::details {
 
         void await_suspend(coroutine_handle<void> handle) {
             m_await_ctx.set_coro_handle(handle);
-            m_executor.template post<await_via_functor>(&m_await_ctx);
+
+            try {
+                m_executor.template post<await_via_functor>(&m_await_ctx);
+            } catch (...) {
+                //the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
+            }
         }
 
         void await_resume() const {
@@ -35,6 +42,9 @@ namespace concurrencpp::details {
 namespace concurrencpp {
     template<class executor_type>
     auto resume_on(std::shared_ptr<executor_type> executor) {
+        static_assert(std::is_base_of_v<concurrencpp::executor, executor_type>,
+                      "concurrencpp::resume_on() - given executor does not derive from concurrencpp::executor");
+
         if (!static_cast<bool>(executor)) {
             throw std::invalid_argument(details::consts::k_resume_on_null_exception_err_msg);
         }
