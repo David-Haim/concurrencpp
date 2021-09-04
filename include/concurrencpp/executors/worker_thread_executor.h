@@ -2,11 +2,11 @@
 #define CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
 #include <mutex>
-#include <semaphore>
 
 namespace concurrencpp {
     class alignas(64) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
@@ -17,7 +17,7 @@ namespace concurrencpp {
         details::thread m_thread;
         alignas(64) std::mutex m_lock;
         std::deque<task> m_public_queue;
-        std::binary_semaphore m_semaphore;
+        details::binary_semaphore m_semaphore;
         std::atomic_bool m_atomic_abort;
         bool m_abort;
 
