@@ -1545,7 +1545,7 @@ Task objects apply the short-buffer-optimization (sbo) for regular, small callab
     /*
         Returns true if *this stores a callable. false otherwise.
     */
-       expliit  operator bool() const noexcept;
+        explicit operator bool() const noexcept;
 
     /*
         Returns true if *this stores a callable,
