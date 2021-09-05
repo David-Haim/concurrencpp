@@ -11,7 +11,7 @@
 
 namespace concurrencpp::details {
     struct coroutine_per_thread_data {
-        executor* executor = nullptr;
+        concurrencpp::executor* executor = nullptr;
         std::vector<task>* accumulator = nullptr;
 
         static thread_local coroutine_per_thread_data s_tl_per_thread_data;
