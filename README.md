@@ -1679,7 +1679,7 @@ In this example, we created an executor which logs actions like enqueuing a task
 ### Supported platforms and tools
 
 * **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
-* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang (Clang-11 and above)
+* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang (Clang-11 and above), GCC (GCC-11 and above)
 * **Tools:** CMake (3.16 and above) 
 
 ### Building, installing and testing

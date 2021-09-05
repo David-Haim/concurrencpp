@@ -153,7 +153,7 @@ namespace concurrencpp::details {
     struct shared_result_tag {};
 }  // namespace concurrencpp::details
 
-namespace std::experimental {
+namespace CRCPP_COROUTINE_NAMESPACE {
     // No executor + No result
     template<class type>
     struct coroutine_traits<::concurrencpp::shared_result<type>,
@@ -161,6 +161,6 @@ namespace std::experimental {
                             concurrencpp::result<type>> {
         using promise_type = concurrencpp::details::shared_result_promise<type>;
     };
-}  // namespace std::experimental
+}  // namespace CRCPP_COROUTINE_NAMESPACE
 
 #endif
