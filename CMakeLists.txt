@@ -36,7 +36,7 @@ set(concurrencpp_headers
         include/concurrencpp/concurrencpp.h
         include/concurrencpp/errors.h
         include/concurrencpp/task.h
-        include/concurrencpp/forward_declerations.h
+        include/concurrencpp/forward_declarations.h
         include/concurrencpp/platform_defs.h
         include/concurrencpp/coroutines/coroutine.h
         include/concurrencpp/executors/constants.h
@@ -62,7 +62,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/shared_result.h
         include/concurrencpp/results/result_awaitable.h
         include/concurrencpp/results/shared_result_awaitable.h
-        include/concurrencpp/results/result_fwd_declerations.h
+        include/concurrencpp/results/result_fwd_declarations.h
         include/concurrencpp/results/when_result.h
         include/concurrencpp/results/resume_on.h
         include/concurrencpp/runtime/constants.h

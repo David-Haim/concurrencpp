@@ -2,7 +2,7 @@
 #define CONCURRENCPP_RUNTIME_H
 
 #include "concurrencpp/runtime/constants.h"
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 
 #include <memory>
 #include <mutex>
