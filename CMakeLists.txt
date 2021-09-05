@@ -15,6 +15,7 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
 endif()
 
 # ---- Declare library ----
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 set(concurrencpp_sources
         source/task.cpp
@@ -75,7 +76,7 @@ set(concurrencpp_headers
         include/concurrencpp/timers/timer_queue.h
         include/concurrencpp/utils/bind.h)
 
-add_library(concurrencpp STATIC ${concurrencpp_headers} ${concurrencpp_sources})
+add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)
 
 target_include_directories(concurrencpp
@@ -100,11 +101,9 @@ set(concurrencpp_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${concurrencpp_d
 
 install(TARGETS concurrencpp
         EXPORT concurrencppTargets
-        ARCHIVE #
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT concurrencpp_Development
-        INCLUDES #
-        DESTINATION "${concurrencpp_include_directory}")
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT concurrencpp_Development
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Development
+        INCLUDES DESTINATION "${concurrencpp_include_directory}")
 
 set(concurrencpp_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${concurrencpp_directory}")
