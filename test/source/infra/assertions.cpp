@@ -1,6 +1,8 @@
 #include "infra/assertions.h"
 
-#include <cstdio>
+#include <iostream>
+#include <string>
+#include <string_view>
 
 namespace concurrencpp::tests::details {
     std::string to_string(bool value) {
@@ -56,74 +58,32 @@ namespace concurrencpp::tests::details {
     }
 
     void assert_equal_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected [";
-        error_msg += a;
-        error_msg += "] == [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] == [" << b << "]" << std::endl;
         std::abort();
     }
 
     void assert_not_equal_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected: [";
-        error_msg += a;
-        error_msg += "] =/= [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] =/= [" << b << "]" << std::endl;
         std::abort();
     }
 
     void assert_bigger_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected [";
-        error_msg += a;
-        error_msg += "] > [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] > [" << b << "]" << std::endl;
         std::abort();
     }
 
     void assert_smaller_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected [";
-        error_msg += a;
-        error_msg += "] < [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] < [" << b << "]" << std::endl;
         std::abort();
     }
 
     void assert_bigger_equal_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected [";
-        error_msg += a;
-        error_msg += "] >= [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] >= [" << b << "]" << std::endl;
         std::abort();
     }
 
     void assert_smaller_equal_failed_impl(const std::string& a, const std::string& b) {
-        std::string error_msg = "assertion failed. ";
-        error_msg += "expected [";
-        error_msg += a;
-        error_msg += "] <= [";
-        error_msg += b;
-        error_msg += "]";
-
-        fprintf(stderr, "%s", error_msg.data());
+        std::cerr << "assertion failed. expected [" << a << "] <= [" << b << "]" << std::endl;
         std::abort();
     }
 
@@ -132,14 +92,14 @@ namespace concurrencpp::tests::details {
 namespace concurrencpp::tests {
     void assert_true(bool condition) {
         if (!condition) {
-            fprintf(stderr, "%s", "assertion faild. expected: [true] actual: [false].");
+            std::cerr << "assertion failed. expected: [true] actual: [false].";
             std::abort();
         }
     }
 
     void assert_false(bool condition) {
         if (condition) {
-            fprintf(stderr, "%s", "assertion faild. expected: [false] actual: [true].");
+            std::cerr << "assertion failed. expected: [false] actual: [true].";
             std::abort();
         }
     }
