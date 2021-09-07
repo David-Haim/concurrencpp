@@ -1,8 +1,7 @@
 #include "infra/tester.h"
 
 #include <chrono>
-
-#include <cstdio>
+#include <iostream>
 
 using concurrencpp::tests::test_step;
 using concurrencpp::tests::tester;
@@ -12,12 +11,12 @@ test_step::test_step(const char* step_name, std::function<void()> callable) : m_
 
 void test_step::launch_test_step() noexcept {
     const auto test_start_time = system_clock::now();
-    printf("\tTest-step started: %s\n", m_step_name);
+    std::cout << "\tTest-step started: " << m_step_name << std::endl;
 
     m_step();
 
     const auto elapsed_time = duration_cast<milliseconds>(system_clock::now() - test_start_time).count();
-    printf("\tTest-step ended (%lldms).\n", elapsed_time);
+    std::cout << "\tTest-step ended (" << elapsed_time << "ms)." << std::endl;
 }
 
 tester::tester(const char* test_name) noexcept : m_test_name(test_name) {}
@@ -27,15 +26,15 @@ void tester::add_step(const char* step_name, std::function<void()> callable) {
 }
 
 void tester::launch_test() noexcept {
-    printf("Test started: %s\n", m_test_name);
+    std::cout << "Test started: " << m_test_name << std::endl;
 
     for (auto& test_step : m_steps) {
         try {
             test_step.launch_test_step();
         } catch (const std::exception& ex) {
-            ::fprintf(stderr, "\tTest step terminated with an exception : %s\n", ex.what());
+            std::cerr << "\tTest step terminated with an exception : " << ex.what() << std::endl;
         }
     }
 
-    printf("Test ended.\n____________________\n");
+    std::cout << "Test ended.\n____________________" << std::endl;
 }
