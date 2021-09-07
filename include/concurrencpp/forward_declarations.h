@@ -1,5 +1,5 @@
-#ifndef CONCURRENCPP_FORWARD_DECLERATIONS_H
-#define CONCURRENCPP_FORWARD_DECLERATIONS_H
+#ifndef CONCURRENCPP_FORWARD_DECLARATIONS_H
+#define CONCURRENCPP_FORWARD_DECLARATIONS_H
 
 namespace concurrencpp {
     struct null_result;
@@ -29,4 +29,4 @@ namespace concurrencpp {
     class manual_executor;
 }  // namespace concurrencpp
 
-#endif  // FORWARD_DECLERATIONS_H
+#endif  // FORWARD_DECLARATIONS_H

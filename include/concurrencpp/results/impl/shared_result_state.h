@@ -2,7 +2,7 @@
 #define CONCURRENCPP_SHARED_RESULT_STATE_H
 
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 #include "concurrencpp/results/impl/producer_context.h"
 #include "concurrencpp/results/impl/return_value_struct.h"
 

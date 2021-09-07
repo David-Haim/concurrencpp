@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_H
 #define CONCURRENCPP_H
 
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 #include "concurrencpp/platform_defs.h"
 
 #include "concurrencpp/timers/timer.h"
