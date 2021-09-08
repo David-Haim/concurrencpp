@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.1.2
+        VERSION 0.1.3
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -15,6 +15,7 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
 endif()
 
 # ---- Declare library ----
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 set(concurrencpp_sources
         source/task.cpp
@@ -28,6 +29,7 @@ set(concurrencpp_sources
         source/results/impl/shared_result_state.cpp
         source/results/promises.cpp
         source/runtime/runtime.cpp
+        source/threads/binary_semaphore.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
         source/timers/timer_queue.cpp)
@@ -36,7 +38,7 @@ set(concurrencpp_headers
         include/concurrencpp/concurrencpp.h
         include/concurrencpp/errors.h
         include/concurrencpp/task.h
-        include/concurrencpp/forward_declerations.h
+        include/concurrencpp/forward_declarations.h
         include/concurrencpp/platform_defs.h
         include/concurrencpp/coroutines/coroutine.h
         include/concurrencpp/executors/constants.h
@@ -62,18 +64,19 @@ set(concurrencpp_headers
         include/concurrencpp/results/shared_result.h
         include/concurrencpp/results/result_awaitable.h
         include/concurrencpp/results/shared_result_awaitable.h
-        include/concurrencpp/results/result_fwd_declerations.h
+        include/concurrencpp/results/result_fwd_declarations.h
         include/concurrencpp/results/when_result.h
         include/concurrencpp/results/resume_on.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
+        include/concurrencpp/threads/binary_semaphore.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
         include/concurrencpp/utils/bind.h)
 
-add_library(concurrencpp STATIC ${concurrencpp_headers} ${concurrencpp_sources})
+add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)
 
 target_include_directories(concurrencpp
@@ -98,11 +101,9 @@ set(concurrencpp_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${concurrencpp_d
 
 install(TARGETS concurrencpp
         EXPORT concurrencppTargets
-        ARCHIVE #
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT concurrencpp_Development
-        INCLUDES #
-        DESTINATION "${concurrencpp_include_directory}")
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT concurrencpp_Development
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Development
+        INCLUDES DESTINATION "${concurrencpp_include_directory}")
 
 set(concurrencpp_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${concurrencpp_directory}")

@@ -25,4 +25,10 @@
 #    define CRCPP_DEBUG_MODE
 #endif
 
+#include <exception>
+
+#if defined(_LIBCPP_VERSION)
+#    define CRCPP_LIBCPP_LIB
+#endif
+
 #endif  // PLATFORM_DEFS_H

@@ -2,7 +2,7 @@
 #define CONCURRENCPP_CONSUMER_CONTEXT_H
 
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/results/result_fwd_declerations.h"
+#include "concurrencpp/results/result_fwd_declarations.h"
 
 #include <mutex>
 #include <condition_variable>
