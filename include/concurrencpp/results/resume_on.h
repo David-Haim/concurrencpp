@@ -29,7 +29,7 @@ namespace concurrencpp::details {
             try {
                 m_executor.template post<await_via_functor>(&m_await_ctx);
             } catch (...) {
-                //the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
+                // the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
             }
         }
 

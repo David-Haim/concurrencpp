@@ -12,7 +12,7 @@ namespace concurrencpp::details::consts {
 
     constexpr static unsigned int k_concurrencpp_version_major = 0;
     constexpr static unsigned int k_concurrencpp_version_minor = 1;
-    constexpr static unsigned int k_concurrencpp_version_revision = 2;
+    constexpr static unsigned int k_concurrencpp_version_revision = 3;
 }  // namespace concurrencpp::details::consts
 
 #endif

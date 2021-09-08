@@ -20,7 +20,8 @@ namespace concurrencpp::tests {
         co_await concurrencpp::resume_on(executor);
     }
 
-    result<void> resume_on_many_executors_shared(std::span<std::shared_ptr<concurrencpp::executor>> executors, std::unordered_set<size_t>& set) {
+    result<void> resume_on_many_executors_shared(std::span<std::shared_ptr<concurrencpp::executor>> executors,
+                                                 std::unordered_set<size_t>& set) {
         for (auto& executor : executors) {
             co_await concurrencpp::resume_on(executor);
             set.insert(::concurrencpp::details::thread::get_current_virtual_id());
@@ -43,26 +44,25 @@ void concurrencpp::tests::test_resume_on_null_executor() {
         concurrencpp::details::consts::k_resume_on_null_exception_err_msg);
 }
 
-void concurrencpp::tests::test_resume_on_shutdown_executor(){
+void concurrencpp::tests::test_resume_on_shutdown_executor() {
     auto ex = std::make_shared<inline_executor>();
     ex->shutdown();
 
-	assert_throws<errors::broken_task>([ex] {
+    assert_throws<errors::broken_task>([ex] {
         resume_on_1_executor(ex).get();
     });
 }
 
-void concurrencpp::tests::test_resume_on_shutdown_executor_delayed()
-{
+void concurrencpp::tests::test_resume_on_shutdown_executor_delayed() {
     auto ex = std::make_shared<manual_executor>();
     auto result = resume_on_1_executor(ex);
 
     assert_equal(ex->size(), 1);
 
-	ex->shutdown();
+    ex->shutdown();
 
     assert_throws<errors::broken_task>([&result] {
-		result.get();
+        result.get();
     });
 }
 
