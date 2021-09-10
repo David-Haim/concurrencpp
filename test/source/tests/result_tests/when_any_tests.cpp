@@ -32,7 +32,7 @@ namespace concurrencpp::tests {
 
 template<class type>
 void concurrencpp::tests::test_when_any_vector_empty_result() {
-    const size_t task_count = 63;
+    constexpr size_t task_count = 63;
     std::vector<result_promise<type>> result_promises(task_count);
     std::vector<result<type>> results;
 
@@ -69,7 +69,7 @@ void concurrencpp::tests::test_when_any_vector_empty_range() {
 
 template<class type>
 concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::shared_ptr<thread_executor> ex) {
-    const size_t task_count = 64;
+    constexpr size_t task_count = 64;
     value_gen<type> gen;
     std::vector<result<type>> results;
     random randomizer;
@@ -87,7 +87,16 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
         }));
     }
 
-    auto any_done = co_await when_any(results.begin(), results.end());
+    auto any_res = when_any(results.begin(), results.end());
+
+    const auto all_empty = std::all_of(results.begin(), results.end(), [](const auto& result) {
+        return !static_cast<bool>(result);
+    });
+
+    assert_true(all_empty);
+    assert_equal(any_res.status(), result_status::idle);
+
+    auto any_done = co_await any_res;
 
     const auto all_valid = std::all_of(any_done.results.begin(), any_done.results.end(), [](const auto& result) {
         return static_cast<bool>(result);
@@ -240,16 +249,20 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
         return value_gen<std::string&>::default_value();
     });
 
-    auto any_done = co_await when_any(std::move(int_res_val),
-                                      std::move(int_res_ex),
-                                      std::move(s_res_val),
-                                      std::move(s_res_ex),
-                                      std::move(void_res_val),
-                                      std::move(void_res_ex),
-                                      std::move(int_ref_res_val),
-                                      std::move(int_ref_res_ex),
-                                      std::move(str_ref_res_val),
-                                      std::move(str_ref_res_ex));
+    auto any_res = when_any(std::move(int_res_val),
+                            std::move(int_res_ex),
+                            std::move(s_res_val),
+                            std::move(s_res_ex),
+                            std::move(void_res_val),
+                            std::move(void_res_ex),
+                            std::move(int_ref_res_val),
+                            std::move(int_ref_res_ex),
+                            std::move(str_ref_res_val),
+                            std::move(str_ref_res_ex));
+
+    assert_equal(any_res.status(), result_status::idle);
+
+    auto any_done = co_await any_res;
 
     assert_bigger_equal(counter.load(std::memory_order_relaxed), static_cast<size_t>(1));
 

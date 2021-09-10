@@ -34,7 +34,7 @@ namespace concurrencpp::tests {
 
 template<class type>
 void concurrencpp::tests::test_when_all_vector_empty_result() {
-    const size_t task_count = 63;
+    constexpr size_t task_count = 63;
     std::vector<result_promise<type>> result_promises(task_count);
     std::vector<result<type>> results;
 
@@ -62,15 +62,18 @@ template<class type>
 void concurrencpp::tests::test_when_all_vector_empty_range() {
     std::vector<result<type>> empty_range;
     auto all = concurrencpp::when_all(empty_range.begin(), empty_range.end());
-    assert_equal(all.status(), result_status::value);
+    assert_equal(all.status(), result_status::idle);
 
-    const auto all_done = all.get();
+    auto all_eager = all.run();
+    assert_equal(all_eager.status(), result_status::value);
+
+    const auto all_done = all_eager.get();
     assert_true(all_done.empty());
 }
 
 template<class type>
 concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_valid(std::shared_ptr<thread_executor> ex) {
-    const size_t task_count = 1'024;
+    constexpr size_t task_count = 1'024;
     std::atomic_size_t counter = 0;
     value_gen<type> gen;
     std::vector<result<type>> results;
@@ -97,6 +100,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_vector_valid(std::
     });
 
     assert_true(all_empty);
+    assert_equal(all.status(), result_status::idle);
 
     auto done_results = co_await all;
 
@@ -168,8 +172,12 @@ void concurrencpp::tests::test_when_all_tuple_empty_result() {
 
 void concurrencpp::tests::test_when_all_tuple_empty_range() {
     auto all = when_all();
-    assert_equal(all.status(), result_status::value);
-    assert_equal(all.get(), std::tuple<> {});
+    assert_equal(all.status(), result_status::idle);
+
+    auto eager_all = all.run();
+
+    assert_equal(eager_all.status(), result_status::value);
+    assert_equal(eager_all.get(), std::tuple<> {});
 }
 
 concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::shared_ptr<thread_executor> ex) {
@@ -249,6 +257,8 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::s
     assert_false(static_cast<bool>(int_ref_res_ex));
     assert_false(static_cast<bool>(str_ref_res_val));
     assert_false(static_cast<bool>(str_ref_res_ex));
+
+    assert_equal(all.status(), result_status::idle);
 
     auto done_results_tuple = co_await all;
 
