@@ -1724,3 +1724,11 @@ $ cmake --build build/test
 $ cd build/test
 $ ctest .
 ```
+
+##### Via vcpkg on Windows and *nix platforms
+
+Alternatively to building and installing the library manually, you may get stable releases of concurrencpp as [vcpkg](https://vcpkg.io/) packages:
+
+```shell
+$ vcpkg install concurrencpp
+```
