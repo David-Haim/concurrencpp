@@ -1,6 +1,7 @@
-#include "concurrencpp/timers/timer_queue.h"
-#include "concurrencpp/results/result.h"
 #include "concurrencpp/timers/timer.h"
+#include "concurrencpp/timers/timer_queue.h"
+
+#include "concurrencpp/coroutines/coroutine.h"
 
 #include <set>
 #include <unordered_map>
@@ -148,7 +149,7 @@ timer_queue::~timer_queue() noexcept {
     assert(!m_worker.joinable());
 }
 
-void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
+void timer_queue::add_internal_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
     assert(lock.owns_lock());
     m_request_queue.emplace_back(std::move(new_timer), timer_request::add);
     lock.unlock();
@@ -156,13 +157,28 @@ void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_ti
     m_condition.notify_one();
 }
 
-void timer_queue::remove_timer(timer_ptr existing_timer) {
+void timer_queue::remove_internal_timer(timer_ptr existing_timer) {
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         m_request_queue.emplace_back(std::move(existing_timer), timer_request::remove);
     }
 
     m_condition.notify_one();
+}
+
+void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
+    assert(lock.owns_lock());
+
+    if (m_abort) {
+        throw errors::runtime_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
+    }
+
+    auto old_thread = ensure_worker_thread(lock);
+    add_internal_timer(lock, new_timer);
+
+    if (old_thread.joinable()) {
+        old_thread.join();
+    }
 }
 
 void timer_queue::work_loop() noexcept {
@@ -243,19 +259,55 @@ concurrencpp::details::thread timer_queue::ensure_worker_thread(std::unique_lock
     return old_worker;
 }
 
-concurrencpp::result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time, std::shared_ptr<executor> executor) {
+concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono::milliseconds due_time,
+                                                                    std::shared_ptr<concurrencpp::timer_queue> self,
+                                                                    std::shared_ptr<concurrencpp::executor> executor) {
+    class delay_object_awaitable : public details::suspend_always {
+
+       private:
+        const size_t m_due_time_ms;
+        timer_queue& m_parent_queue;
+        std::shared_ptr<concurrencpp::executor> m_executor;
+        details::await_context m_await_context;
+
+       public:
+        delay_object_awaitable(size_t due_time_ms,
+                               timer_queue& parent_queue,
+                               std::shared_ptr<concurrencpp::executor> executor) noexcept :
+            m_due_time_ms(due_time_ms),
+            m_parent_queue(parent_queue), m_executor(std::move(executor)) {}
+
+        void await_suspend(details::coroutine_handle<void> coro_handle) {
+            m_await_context.set_coro_handle(coro_handle);
+
+            try {
+                m_parent_queue.make_timer_impl(m_due_time_ms,
+                                               0,
+                                               std::move(m_executor),
+                                               true,
+                                               details::await_via_functor {&m_await_context});
+
+            } catch (...) {
+                // if an exception is thrown, await_via_functor d.tor will set an interrupt and resume the coro
+                // no need to let the exception propagate.
+            }
+        }
+
+        void await_resume() const {
+            m_await_context.throw_if_interrupted();
+        }
+    };
+
+    co_await delay_object_awaitable {static_cast<size_t>(due_time.count()), *this, std::move(executor)};
+}
+
+concurrencpp::lazy_result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time,
+                                                               std::shared_ptr<executor> executor) {
     if (!static_cast<bool>(executor)) {
         throw std::invalid_argument(details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
     }
 
-    concurrencpp::result_promise<void> promise;
-    auto task = promise.get_result();
-
-    make_timer_impl(due_time.count(), 0, std::move(executor), true, [tcs = std::move(promise)]() mutable {
-        tcs.set_result();
-    });
-
-    return task;
+    return make_delay_object_impl(due_time, shared_from_this(), std::move(executor));
 }
 
 milliseconds timer_queue::max_worker_idle_time() const noexcept {
