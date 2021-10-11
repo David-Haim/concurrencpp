@@ -60,7 +60,7 @@ concurrencpp::result<std::vector<int>> find_prime_numbers(std::shared_ptr<concur
         found_primes_in_range.emplace_back(std::move(result));
     }
 
-    auto all_done = co_await concurrencpp::when_all(found_primes_in_range.begin(), found_primes_in_range.end());
+    auto all_done = co_await concurrencpp::when_all(executor, found_primes_in_range.begin(), found_primes_in_range.end());
 
     std::vector<int> found_primes;
     for (auto& done_result : all_done) {
