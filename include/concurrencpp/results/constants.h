@@ -51,9 +51,13 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_when_all_empty_result_error_msg = "concurrencpp::when_all() - one of the result objects is empty.";
 
+	inline const char* k_when_all_null_resume_executor_error_msg = "concurrencpp::when_all() - given resume_executor is null.";
+
     inline const char* k_when_any_empty_result_error_msg = "concurrencpp::when_any() - one of the result objects is empty.";
 
     inline const char* k_when_any_empty_range_error_msg = "concurrencpp::when_any() - given range contains no elements.";
+
+	inline const char* k_when_any_null_resume_executor_error_msg = "concurrencpp::when_any() - given resume_executor is null.";
 
     /*
      * shared_result

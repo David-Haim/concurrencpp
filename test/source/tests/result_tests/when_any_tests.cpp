@@ -1,8 +1,8 @@
 #include "concurrencpp/concurrencpp.h"
 
+#include "utils/random.h"
 #include "infra/tester.h"
 #include "infra/assertions.h"
-#include "utils/random.h"
 #include "utils/object_observer.h"
 #include "utils/test_generators.h"
 #include "utils/test_ready_result.h"
@@ -10,28 +10,40 @@
 
 namespace concurrencpp::tests {
     template<class type>
-    void test_when_any_vector_empty_result();
+    void test_when_any_vector_empty_result(std::shared_ptr<worker_thread_executor> resume_executor);
 
     template<class type>
-    void test_when_any_vector_empty_range();
+    void test_when_any_vector_empty_range(std::shared_ptr<worker_thread_executor> resume_executor);
 
     template<class type>
-    result<void> test_when_any_vector_valid(std::shared_ptr<thread_executor> ex);
+    void test_when_any_vector_null_resume_executor();
+
+    template<class type>
+    result<void> test_when_any_vector_valid(std::shared_ptr<worker_thread_executor> resume_executor,
+                                            std::shared_ptr<thread_executor> ex);
+
+    template<class type>
+    void test_when_any_vector_resuming_mechanism(std::shared_ptr<worker_thread_executor> wte);
 
     template<class type>
     void test_when_any_vector_impl();
 
     void test_when_any_vector();
 
-    void test_when_any_tuple_empty_result();
+    void test_when_any_tuple_empty_result(std::shared_ptr<worker_thread_executor> wte);
 
-    result<void> test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex);
+    void test_when_any_tuple_null_resume_executor();
+
+    result<void> test_when_any_tuple_impl(std::shared_ptr<worker_thread_executor> resume_executor,
+                                          std::shared_ptr<thread_executor> ex);
+
+    void test_when_any_tuple_resuming_mechanism(std::shared_ptr<worker_thread_executor> wte);
 
     void test_when_any_tuple();
 }  // namespace concurrencpp::tests
 
 template<class type>
-void concurrencpp::tests::test_when_any_vector_empty_result() {
+void concurrencpp::tests::test_when_any_vector_empty_result(std::shared_ptr<worker_thread_executor> resume_executor) {
     constexpr size_t task_count = 63;
     std::vector<result_promise<type>> result_promises(task_count);
     std::vector<result<type>> results;
@@ -45,7 +57,7 @@ void concurrencpp::tests::test_when_any_vector_empty_result() {
 
     assert_throws_with_error_message<errors::empty_result>(
         [&] {
-            concurrencpp::when_any(results.begin(), results.end());
+            concurrencpp::when_any(resume_executor, results.begin(), results.end());
         },
         concurrencpp::details::consts::k_when_any_empty_result_error_msg);
 
@@ -57,18 +69,37 @@ void concurrencpp::tests::test_when_any_vector_empty_result() {
 }
 
 template<class type>
-void concurrencpp::tests::test_when_any_vector_empty_range() {
+void concurrencpp::tests::test_when_any_vector_empty_range(std::shared_ptr<worker_thread_executor> resume_executor) {
     std::vector<result<type>> empty_range;
 
     assert_throws_with_error_message<std::invalid_argument>(
         [&] {
-            when_any(empty_range.begin(), empty_range.end());
+            when_any(resume_executor, empty_range.begin(), empty_range.end());
         },
         concurrencpp::details::consts::k_when_any_empty_range_error_msg);
 }
 
 template<class type>
-concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_any_vector_null_resume_executor() {
+    constexpr size_t task_count = 16;
+    std::vector<result_promise<type>> result_promises(task_count);
+    std::vector<result<type>> results;
+
+    for (auto& rp : result_promises) {
+        results.emplace_back(rp.get_result());
+    }
+
+    // with results
+    assert_throws_with_error_message<std::invalid_argument>(
+        [&] {
+            when_any(std::shared_ptr<worker_thread_executor> {}, results.begin(), results.end());
+        },
+        concurrencpp::details::consts::k_when_any_null_resume_executor_error_msg);
+}
+
+template<class type>
+concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::shared_ptr<worker_thread_executor> resume_executor,
+                                                                           std::shared_ptr<thread_executor> ex) {
     constexpr size_t task_count = 64;
     value_gen<type> gen;
     std::vector<result<type>> results;
@@ -87,7 +118,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
         }));
     }
 
-    auto any_res = when_any(results.begin(), results.end());
+    auto any_res = when_any(resume_executor, results.begin(), results.end());
 
     const auto all_empty = std::all_of(results.begin(), results.end(), [](const auto& result) {
         return !static_cast<bool>(result);
@@ -126,14 +157,51 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_vector_valid(std::
     }
 }
 
+namespace concurrencpp::tests {
+    template<class type>
+    result<void> await_result_when_any(std::atomic_uintptr_t& resuming_thread_id, result<type> res) {
+        co_await res;
+        resuming_thread_id.store(concurrencpp::details::thread::get_current_virtual_id());
+    }
+}  // namespace concurrencpp::tests
+
+template<class type>
+void concurrencpp::tests::test_when_any_vector_resuming_mechanism(std::shared_ptr<worker_thread_executor> resume_executor) {
+    constexpr size_t task_count = 16;
+    std::vector<result_promise<type>> result_promises(task_count);
+    std::vector<result<type>> results;
+
+    for (auto& rp : result_promises) {
+        results.emplace_back(rp.get_result());
+    }
+
+    std::atomic_uintptr_t this_thread_id = concurrencpp::details::thread::get_current_virtual_id(), resuming_thread_id {0};
+
+    auto any = when_any(resume_executor, results.begin(), results.end()).run();
+
+    auto test = await_result_when_any(resuming_thread_id, std::move(any));
+
+    result_promises[10].set_from_function(value_gen<type>::default_value);
+
+    test.get();
+
+    assert_not_equal(this_thread_id.load(), resuming_thread_id.load());
+}
+
 template<class type>
 void concurrencpp::tests::test_when_any_vector_impl() {
-    test_when_any_vector_empty_result<type>();
-    test_when_any_vector_empty_range<type>();
+	auto wte = std::make_shared<concurrencpp::worker_thread_executor>();
+    executor_shutdowner es1(wte);
+
+	test_when_any_vector_empty_result<type>(wte);
+    test_when_any_vector_empty_range<type>(wte);
+    test_when_any_vector_null_resume_executor<type>();
 
     auto ex = std::make_shared<concurrencpp::thread_executor>();
-    executor_shutdowner es(ex);
-    test_when_any_vector_valid<type>(ex).get();
+    executor_shutdowner es0(ex);
+
+    test_when_any_vector_valid<type>(wte, ex).get();
+    test_when_any_vector_resuming_mechanism<type>(wte);
 }
 
 void concurrencpp::tests::test_when_any_vector() {
@@ -144,7 +212,7 @@ void concurrencpp::tests::test_when_any_vector() {
     test_when_any_vector_impl<std::string&>();
 }
 
-void concurrencpp::tests::test_when_any_tuple_empty_result() {
+void concurrencpp::tests::test_when_any_tuple_empty_result(std::shared_ptr<worker_thread_executor> resume_executor) {
     result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
@@ -161,7 +229,12 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
 
     assert_throws_with_error_message<errors::empty_result>(
         [&] {
-            when_any(std::move(int_res), std::move(str_res), std::move(void_res), std::move(int_ref_res), std::move(str_ref_res));
+            when_any(resume_executor,
+                     std::move(int_res),
+                     std::move(str_res),
+                     std::move(void_res),
+                     std::move(int_ref_res),
+                     std::move(str_ref_res));
         },
         concurrencpp::details::consts::k_when_any_empty_result_error_msg);
 
@@ -172,7 +245,27 @@ void concurrencpp::tests::test_when_any_tuple_empty_result() {
     assert_true(static_cast<bool>(int_res));
 }
 
-concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<thread_executor> ex) {
+void concurrencpp::tests::test_when_any_tuple_null_resume_executor()
+{
+    result_promise<int> rp_int;
+    auto int_res = rp_int.get_result();
+
+    result_promise<std::string> rp_str;
+    auto str_res = rp_str.get_result();
+
+    result_promise<void> rp_void;
+    auto void_res = rp_void.get_result();
+
+    // with results
+    assert_throws_with_error_message<std::invalid_argument>(
+        [&] {
+            when_any(std::shared_ptr<worker_thread_executor> {}, std::move(int_res), std::move(str_res), std::move(void_res));
+        },
+        concurrencpp::details::consts::k_when_any_null_resume_executor_error_msg);
+}
+
+concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<worker_thread_executor> resume_executor,
+                                                                         std::shared_ptr<thread_executor> ex) {
     std::atomic_size_t counter = 0;
     random randomizer;
 
@@ -249,7 +342,8 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
         return value_gen<std::string&>::default_value();
     });
 
-    auto any_res = when_any(std::move(int_res_val),
+    auto any_res = when_any(resume_executor,
+                            std::move(int_res_val),
                             std::move(int_res_ex),
                             std::move(s_res_val),
                             std::move(s_res_ex),
@@ -325,12 +419,40 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
         any_done.results);
 }
 
+void concurrencpp::tests::test_when_any_tuple_resuming_mechanism(std::shared_ptr<worker_thread_executor> resume_executor)
+{
+    result_promise<int> rp_int;
+    auto int_res = rp_int.get_result();
+
+    result_promise<std::string> rp_str;
+    auto str_res = rp_str.get_result();
+
+    result_promise<void> rp_void;
+    auto void_res = rp_void.get_result();
+
+    std::atomic_uintptr_t this_thread_id = concurrencpp::details::thread::get_current_virtual_id(), resuming_thread_id {0};
+
+    auto any = when_any(resume_executor, std::move(int_res), std::move(str_res), std::move(void_res)).run();
+    auto test = await_result_when_any(resuming_thread_id, std::move(any));
+
+    rp_str.set_result("");
+
+    test.get();
+
+    assert_not_equal(this_thread_id.load(), resuming_thread_id.load());
+}
+
 void concurrencpp::tests::test_when_any_tuple() {
-    test_when_any_tuple_empty_result();
+    auto wte = std::make_shared<concurrencpp::worker_thread_executor>();
+    executor_shutdowner es0(wte);
+
+	test_when_any_tuple_empty_result(wte);
+    test_when_any_tuple_null_resume_executor();
 
     auto ex = std::make_shared<concurrencpp::thread_executor>();
-    executor_shutdowner es(ex);
-    test_when_any_tuple_impl(ex).get();
+    executor_shutdowner es1(ex);
+    test_when_any_tuple_impl(wte, ex).get();
+    test_when_any_tuple_resuming_mechanism(wte);
 }
 
 using namespace concurrencpp::tests;
