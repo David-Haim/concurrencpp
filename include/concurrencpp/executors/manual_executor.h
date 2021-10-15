@@ -1,13 +1,14 @@
 #ifndef CONCURRENCPP_MANUAL_EXECUTOR_H
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
+#include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
 #include <chrono>
 
 namespace concurrencpp {
-    class alignas(64) manual_executor final : public derivable_executor<manual_executor> {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public derivable_executor<manual_executor> {
 
        private:
         mutable std::mutex m_lock;

@@ -2,6 +2,7 @@
 #define CONCURRENCPP_WORKER_THREAD_EXECUTOR_H
 
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
@@ -9,13 +10,13 @@
 #include <mutex>
 
 namespace concurrencpp {
-    class alignas(64) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
 
        private:
         std::deque<task> m_private_queue;
         std::atomic_bool m_private_atomic_abort;
         details::thread m_thread;
-        alignas(64) std::mutex m_lock;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
         std::deque<task> m_public_queue;
         details::binary_semaphore m_semaphore;
         std::atomic_bool m_atomic_abort;

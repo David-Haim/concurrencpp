@@ -71,6 +71,7 @@ set(concurrencpp_headers
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/binary_semaphore.h
         include/concurrencpp/threads/thread.h
+        include/concurrencpp/threads/cache_line.h
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
