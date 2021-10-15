@@ -1,9 +1,15 @@
 #ifndef CONCURRENCPP_BINARY_SEMAPHORE_H
 #define CONCURRENCPP_BINARY_SEMAPHORE_H
 
-#include "concurrencpp/platform_defs.h"
+#    if defined(__cpp_lib_semaphore)
 
-#if defined(CRCPP_MAC_OS) && defined(CRCPP_LIBCPP_LIB)
+#    include <semaphore>
+
+namespace concurrencpp::details {
+    using binary_semaphore = std::binary_semaphore;
+}
+
+#else
 
 #    include <mutex>
 #    include <chrono>
@@ -45,14 +51,6 @@ namespace concurrencpp::details {
     };
 
 }  // namespace concurrencpp::details
-
-#else
-
-#    include <semaphore>
-
-namespace concurrencpp::details {
-    using binary_semaphore = std::binary_semaphore;
-}
 
 #endif
 

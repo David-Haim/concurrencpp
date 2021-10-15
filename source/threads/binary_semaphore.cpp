@@ -1,6 +1,6 @@
 #include "concurrencpp/threads/binary_semaphore.h"
 
-#if defined(CRCPP_MAC_OS) && defined(CRCPP_LIBCPP_LIB)
+#if !defined(__cpp_lib_semaphore)
 
 #    include <cassert>
 
