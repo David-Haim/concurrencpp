@@ -27,7 +27,7 @@ namespace concurrencpp::details {
 
         void release(std::ptrdiff_t update = 1);
         void acquire();
-        bool try_acquire() noexcept;
+        bool try_acquire();
 
         template<class Rep, class Period>
         bool try_acquire_for(const std::chrono::duration<Rep, Period>& rel_time) {

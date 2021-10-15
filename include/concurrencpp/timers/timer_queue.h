@@ -76,13 +76,13 @@ namespace concurrencpp {
             return timer_state;
         }
 
-        void work_loop() noexcept;
+        void work_loop();
 
        public:
-        timer_queue(std::chrono::milliseconds max_waiting_time) noexcept;
+        timer_queue(std::chrono::milliseconds max_waiting_time);
         ~timer_queue() noexcept;
 
-        void shutdown() noexcept;
+        void shutdown();
         bool shutdown_requested() const noexcept;
 
         template<class callable_type, class... argumet_types>

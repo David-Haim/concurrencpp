@@ -19,7 +19,8 @@ int example_job(int task_num, int dummy_value, int sleeping_time_ms) {
     return dummy_value;
 }
 
-concurrencpp::result<void> consume_tasks_as_they_finish(std::shared_ptr<concurrencpp::thread_pool_executor> resume_executor, std::vector<concurrencpp::result<int>> results) {
+concurrencpp::result<void> consume_tasks_as_they_finish(std::shared_ptr<concurrencpp::thread_pool_executor> resume_executor,
+                                                        std::vector<concurrencpp::result<int>> results) {
     while (!results.empty()) {
         auto when_any = co_await concurrencpp::when_any(resume_executor, results.begin(), results.end());
         auto finished_task = std::move(when_any.results[when_any.index]);
@@ -39,7 +40,7 @@ concurrencpp::result<void> consume_tasks_as_they_finish(std::shared_ptr<concurre
 int main(int argc, const char* argv[]) {
     concurrencpp::runtime runtime;
     auto background_executor = runtime.background_executor();
-	auto thread_pool_executor = runtime.thread_pool_executor();
+    auto thread_pool_executor = runtime.thread_pool_executor();
     std::vector<concurrencpp::result<int>> results;
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));

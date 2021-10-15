@@ -32,8 +32,8 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        bool shutdown_requested() const noexcept override;
-        void shutdown() noexcept override;
+        bool shutdown_requested() const override;
+        void shutdown() override;
     };
 }  // namespace concurrencpp
 

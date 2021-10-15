@@ -52,16 +52,16 @@ namespace concurrencpp::details {
         binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
-        std::atomic_bool m_event_found;
+        std::atomic_bool m_task_found_or_abort;
         thread m_thread;
 
         void balance_work();
 
-        bool wait_for_task(std::unique_lock<std::mutex>& lock) noexcept;
+        bool wait_for_task(std::unique_lock<std::mutex>& lock);
         bool drain_queue_impl();
         bool drain_queue();
 
-        void work_loop() noexcept;
+        void work_loop();
 
         void ensure_worker_active(bool first_enqueuer, std::unique_lock<std::mutex>& lock);
 
@@ -79,7 +79,7 @@ namespace concurrencpp::details {
         void enqueue_local(concurrencpp::task& task);
         void enqueue_local(std::span<concurrencpp::task> tasks);
 
-        void shutdown() noexcept;
+        void shutdown();
 
         std::chrono::milliseconds max_worker_idle_time() const noexcept;
 
@@ -100,7 +100,6 @@ namespace concurrencpp {
 
         void mark_worker_idle(size_t index) noexcept;
         void mark_worker_active(size_t index) noexcept;
-
         void find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept;
 
         details::thread_pool_worker& worker_at(size_t index) noexcept;
@@ -113,8 +112,8 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        bool shutdown_requested() const noexcept override;
-        void shutdown() noexcept override;
+        bool shutdown_requested() const override;
+        void shutdown() override;
 
         std::chrono::milliseconds max_worker_idle_time() const noexcept;
     };

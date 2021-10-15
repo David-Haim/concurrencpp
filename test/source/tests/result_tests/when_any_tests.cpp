@@ -190,10 +190,10 @@ void concurrencpp::tests::test_when_any_vector_resuming_mechanism(std::shared_pt
 
 template<class type>
 void concurrencpp::tests::test_when_any_vector_impl() {
-	auto wte = std::make_shared<concurrencpp::worker_thread_executor>();
+    auto wte = std::make_shared<concurrencpp::worker_thread_executor>();
     executor_shutdowner es1(wte);
 
-	test_when_any_vector_empty_result<type>(wte);
+    test_when_any_vector_empty_result<type>(wte);
     test_when_any_vector_empty_range<type>(wte);
     test_when_any_vector_null_resume_executor<type>();
 
@@ -245,8 +245,7 @@ void concurrencpp::tests::test_when_any_tuple_empty_result(std::shared_ptr<worke
     assert_true(static_cast<bool>(int_res));
 }
 
-void concurrencpp::tests::test_when_any_tuple_null_resume_executor()
-{
+void concurrencpp::tests::test_when_any_tuple_null_resume_executor() {
     result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
@@ -419,8 +418,7 @@ concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::sh
         any_done.results);
 }
 
-void concurrencpp::tests::test_when_any_tuple_resuming_mechanism(std::shared_ptr<worker_thread_executor> resume_executor)
-{
+void concurrencpp::tests::test_when_any_tuple_resuming_mechanism(std::shared_ptr<worker_thread_executor> resume_executor) {
     result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
@@ -446,7 +444,7 @@ void concurrencpp::tests::test_when_any_tuple() {
     auto wte = std::make_shared<concurrencpp::worker_thread_executor>();
     executor_shutdowner es0(wte);
 
-	test_when_any_tuple_empty_result(wte);
+    test_when_any_tuple_empty_result(wte);
     test_when_any_tuple_null_resume_executor();
 
     auto ex = std::make_shared<concurrencpp::thread_executor>();

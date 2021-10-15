@@ -44,10 +44,10 @@ namespace concurrencpp::details {
         bool m_ready = false;
 
        public:
-        void wait() noexcept;
-        bool wait_for(size_t milliseconds) noexcept;
+        void wait();
+        bool wait_for(size_t milliseconds);
 
-        void notify() noexcept;
+        void notify();
     };
 
     class when_any_context {
@@ -96,7 +96,7 @@ namespace concurrencpp::details {
         ~consumer_context() noexcept;
 
         void clear() noexcept;
-        void resume_consumer(result_state_base* self) const noexcept;
+        void resume_consumer(result_state_base* self) const;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;

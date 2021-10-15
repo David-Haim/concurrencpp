@@ -378,10 +378,8 @@ concurrencpp::result<void> concurrencpp::tests::test_when_all_tuple_valid(std::s
     test_ready_result_custom_exception(std::move(std::get<9>(done_results_tuple)), 4);
 }
 
-void concurrencpp::tests::test_when_all_tuple_resuming_mechanism(
-	std::shared_ptr<worker_thread_executor> resume_executor)
-{
-	result_promise<int> rp_int;
+void concurrencpp::tests::test_when_all_tuple_resuming_mechanism(std::shared_ptr<worker_thread_executor> resume_executor) {
+    result_promise<int> rp_int;
     auto int_res = rp_int.get_result();
 
     result_promise<std::string> rp_str;
@@ -390,12 +388,12 @@ void concurrencpp::tests::test_when_all_tuple_resuming_mechanism(
     result_promise<void> rp_void;
     auto void_res = rp_void.get_result();
 
-	std::atomic_uintptr_t this_thread_id = concurrencpp::details::thread::get_current_virtual_id(), resuming_thread_id {0};
+    std::atomic_uintptr_t this_thread_id = concurrencpp::details::thread::get_current_virtual_id(), resuming_thread_id {0};
 
     auto all = when_all(resume_executor, std::move(int_res), std::move(str_res), std::move(void_res)).run();
-    auto test =  await_result_when_all(resuming_thread_id, std::move(all));
+    auto test = await_result_when_all(resuming_thread_id, std::move(all));
 
-	rp_void.set_result();
+    rp_void.set_result();
     rp_str.set_result("");
     rp_int.set_result(0);
 

@@ -32,7 +32,7 @@ void binary_semaphore::acquire() {
     m_is_signaled = false;
 }
 
-bool binary_semaphore::try_acquire() noexcept {
+bool binary_semaphore::try_acquire() {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_is_signaled) {
         m_is_signaled = false;

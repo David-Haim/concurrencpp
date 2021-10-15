@@ -98,8 +98,8 @@ namespace concurrencpp {
 
         virtual int max_concurrency_level() const noexcept = 0;
 
-        virtual bool shutdown_requested() const noexcept = 0;
-        virtual void shutdown() noexcept = 0;
+        virtual bool shutdown_requested() const = 0;
+        virtual void shutdown() = 0;
 
         template<class callable_type, class... argument_types>
         void post(callable_type&& callable, argument_types&&... arguments) {

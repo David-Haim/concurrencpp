@@ -35,11 +35,11 @@ namespace concurrencpp {
             return details::consts::k_inline_executor_max_concurrency_level;
         }
 
-        void shutdown() noexcept override {
+        void shutdown() override {
             m_abort.store(true, std::memory_order_relaxed);
         }
 
-        bool shutdown_requested() const noexcept override {
+        bool shutdown_requested() const override {
             return m_abort.load(std::memory_order_relaxed);
         }
     };

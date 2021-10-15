@@ -24,7 +24,7 @@ namespace concurrencpp {
         bool drain_queue_impl();
         bool drain_queue();
         void wait_for_task(std::unique_lock<std::mutex>& lock);
-        void work_loop() noexcept;
+        void work_loop();
 
         void enqueue_local(concurrencpp::task& task);
         void enqueue_local(std::span<concurrencpp::task> task);
@@ -40,8 +40,8 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        bool shutdown_requested() const noexcept override;
-        void shutdown() noexcept override;
+        bool shutdown_requested() const override;
+        void shutdown() override;
     };
 }  // namespace concurrencpp
 

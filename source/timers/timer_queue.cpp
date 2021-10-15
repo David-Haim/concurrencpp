@@ -141,7 +141,7 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
-timer_queue::timer_queue(milliseconds max_waiting_time) noexcept :
+timer_queue::timer_queue(milliseconds max_waiting_time) :
     m_atomic_abort(false), m_abort(false), m_idle(true), m_max_waiting_time(max_waiting_time) {}
 
 timer_queue::~timer_queue() noexcept {
@@ -181,7 +181,7 @@ void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_ti
     }
 }
 
-void timer_queue::work_loop() noexcept {
+void timer_queue::work_loop() {
     time_point next_deadline;
     details::timer_queue_internal internal_state;
 
@@ -220,16 +220,16 @@ void timer_queue::work_loop() noexcept {
 }
 
 bool timer_queue::shutdown_requested() const noexcept {
-    return m_atomic_abort.load(std::memory_order_relaxed);
+    return m_atomic_abort.load(std::memory_order_acquire);
 }
 
-void timer_queue::shutdown() noexcept {
+void timer_queue::shutdown() {
     const auto state_before = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (state_before) {
         return;  // timer_queue has been shut down already.
     }
 
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
+    std::unique_lock<std::mutex> lock(m_lock);
     m_abort = true;
 
     if (!m_worker.joinable()) {
@@ -277,7 +277,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
             m_due_time_ms(due_time_ms),
             m_parent_queue(parent_queue), m_executor(std::move(executor)) {}
 
-        void await_suspend(details::coroutine_handle<void> coro_handle) {
+        void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
             m_await_context.set_coro_handle(coro_handle);
 
             try {

@@ -240,7 +240,7 @@ namespace concurrencpp::details {
     lazy_result<when_any_result<tuple_type>> when_any_impl(std::shared_ptr<executor_type> resume_executor, tuple_type tuple) {
         const auto completed_index = co_await when_result_helper::when_any_awaitable<tuple_type> {tuple};
         co_await resume_on(resume_executor);
-    	co_return when_any_result<tuple_type> {completed_index, std::move(tuple)};
+        co_return when_any_result<tuple_type> {completed_index, std::move(tuple)};
     }
 
     template<class executor_type, class type>
@@ -264,14 +264,12 @@ namespace concurrencpp {
             throw std::invalid_argument(details::consts::k_when_any_null_resume_executor_error_msg);
         }
 
-    	return details::when_any_impl(resume_executor, std::make_tuple(std::forward<result_types>(results)...));
+        return details::when_any_impl(resume_executor, std::make_tuple(std::forward<result_types>(results)...));
     }
 
     template<class executor_type, class iterator_type>
-    lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>> when_any(
-        std::shared_ptr<executor_type> resume_executor,
-        iterator_type begin,
-        iterator_type end) {
+    lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
+    when_any(std::shared_ptr<executor_type> resume_executor, iterator_type begin, iterator_type end) {
         details::when_result_helper::throw_if_empty_range(details::consts::k_when_any_empty_result_error_msg, begin, end);
 
         if (begin == end) {
@@ -284,7 +282,8 @@ namespace concurrencpp {
 
         using type = typename std::iterator_traits<iterator_type>::value_type;
 
-        return details::when_any_impl(resume_executor, std::vector<type> {std::make_move_iterator(begin), std::make_move_iterator(end)});
+        return details::when_any_impl(resume_executor,
+                                      std::vector<type> {std::make_move_iterator(begin), std::make_move_iterator(end)});
     }
 }  // namespace concurrencpp
 
