@@ -95,6 +95,10 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_resume_on_null_exception_err_msg = "resume_on - given executor is null.";
 
+    /*
+     * generator
+     */
+    inline const char* k_empty_generator_begin_err_msg = "generator::begin - generator is empty.";
 }  // namespace concurrencpp::details::consts
 
 #endif

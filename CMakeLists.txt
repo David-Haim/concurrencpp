@@ -55,6 +55,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/impl/result_state.h
         include/concurrencpp/results/impl/shared_result_state.h
         include/concurrencpp/results/impl/lazy_result_state.h
+        include/concurrencpp/results/impl/generator_state.h
         include/concurrencpp/results/constants.h
         include/concurrencpp/results/make_result.h
         include/concurrencpp/results/promises.h
@@ -67,6 +68,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/result_fwd_declarations.h
         include/concurrencpp/results/when_result.h
         include/concurrencpp/results/resume_on.h
+        include/concurrencpp/results/generator.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/binary_semaphore.h

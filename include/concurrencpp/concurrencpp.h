@@ -15,6 +15,7 @@
 #include "concurrencpp/results/shared_result_awaitable.h"
 #include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/resume_on.h"
+#include "concurrencpp/results/generator.h"
 #include "concurrencpp/executors/executor_all.h"
 
 #endif
