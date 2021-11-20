@@ -4,6 +4,7 @@
 #include "infra/assertions.h"
 #include "utils/object_observer.h"
 #include "utils/test_generators.h"
+#include "utils/test_ready_result.h"
 #include "utils/executor_shutdowner.h"
 
 namespace concurrencpp::tests {
@@ -16,18 +17,22 @@ namespace concurrencpp::tests {
 
     void test_worker_thread_executor_max_concurrency_level();
 
+    void test_worker_thread_executor_post_exception();
     void test_worker_thread_executor_post_foreign();
     void test_worker_thread_executor_post_inline();
     void test_worker_thread_executor_post();
 
+    void test_worker_thread_executor_submit_exception();
     void test_worker_thread_executor_submit_foreign();
     void test_worker_thread_executor_submit_inline();
     void test_worker_thread_executor_submit();
 
+    void test_worker_thread_executor_bulk_post_exception();
     void test_worker_thread_executor_bulk_post_foreign();
     void test_worker_thread_executor_bulk_post_inline();
     void test_worker_thread_executor_bulk_post();
 
+    void test_worker_thread_executor_bulk_submit_exception();
     void test_worker_thread_executor_bulk_submit_foreign();
     void test_worker_thread_executor_bulk_submit_inline();
     void test_worker_thread_executor_bulk_submit();
@@ -102,6 +107,17 @@ void concurrencpp::tests::test_worker_thread_executor_max_concurrency_level() {
     assert_equal(executor->max_concurrency_level(), concurrencpp::details::consts::k_worker_thread_max_concurrency_level);
 }
 
+void concurrencpp::tests::test_worker_thread_executor_post_exception() {
+    auto executor = std::make_shared<worker_thread_executor>();
+    executor_shutdowner shutdown(executor);
+
+    executor->post([] {
+        throw std::runtime_error("");
+    });
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+}
+
 void concurrencpp::tests::test_worker_thread_executor_post_foreign() {
     object_observer observer;
     const size_t task_count = 1'024;
@@ -135,8 +151,22 @@ void concurrencpp::tests::test_worker_thread_executor_post_inline() {
 }
 
 void concurrencpp::tests::test_worker_thread_executor_post() {
+    test_worker_thread_executor_post_exception();
     test_worker_thread_executor_post_foreign();
     test_worker_thread_executor_post_inline();
+}
+
+void concurrencpp::tests::test_worker_thread_executor_submit_exception() {
+    auto executor = std::make_shared<worker_thread_executor>();
+    executor_shutdowner shutdown(executor);
+    constexpr intptr_t id = 12345;
+
+    auto result = executor->submit([id] {
+        throw custom_exception(id);
+    });
+
+    result.wait();
+    test_ready_result_custom_exception(std::move(result), id);
 }
 
 void concurrencpp::tests::test_worker_thread_executor_submit_foreign() {
@@ -188,8 +218,25 @@ void concurrencpp::tests::test_worker_thread_executor_submit_inline() {
 }
 
 void concurrencpp::tests::test_worker_thread_executor_submit() {
+    test_worker_thread_executor_submit_exception();
     test_worker_thread_executor_submit_foreign();
     test_worker_thread_executor_submit_inline();
+}
+
+void concurrencpp::tests::test_worker_thread_executor_bulk_post_exception() {
+    auto executor = std::make_shared<worker_thread_executor>();
+    executor_shutdowner shutdown(executor);
+
+    auto thrower = [] {
+        throw std::runtime_error("");
+    };
+
+    std::vector<decltype(thrower)> tasks;
+    tasks.resize(4);
+
+    executor->bulk_post<decltype(thrower)>(tasks);
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_post_foreign() {
@@ -235,8 +282,29 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_post_inline() {
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_post() {
+    test_worker_thread_executor_bulk_post_exception();
     test_worker_thread_executor_bulk_post_foreign();
     test_worker_thread_executor_bulk_post_inline();
+}
+
+void concurrencpp::tests::test_worker_thread_executor_bulk_submit_exception() {
+    auto executor = std::make_shared<worker_thread_executor>();
+    executor_shutdowner shutdown(executor);
+    constexpr intptr_t id = 12345;
+
+    auto thrower = [id] {
+        throw custom_exception(id);
+    };
+
+    std::vector<decltype(thrower)> tasks;
+    tasks.resize(4, thrower);
+
+    auto results = executor->bulk_submit<decltype(thrower)>(tasks);
+
+    for (auto& result : results) {
+        result.wait();
+        test_ready_result_custom_exception(std::move(result), id);
+    }
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_submit_foreign() {
@@ -290,6 +358,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit_inline() {
 }
 
 void concurrencpp::tests::test_worker_thread_executor_bulk_submit() {
+    test_worker_thread_executor_bulk_submit_exception();
     test_worker_thread_executor_bulk_submit_foreign();
     test_worker_thread_executor_bulk_submit_inline();
 }
