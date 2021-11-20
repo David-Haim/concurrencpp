@@ -22,6 +22,7 @@ namespace concurrencpp::tests {
 
     template<class type, class arguments_tuple_type>
     void test_result_promise_set_value_impl(const arguments_tuple_type& tuple_args);
+    void test_result_promise_set_value_thrown_exception();
     void test_result_promise_set_value();
 
     template<class type>
@@ -202,6 +203,33 @@ void concurrencpp::tests::test_result_promise_set_value_impl(const arguments_tup
     }
 }
 
+void concurrencpp::tests::test_result_promise_set_value_thrown_exception() {
+
+    struct throws_on_construction {
+        throws_on_construction() {
+            static bool s_thrown = false;
+
+            if (!s_thrown) {
+                s_thrown = true;
+                throw std::runtime_error("");
+            }
+        }
+    };
+
+    result_promise<throws_on_construction> rp;
+    auto result = rp.get_result();
+
+    assert_throws<std::runtime_error>([&] {
+        rp.set_result();
+    });
+
+    assert_equal(result.status(), result_status::idle);
+    assert_true(static_cast<bool>(rp));
+
+    rp.set_result();  // should not throw.
+    assert_equal(result.status(), result_status::value);
+}
+
 void concurrencpp::tests::test_result_promise_set_value() {
     const auto expected_int_result = value_gen<int>::default_value();
     auto int_tuple = std::make_tuple(expected_int_result);
@@ -222,6 +250,8 @@ void concurrencpp::tests::test_result_promise_set_value() {
     auto& expected_str_ref_result = value_gen<std::string&>::default_value();
     std::tuple<std::string&> str_ref_tuple = {expected_str_ref_result};
     test_result_promise_set_value_impl<std::string&>(str_ref_tuple);
+
+    test_result_promise_set_value_thrown_exception();
 }
 
 template<class type>
