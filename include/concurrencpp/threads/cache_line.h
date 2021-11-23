@@ -5,7 +5,7 @@
 
 #include <new>
 
-#ifdef __cpp_lib_hardware_interference_size && !defined(CRCPP_MAC_OS)
+#if  !defined(CRCPP_MAC_OS) && defined(__cpp_lib_hardware_interference_size) 
 #    define CRCPP_CACHE_LINE_ALIGNMENT std::hardware_destructive_interference_size
 #else
 #    define CRCPP_CACHE_LINE_ALIGNMENT 64
