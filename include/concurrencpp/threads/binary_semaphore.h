@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_BINARY_SEMAPHORE_H
 #define CONCURRENCPP_BINARY_SEMAPHORE_H
 
-#    if defined(__cpp_lib_semaphore)
+#if defined(__cpp_lib_semaphore)
 
 #    include <semaphore>
 

@@ -20,7 +20,7 @@ concurrencpp::result<void> read_file_lines(const std::filesystem::path& path,
                                            std::shared_ptr<concurrencpp::thread_pool_executor> background_executor,
                                            std::shared_ptr<concurrencpp::thread_pool_executor> thread_pool_executor) {
     // make sure we don't block in a thread that is used for cpu-processing
-	co_await concurrencpp::resume_on(background_executor);
+    co_await concurrencpp::resume_on(background_executor);
 
     std::ifstream stream(path.c_str(), std::ios::binary | std::ios::in);
     std::string file_content(std::istreambuf_iterator<char>(stream), {});

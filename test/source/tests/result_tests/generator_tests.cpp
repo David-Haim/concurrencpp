@@ -28,8 +28,7 @@ namespace concurrencpp::tests {
     void test_generator_iterator_comparison_operators();
 }  // namespace concurrencpp::tests
 
-void concurrencpp::tests::test_generator_move_constructor()
-{
+void concurrencpp::tests::test_generator_move_constructor() {
     auto gen0 = []() -> generator<int> {
         co_yield 1;
     }();
@@ -49,8 +48,8 @@ void concurrencpp::tests::test_generator_destructor() {
     object_observer observer;
 
     {
-	    auto gen0 = gen_fn(observer.get_testing_stub());
-        auto gen1(std::move(gen0)); //check to see that empty generator d.tor is benign
+        auto gen0 = gen_fn(observer.get_testing_stub());
+        auto gen1(std::move(gen0));  // check to see that empty generator d.tor is benign
     }
 
     assert_equal(observer.get_destruction_count(), 1);
@@ -120,7 +119,7 @@ void concurrencpp::tests::test_generator_iterator_operator_plus_plus_exception()
 
     auto gen_it = gen.begin();  // i = 0
     const auto end = gen.end();
-	assert_not_equal(gen_it, end);
+    assert_not_equal(gen_it, end);
 
     auto& res0 = ++gen_it;  // i = 1
     assert_equal(&res0, &gen_it);
@@ -145,7 +144,7 @@ void concurrencpp::tests::test_generator_iterator_operator_plus_plus_ran_to_end(
 
     auto gen_it = gen.begin();  // i = 0
     const auto end = gen.end();
-	assert_not_equal(gen_it, end);
+    assert_not_equal(gen_it, end);
 
     auto& res0 = ++gen_it;  // i = 1
     assert_equal(&res0, &gen_it);
