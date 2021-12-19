@@ -1,3 +1,5 @@
+
+
 # concurrencpp, the C++ concurrency library
 
 ![Latest Release](https://img.shields.io/github/v/release/David-Haim/concurrencpp.svg) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -37,6 +39,8 @@ concurrencpp main advantages are:
 * [Shared result objects](#shared-result-objects)
     * [`shared_result` API](#shared_result-api)
     * [`shared_result` example](#shared_result-example)
+* [Termination in concurrencpp](#termination-in-concurrencpp)
+* [Resume executors](#resume-executors)
 * [Utility functions](#utility-functions)
     * [`make_ready_result`](#make_ready_result-function)
     * [`make_exceptional_result`](#make_exceptional_result-function)
@@ -51,9 +55,12 @@ concurrencpp main advantages are:
     * [Oneshot timer example](#oneshot-timer-example)
     * [Delay objects](#delay-objects)
     * [Delay object example](#delay-object-example)
+* [Generators](#generators)     
+	* [`generator` API](#generator-api)
 * [The runtime object](#the-runtime-object)
     * [`runtime` API](#runtime-api)
     * [Creating user-defined executors](#creating-user-defined-executors)
+    * [`task` objects](#task-objects)
     * [`task` API](#task-api)
     * [Using a user-defined executor example](#example-using-a-user-defined-executor)
 * [Supported platforms and tools](#supported-platforms-and-tools)
@@ -245,9 +252,10 @@ class executor {
     virtual void shutdown() noexcept = 0;
 
     /*
-        Turns a callable and its arguments into a task object and schedules it to run in this executor using enqueue.
+        Turns a callable and its arguments into a task object and
+        schedules it to run in this executor using enqueue.
         Arguments are passed to the task by decaying them first.
-         Throws errors::runtime_shutdown exception if shutdown has been called before.
+        Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type, class ... argument_types>
     void post(callable_type&& callable, argument_types&& ... arguments);
@@ -260,7 +268,8 @@ class executor {
     result<type> submit(callable_type&& callable, argument_types&& ... arguments);
 
     /*
-        Turns an array of callables into an array of tasks and schedules them to run in this executor using enqueue.
+        Turns an array of callables into an array of tasks and
+        schedules them to run in this executor using enqueue.
         Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type>
@@ -283,8 +292,15 @@ As mentioned above, concurrencpp provides commonly used executors. These executo
 The thread pool executor is suitable for short cpu-bound tasks that don't block. Applications are encouraged to use this executor as the default executor for non-blocking tasks.
 The concurrencpp thread pool provides dynamic thread injection and dynamic work balancing.
 
-* **background executor** - a threadpool executor with a larger pool of threads. Suitable for launching short blocking tasks like file io and db queries.
+* **background executor** - a threadpool executor with a larger pool of threads. Suitable for launching short blocking tasks like file io and db queries. Important note: when consuming results this executor returned by calling `submit` and `bulk_submit`, it is important to switch execution using `resume_on` to a cpu-bound executor, in order to prevent cpu-bound tasks to be processed inside background_executor.
 
+example:
+```cpp
+auto result = background_executor.submit([]{/* some blocking action */});
+auto done_result = co_await result.resolve();	
+co_await resume_on(some_cpu_executor);
+auto val = co_await done_result; //runs inside some_cpu_executor
+```
 * **thread executor** - an executor that launches each enqueued task to run on a new thread of execution. Threads are not reused.
 This executor is good for long running tasks, like objects that run a work loop, or long blocking operations.
 
@@ -319,8 +335,10 @@ Aside from `post`, `submit`, `bulk_post` and `bulk_submit`, the `thread_pool_exe
 class thread_pool_executor {
 
     /*
-        Returns the number of milliseconds each thread-pool worker remains idle (without any task to execute) before exiting.
-        This constant can be set by passing a runtime_options object to the constructor of the runtime class.
+        Returns the number of milliseconds each thread-pool worker
+        remains idle (lacks any task to execute) before exiting.
+        This constant can be set by passing a runtime_options object
+        to the constructor of the runtime class.
     */
     std::chrono::milliseconds max_worker_idle_time() const noexcept;
 
@@ -342,6 +360,7 @@ class manual_executor {
         Returns the number of enqueued tasks at the moment of invocation.
         This number can change quickly by the time the application handles it, it should be used as a hint.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     size_t size() const noexcept;
         
@@ -349,30 +368,42 @@ class manual_executor {
         Queries whether the executor is empty from tasks at the moment of invocation.
         This value can change quickly by the time the application handles it, it should be used as a hint.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     bool empty() const noexcept;
 
     /*
-        Clears the executor from any enqueued but yet to-be-executed tasks, and returns the number of cleared tasks.
-        Tasks enqueued to this executor by (post_)submit method are resumed and errors::broken_task exception is thrown inside them.
+        Clears the executor from any enqueued but yet to-be-executed tasks,
+        and returns the number of cleared tasks.
+        Tasks enqueued to this executor by (post_)submit method are resumed
+        and errors::broken_task exception is thrown inside them.
         Ongoing tasks that are being executed by loop_once(_XXX) or loop(_XXX) are uneffected.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     size_t clear();
 
     /*
-        Tries to execute a single task. If at the moment of invocation the executor is empty, the method does nothing.
+        Tries to execute a single task. If at the moment of invocation the executor
+        is empty, the method does nothing.
         Returns true if a task was executed, false otherwise.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws. 
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     bool loop_once();
 
     /*
         Tries to execute a single task.
-        This method returns when either a task was executed or max_waiting_time (in milliseconds) has reached.
+        This method returns when either a task was executed or max_waiting_time
+        (in milliseconds) has reached.
         If max_waiting_time is 0, the method is equivalent to loop_once.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     bool loop_once_for(std::chrono::milliseconds max_waiting_time);
 
@@ -380,26 +411,36 @@ class manual_executor {
         Tries to execute a single task.
         This method returns when either a task was executed or timeout_time has reached.
         If timeout_time has already expired, this method is equivalent to loop_once.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method
+        returns and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     template<class clock_type, class duration_type>
     bool loop_once_until(std::chrono::time_point<clock_type, duration_type> timeout_time);
    
     /*
         Tries to execute max_count enqueued tasks and returns the number of tasks that were executed.
-        This method does not wait: it returns when the executor becomes empty from tasks or max_count tasks have been executed.
+        This method does not wait: it returns when the executor
+        becomes empty from tasks or max_count tasks have been executed.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     size_t loop(size_t max_count);
 
     /*
         Tries to execute max_count tasks.
-        This method returns when either max_count tasks were executed or a total amount of max_waiting_time has passed.
+        This method returns when either max_count tasks were executed or a
+        total amount of max_waiting_time has passed.
         If max_waiting_time is 0, the method is equivalent to loop.
         Returns the actual amount of tasks that were executed.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     size_t loop_for(size_t max_count, std::chrono::milliseconds max_waiting_time);
 
@@ -408,68 +449,98 @@ class manual_executor {
         This method returns when either max_count tasks were executed or timeout_time has reached.
         If timeout_time has already expired, the method is equivalent to loop.
         Returns the actual amount of tasks that were executed.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     template<class clock_type, class duration_type>
     size_t loop_until(size_t max_count, std::chrono::time_point<clock_type, duration_type> timeout_time);
     
     /*
         Waits for at least one task to be available for execution.
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
+        This method should be used as a hint,
+        as other threads (calling loop, for example) might empty the executor,
         before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     void wait_for_task();
 
     /*
-        This method returns when one or more tasks are available for execution or max_waiting_time has passed.    
+        This method returns when one or more tasks are available for
+        execution or max_waiting_time has passed.    
         Returns true if at at least one task is available for execution, false otherwise.
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
-        before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        This method should be used as a hint, as other threads (calling loop, for example)
+        might empty the executor, before this thread has a chance to do something
+        with the newly enqueued tasks.
+        If shutdown is called from another thread, this method
+        returns and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     bool wait_for_task_for(std::chrono::milliseconds max_waiting_time);
 
     /*
         This method returns when one or more tasks are available for execution or timeout_time has reached.    
         Returns true if at at least one task is available for execution, false otherwise.
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
+        This method should be used as a hint,
+        as other threads (calling loop, for example) might empty the executor,
         before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
+        If shutdown is called from another thread, this method
+        returns and throws errors::shutdown_exception.
         This method is thread safe.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     template<class clock_type, class duration_type>
     bool wait_for_task_until(std::chrono::time_point<clock_type, duration_type> timeout_time);
     
     /*
         This method returns when max_count or more tasks are available for execution.    
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
+        This method should be used as a hint, as other threads
+        (calling loop, for example) might empty the executor,
         before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
-        This method is thread safe.
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
+        This method is thread safe. 
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.
     */
     void wait_for_tasks(size_t max_count);
 
     /*
-        This method returns when max_count or more tasks are available for execution or max_waiting_time (in milliseconds) has passed.    
+        This method returns when max_count or more tasks are available for execution
+        or max_waiting_time (in milliseconds) has passed.    
         Returns the number of tasks available for execution when the method returns.
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
+        This method should be used as a hint, as other
+        threads (calling loop, for example) might empty the executor,
         before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
-        This method is thread safe.    
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
+        This method is thread safe.  
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.    
     */
     size_t wait_for_tasks_for(size_t count, std::chrono::milliseconds max_waiting_time);
 
     /*
-        This method returns when max_count or more tasks are available for execution or timeout_time is reached.    
+        This method returns when max_count or more tasks are available for execution
+        or timeout_time is reached.    
         Returns the number of tasks available for execution when the method returns.
-        This method should be used as a hint, as other threads (calling loop, for example) might empty the executor,
+        This method should be used as a hint, as other threads
+        (calling loop, for example) might empty the executor,
         before this thread has a chance to do something with the newly enqueued tasks.
-        If shutdown is called from another thread, this method returns and throws errors::shutdown_exception.
-        This method is thread safe.    
+        If shutdown is called from another thread, this method returns
+        and throws errors::shutdown_exception.
+        This method is thread safe.  
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
+        Throws errors::shutdown_exception if shutdown was called before.    
     */
     template<class clock_type, class duration_type>
     size_t wait_for_tasks_until(size_t count, std::chrono::time_point<clock_type, duration_type> timeout_time);
@@ -541,52 +612,66 @@ class result{
     /*
         Queries the status of *this.
         The returned value is any of result_status::idle, result_status::value or result_status::exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
+        Throws errors::empty_result if *this is empty.        
     */
     result_status status() const;
 
     /*
-        Blocks the current thread of execution until this result is ready, when status() != result_status::idle.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks the current thread of execution until this result is ready,
+        when status() != result_status::idle.
+        Throws errors::empty_result if *this is empty.
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.                    
     */
     void wait();
 
     /*
-        Blocks until this result is ready or duration has passed. Returns the status of this result after unblocking.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks until this result is ready or duration has passed. Returns the status
+        of this result after unblocking.
+        Throws errors::empty_result if *this is empty.  
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     template<class duration_unit, class ratio>
     result_status wait_for(std::chrono::duration<duration_unit, ratio> duration);
 
     /*
-        Blocks until this result is ready or timeout_time has reached. Returns the status of this result after unblocking.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks until this result is ready or timeout_time has reached. Returns the status
+        of this result after unblocking.
+        Throws errors::empty_result if *this is empty.         
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     template< class clock, class duration >
     result_status wait_until(std::chrono::time_point<clock, duration> timeout_time);
 
     /*
-        Blocks the current thread of execution until this result is ready, when status() != result_status::idle.
+        Blocks the current thread of execution until this result is ready,
+        when status() != result_status::idle.
         If the result is a valid value, it is returned, otherwise, get rethrows the asynchronous exception.        
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Throws errors::empty_result if *this is empty.         
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.           
     */
     type get();
 
     /*
         Returns an awaitable used to await this result.
-        If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
-        If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
+        If the result is already ready - the current coroutine resumes
+        immediately in the calling thread of execution.
+        If the result is not ready yet, the current coroutine is suspended
+        and resumed when the asynchronous result is ready,
         by the thread which had set the asynchronous value or exception.
         In either way, after resuming, if the result is a valid value, it is returned.
         Otherwise, operator co_await rethrows the asynchronous exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.                            
+        Throws errors::empty_result if *this is empty.                            
     */
     auto operator co_await();
 
     /*
         Returns an awaitable used to resolve this result.
         After co_await expression finishes, *this is returned in a non-empty form, in a ready state.
-        Throws concurrencpp::errors::empty_result if *this is empty.
+        Throws errors::empty_result if *this is empty.
     */    
     auto resolve();
 };
@@ -634,34 +719,40 @@ class lazy_result {
 	/*
 		Queries the status of *this.
 		The returned value is any of result_status::idle, result_status::value or result_status::exception.
-		Throws concurrencpp::errors::empty_result if *this is empty.  
+		Throws errors::empty_result if *this is empty.  
 	*/
 	result_status status() const;
 
 	/*
 		Returns an awaitable used to start the associated task and await this result.
-        If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
-        If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
+        If the result is already ready - the current coroutine resumes immediately
+        in the calling thread of execution.
+        If the result is not ready yet, the current coroutine is suspended and
+        resumed when the asynchronous result is ready,
         by the thread which had set the asynchronous value or exception.
         In either way, after resuming, if the result is a valid value, it is returned.
         Otherwise, operator co_await rethrows the asynchronous exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.   
+        Throws errors::empty_result if *this is empty.   
 	*/
 	auto operator co_await();
 
 	/*
 		Returns an awaitable used to start the associated task and resolve this result.
-		If the result is already ready - the current coroutine resumes immediately in the calling thread of execution.
-		If the result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready, by the thread which had set the asynchronous value or exception.
+		If the result is already ready - the current coroutine resumes immediately
+		in the calling thread of execution.
+		If the result is not ready yet, the current coroutine is suspended and resumed
+		when the asynchronous result is ready, by the thread which
+		had set the asynchronous value or exception.
 		After co_await expression finishes, *this is returned in a non-empty form, in a ready state.	
-		Throws concurrencpp::errors::empty_result if *this is empty.
+		Throws errors::empty_result if *this is empty.
 	*/
 	auto resolve();
 
 	/*
 		Runs the associated task inline and returns a result object that monitors the newly started task.
 		After this call, *this is empty. 
-		Throws concurrencpp::errors::empty_result if *this is empty.
+		Throws errors::empty_result if *this is empty.
+		Might throw std::bad_alloc if fails to allocate memory.
 	*/
 	result<type> run();
 };
@@ -771,7 +862,7 @@ int main() {
 ### Result-promises
 
 Result objects are the main way to pass data between tasks in concurrencpp and we've seen how executors and coroutines produce such objects.
-Sometimes we want to use the capabilities of a result object with non-tasks, for example when using a third-party library. In this case, we can complete a result object by using a `result_promise`.
+Sometimes we want to use the capabilities of result objects with non-tasks, for example when using a third-party library. In this case, we can complete a result object by using a `result_promise`.
 `result_promise` resembles a `std::promise` object - applications can manually set the asynchronous result or exception and make the associated `result` object become ready.
 
 Just like result objects, result-promises are a move only type that becomes empty after move. Similarly, after setting a result or an exception, the result promise becomes empty as well.
@@ -787,6 +878,7 @@ template <class type>
 class result_promise {    
     /*
         Constructs a valid result_promise.
+        Might throw std::bad_alloc if fails to allocate memory.
     */
     result_promise();
 
@@ -796,7 +888,7 @@ class result_promise {
     result_promise(result_promise&& rhs) noexcept;
 
     /*
-        Destroys *this, possibly setting a concurrencpp::errors::broken_task exception
+        Destroys *this, possibly setting an errors::broken_task exception
         by calling set_exception if *this is not empty at the time of destruction.
     */        
     ~result_promise() noexcept;
@@ -814,37 +906,44 @@ class result_promise {
 
     /*
         Sets a value by constructing <<type>> from arguments... in-place.
-        Makes the associated result object become ready - tasks waiting for it to become ready are unblocked.
+        Makes the associated result object become ready - tasks waiting for it
+        to become ready are unblocked.
         Suspended tasks are resumed inline.
         After this call, *this becomes empty.
-        If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.
+        Throws errors::empty_result_promise exception If *this is empty.
+        Might throw any exception that the constructor
+        of type(std::forward<argument_types>(arguments)...) throws.
     */
     template<class ... argument_types>
     void set_result(argument_types&& ... arguments);
     
     /*
         Sets an exception.
-        Makes the associated result object become ready - tasks waiting for it to become ready are unblocked.
+        Makes the associated result object become ready - tasks waiting for it
+        to become ready are unblocked.
         Suspended tasks are resumed inline.
         After this call, *this becomes empty.
-        If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.
-        If exception_ptr is null, an std::invalid_argument exception is thrown.
+        Throws errors::empty_result_promise exception If *this is empty.
+        Throws std::invalid_argument exception if exception_ptr is null.
     */
     void set_exception(std::exception_ptr exception_ptr);
 
     /*
-        A convenience method that invokes a callable with arguments... and calls set_result with the result of the invocation.
+        A convenience method that invokes a callable with arguments... and calls set_result
+        with the result of the invocation.
         If an exception is thrown, the thrown exception is caught and set instead by calling set_exception.
         After this call, *this becomes empty.
-        If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.            
+        Throws errors::empty_result_promise exception If *this is empty.
+        Might throw any exception that callable(std::forward<argument_types>(arguments)...)
+        or the contructor of type(type&&) throw. 
     */
     template<class callable_type, class ... argument_types>
     void set_from_function(callable_type&& callable, argument_types&& ... arguments);
     
     /*
         Gets the associated result object.
-        If *this is empty, a concurrencpp::errors::empty_result_promise exception is thrown.
-        If this method had been called before, a concurrencpp::errors::result_already_retrieved exception is thrown.
+        Throws errors::empty_result_promise exception If *this is empty.
+        Throws errors::result_already_retrieved exception if this method had been called before.
     */
     result<type> get_result();
 };
@@ -900,6 +999,7 @@ class share_result {
     /*
         Converts a regular result object to a shared-result object.
         After this call, rhs is empty.
+        Might throw std::bad_alloc if fails to allocate memory.
     */
     shared_result(result<type> rhs);
 
@@ -932,52 +1032,63 @@ class share_result {
     /*
         Queries the status of *this.
         The return value is any of result_status::idle, result_status::value or result_status::exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.        
+        Throws errors::empty_result if *this is empty.        
     */
     result_status status() const;
 
     /*
-        Blocks the current thread of execution until this shared-result is ready, when status() != result_status::idle.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks the current thread of execution until this shared-result is ready,
+        when status() != result_status::idle.
+        Throws errors::empty_result if *this is empty.  
+        Might throw std::system_error if one of the underlying synchronization primitives throws.                   
     */
     void wait();
 
     /*
-        Blocks until this shared-result is ready or duration has passed. Returns the status of this shared-result after unblocking.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks until this shared-result is ready or duration has passed.
+        Returns the status of this shared-result after unblocking.
+        Throws errors::empty_result if *this is empty.                    
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     template<class duration_type, class ratio_type>
     result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration);
 
     /*
-        Blocks until this shared-result is ready or timeout_time has reached. Returns the status of this result after unblocking.
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks until this shared-result is ready or timeout_time has reached.
+        Returns the status of this result after unblocking.
+        Throws errors::empty_result if *this is empty.  
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     template<class clock_type, class duration_type>
     result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time);
 
     /*
-        Blocks the current thread of execution until this shared-result is ready, when status() != result_status::idle.
-        If the result is a valid value, a reference to it is returned, otherwise, get rethrows the asynchronous exception.        
-        Throws concurrencpp::errors::empty_result if *this is empty.                    
+        Blocks the current thread of execution until this shared-result is ready,
+        when status() != result_status::idle.
+        If the result is a valid value, a reference to it is returned,
+        otherwise, get rethrows the asynchronous exception.        
+        Throws errors::empty_result if *this is empty.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     std::add_lvalue_reference_t<type> get();
 
     /*
         Returns an awaitable used to await this shared-result.
-        If the shared-result is already ready - the current coroutine resumes immediately in the calling thread of execution.
-        If the shared-result is not ready yet, the current coroutine is suspended and resumed when the asynchronous result is ready,
+        If the shared-result is already ready - the current coroutine resumes
+        immediately in the calling thread of execution.
+        If the shared-result is not ready yet, the current coroutine is
+        suspended and resumed when the asynchronous result is ready,
         by the thread which had set the asynchronous value or exception.
         In either way, after resuming, if the result is a valid value, a reference to it is returned.
         Otherwise, operator co_await rethrows the asynchronous exception.
-        Throws concurrencpp::errors::empty_result if *this is empty.                            
+        Throws errors::empty_result if *this is empty.                            
     */
     auto operator co_await();
   
     /*
         Returns an awaitable used to resolve this shared-result.
         After co_await expression finishes, *this is returned in a non-empty form, in a ready state.
-        Throws concurrencpp::errors::empty_result if *this is empty.
+        Throws errors::empty_result if *this is empty.
     */    
     auto resolve();
 };
@@ -1016,13 +1127,24 @@ int main() {
 
     std::cout << "Main thread waiting for all consumers to finish" << std::endl;
 
-    auto all_consumed = concurrencpp::when_all(std::begin(results), std::end(results));
+    auto tpe = runtime.thread_pool_executor();
+    auto all_consumed = concurrencpp::when_all(tpe, std::begin(results), std::end(results)).run();
     all_consumed.get();
 
     std::cout << "All consumers are done, exiting" << std::endl;
     return 0;
 }
 ```
+
+### Termination in concurrencpp
+When the runtime object gets out of scope of `main`, the application terminates.
+The runtime iterates each stored executor and calls its `shutdown` method. Trying to access either the timer-queue or any executor throws `errors::runtime_shutdown` exception. When an executor shuts down, it clears its inner task queues, destroying un-executed `task` objects. If a task object stores a concurrencpp-coroutine, that coroutine is resumed inline and an `errors::broken_task` exception is thrown. 
+In any case where  a `runtime_shutdown` or a `broken_task` exception is thrown, applications should terminate their current code-flow gracefully as soon as possible. Those exceptions should not be ignored.
+
+### Resume executors
+Many concurrencpp asynchronous actions will require an executor as their resume executor. When an asynchronous action (implemented as a coroutine) can finish synchronously, it resumes immediately in the calling thread of execution. If the asynchronous action can't finish synchronously, it will be resumed when it finishes, inside the given resume-executor. 
+For example, `when_any` utility function requires a resume-executor as its first argument. `when_any` returns a `lazy_result` which becomes ready when at least one given result becomes ready. If one of the results is already ready at the moment of calling `when_any`, the calling coroutine is resumed synchronously in the calling thread of execution. If not, the  calling coroutine will be resumed when at least of result is finished, inside the given resume-executor. 
+Resume executors are important because they mandate where coroutines are resumed in cases where it's not clear where a coroutine is supposed to be resumed (for example, in the case of `when_any` and `when_all`), or in cases where the asynchronous action is processed inside one of the concurrencpp workers, which are only used to process that specific action, and not application code.  
 
 ### Utility functions
 
@@ -1032,15 +1154,16 @@ int main() {
 ```cpp
 /*
     Creates a ready result object by building <<type>> from arguments&&... in-place.
-    Might throw any exception that the constructor of type(std::forward<argument_types>(arguments)...) might throw.
-    Might throw an std::bad_alloc exception if no memory is available.
+    Might throw any exception that the constructor
+    of type(std::forward<argument_types>(arguments)...) throws.
+    Might throw std::bad_alloc exception if fails to allocate memory.
 */
 template<class type, class ... argument_types>
 result<type> make_ready_result(argument_types&& ... arguments);
 
 /*
     An overload for void type.
-    Might throw an std::bad_alloc exception if no memory is available.
+    Might throw std::bad_alloc exception if fails to allocate memory.
 */
 result<void> make_ready_result();
 ```
@@ -1051,7 +1174,7 @@ result<void> make_ready_result();
     Creates a ready result object from an exception pointer.
     The returned result object will re-throw exception_ptr when calling get or await.
     Throws std::invalid_argument if exception_ptr is null.
-    Might throw an std::bad_alloc exception if no memory is available.
+    Might throw std::bad_alloc exception if fails to allocate memory.
 */
 template<class type>
 result<type> make_exceptional_result(std::exception_ptr exception_ptr);
@@ -1059,14 +1182,22 @@ result<type> make_exceptional_result(std::exception_ptr exception_ptr);
 /*
     Overload. Similar to make_exceptional_result(std::exception_ptr),
     but gets an exception object directly.
-    Might throw any exception that the constructor of exception_type(std::move(exception)) might throw.
-    Might throw an std::bad_alloc exception if no memory is available.
+    Might throw any exception that the constructor of exception_type(std::move(exception)) might throw. 
+    Might throw std::bad_alloc exception if fails to allocate memory.
 */
 template<class type, class exception_type>
 result<type> make_exceptional_result(exception_type exception);
 ```
 #### `when_all` function
-`when_all` is a utility function that creates a result object which becomes ready when all input results are completed. Awaiting the result returns all input-result objects in a ready state, ready to be consumed.
+
+`when_all` is a utility function that creates a lazy result object which becomes ready when all input results are completed. Awaiting this lazy result returns all input-result objects in a ready state, ready to be consumed.
+
+`when_all` function comes with three flavors - one that accepts a heterogeneous range of result objects, another that gets a pair of iterators to a range of result objects of the same type, and lastly an overload that accepts no results objects at all.  In the case of no input result objects  - the function returns a ready result object of an empty tuple.
+
+If one of the passed result-objects is empty, an exception will be thrown. In this case, input-result objects are unaffected by the function and can be used again after the exception was handled. If all input result objects are valid, they are emptied by this function, and returned in a valid and ready state as the output result.   
+Currently, `when_all` only accepts `result` objects.
+
+All overloads accept a resume executor as their first parameter. When awaiting a result returned by `when_all`, the caller coroutine will be resumed by the given resume executor.  
 
 ```cpp 
 /*
@@ -1076,8 +1207,9 @@ result<type> make_exceptional_result(exception_type exception);
     Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class ... result_types>
-result<std::tuple<typename std::decay<result_types>::type...>>
-   when_all(result_types&& ... results);
+lazy_result<std::tuple<typename std::decay<result_types>::type...>>
+   when_all(std::shared_ptr<executor_type> resume_executor,
+              result_types&& ... results);
 
 /*
     Overload. Similar to when_all(result_types&& ...) but receives a pair of iterators referencing a range.
@@ -1087,18 +1219,26 @@ result<std::tuple<typename std::decay<result_types>::type...>>
     Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class iterator_type>
-result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>
-   when_all(iterator_type begin, iterator_type end);
+lazy_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>
+   when_all(std::shared_ptr<executor_type> resume_executor,
+               iterator_type begin, iterator_type end);
 
 /*
     Overload. Returns a ready result object that doesn't monitor any asynchronous result.
     Might throw an std::bad_alloc exception if no memory is available.
 */
-result<std::tuple<>> when_all();
+lazy_result<std::tuple<>> when_all(std::shared_ptr<executor_type> resume_executor);
 ```
 #### `when_any` function
 
-`when_any` is a utility function that creates a result object which becomes ready when at least one input result is completed. Awaiting the result will return a helper struct containing all input-result objects plus the index of the completed task. It could be that by the time of consuming the ready result, other results might have already completed asynchronously. Applications can call `when_any` repeatedly in order to consume ready results as they complete until all results are consumed. 
+`when_any` is a utility function that creates a lazy result object which becomes ready when at least one input result is completed. Awaiting this result will return a helper struct containing all input-result objects plus the index of the completed task. It could be that by the time of consuming the ready result, other results might have already completed asynchronously. Applications can call `when_any` repeatedly in order to consume ready results as they complete until all results are consumed.
+ 
+`when_any` function comes with only two flavors - one that accepts a heterogeneous range of result objects and another that gets a pair of iterators to a range of result-objects of the same type. Unlike `when_all`, there is no meaning in awaiting at least one task to finish when the range of results is completely empty. Hence, there is no overload with no arguments. Also, the overload of two iterators will throw an exception if those iterators reference an empty range (when `begin == end`).   
+
+If one of the passed result-objects is empty, an exception will be thrown. In any case an exception is thrown, input-result objects are unaffected by the function and can be used again after the exception was handled. If all input result objects are valid, they are emptied by this function, and returned in a valid state as the output result.  
+Currently, `when_any` only accepts `result` objects. 
+
+All overloads accept a resume executor as their first parameter. When awaiting a result returned by `when_any`, the caller coroutine will be resumed by the given resume executor.  
 
 ```cpp
 /*
@@ -1116,27 +1256,33 @@ struct when_any_result {
     Creates a result object that becomes ready when at least one of the input results is ready.
     Passed result objects are emptied and returned as a tuple.
     Throws std::invalid_argument if any of the passed result objects is empty.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class ... result_types>
-result<when_any_result<std::tuple<result_types...>>>
-   when_any(result_types&& ... results);
+lazy_result<when_any_result<std::tuple<result_types...>>>
+   when_any(std::shared_ptr<executor_type> resume_executor,
+              result_types&& ... results);
 
 /*
     Overload. Similar to when_any(result_types&& ...) but receives a pair of iterators referencing a range.
     Passed result objects are emptied and returned as a vector.
     Throws std::invalid_argument if begin == end.
     Throws std::invalid_argument if any of the passed result objects is empty.
+    Might throw an std::bad_alloc exception if no memory is available.
 */
 template<class iterator_type>
-result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
-   when_any(iterator_type begin, iterator_type end);
+lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
+   when_any(std::shared_ptr<executor_type> resume_executor,
+              iterator_type begin, iterator_type end);
 ```
 
 #### `resume_on` function
 `resume_on` returns an awaitable that suspends the current coroutine and resumes it inside given `executor`. This is an important function that makes sure a coroutine is running in the right executor. For example, applications might schedule a background task using the `background_executor` and await the returned result object. In this case, the awaiting coroutine will be resumed inside the background executor. A call to `resume_on` with another cpu-bound executor makes sure that cpu-bound lines of code will not run on the background executor once the background task is completed. 
+If a coroutine was re-scheduled to run on another executor using `resume_on`, but that executor is shut down before it can resume it, that coroutine is resumed and an `erros::broken_task` exception is thrown. In this case, applications need to quite gracefully.  
 ```cpp
 /*
-	Returns an awaitable that suspends the current coroutine and resumes it inside executor
+	Returns an awaitable that suspends the current coroutine and resumes it inside executor.
+	Might throw any exception that executor_type::enqueue throws.
 */
 template<class executor_type>
 auto resume_on(std::shared_ptr<executor_type> executor);
@@ -1176,7 +1322,8 @@ class timer_queue {
         Shuts down this timer_queue:
         Tells the underlying thread of execution to quit and joins it.
         Cancels all pending timers.
-        After this call, invocation of any method besides shutdown and shutdown_requested will throw an errors::runtime_shutdown.
+        After this call, invocation of any method besides shutdown
+        and shutdown_requested will throw an errors::runtime_shutdown.
         If shutdown had been called before, this method has no effect.
     */
     void shutdown() noexcept;
@@ -1190,6 +1337,8 @@ class timer_queue {
         Creates a new running timer where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
         Throws errors::runtime_shutdown if shutdown had been called before.
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if the one of the underlying synchronization primitives throws.
     */
     template<class callable_type, class ... argumet_types>
     timer make_timer(
@@ -1203,6 +1352,8 @@ class timer_queue {
         Creates a new one-shot timer where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
         Throws errors::runtime_shutdown if shutdown had been called before.
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if the one of the underlying synchronization primitives throws.
     */
     template<class callable_type, class ... argumet_types>
     timer make_one_shot_timer(
@@ -1215,6 +1366,8 @@ class timer_queue {
         Creates a new delay object where *this is the associated timer_queue.
         Throws std::invalid_argument if executor is null.
         Throws errors::runtime_shutdown if shutdown had been called before.
+        Might throw std::bad_alloc if fails to allocate memory.
+        Might throw std::system_error if the one of the underlying synchronization primitives throws.
     */
     result<void> make_delay_object(
         std::chrono::milliseconds due_time,
@@ -1251,10 +1404,12 @@ class timer {
 
     /*
         Cancels this timer.
-        After this call, the associated timer_queue will not schedule *this to run again and *this becomes empty.
+        After this call, the associated timer_queue will not schedule *this
+        to run again and *this becomes empty.
         Scheduled, but not yet executed tasks are cancelled.
         Ongoing tasks are uneffected.
         This method has no effect if *this is empty or the associated timer_queue has already expired.
+        Might throw std::system_error if one of the underlying synchronization primitives throws.
     */
     void cancel();
 
@@ -1293,7 +1448,7 @@ class timer {
         Returns true is *this is not an empty timer, false otherwise.
         The timer should not be used if this->operator bool() is false.
     */
-   explicit  operator bool() const noexcept;
+   explicit operator bool() const noexcept;
 };
 ```
 
@@ -1385,6 +1540,115 @@ int main() {
 ```
 
 In this example, we created a coroutine (that does not marshal any result or thrown exception), which delays itself in a loop by calling `co_await` on a delay object.
+
+### Generators 
+A generator is a lazy, synchronous coroutine that is able to produce a stream of values to consume. Generators use the `co_yield` keyword to yield values back to their consumers.
+ 
+##### Example: 
+A generator that yields the n-th member of the Sequence `S(n) = 1 + 2 + 3 + ... + n`  where `n <= 100`:
+
+```cpp
+concurrencpp::generator<int> sequence() {
+	int i = 1;
+	int sum = 0;
+	while(i <= 100){
+		sum += i;
+		++i;
+		co_yield sum;
+	}
+}
+
+int main() {
+	for(auto value : sequence()){
+		std::cout << value << std::end;
+	}
+	return 0;
+} 
+```
+Generators are meant to be used synchronously - they can only use the `co_yield` keyword and **must not** use the `co_await` keyword. A generator will continue  to produce values as long as the `co_yield` keyword is called. 
+If the `co_return` keyword is called (explicitly or implicitly), then the generator will stop producing values.  Similarly, if an exception is thrown then the generator will stop producing values and the thrown exception will be re-thrown to the consumer of the generator.
+
+Generators are meant to be used in a `range-for` loop: Generators implicitly produce two iterators - `begin` and `end` which control the execution of the `for` loop. These iterators should not be handled or accessed manually.
+
+When a generator is created, it starts as a lazy task. When its `begin` method is called, the generator is resumed for the first time and an iterator is returned. The lazy task is resumed repeatedly by calling `operator++` on the returned iterator. The returned iterator will be equal to `end` iterator when the generator finishes execution either by exiting gracefully or throwing an exception.  As mentioned earlier, this happens behind the scenes by the inner mechanism of the loop and the generator, and should not be called directly.
+
+Like other objects in concurrencpp, Generators are a move-only type. After a generator was moved, it is considered empty and trying to access its inner methods (other than `operator bool`) will throw an exception. The emptiness of a generator should not generally occur - it is advised to consume generators upon their creation in a `for` loop and not to try to call its methods individually. 
+
+#### `generator` API
+```cpp
+class generator {
+    /*
+        Move constructor. After this call, rhs is empty.
+    */
+    generator(generator&& rhs) noexcept;
+
+    /*
+        Destructor. Invalidates existing iterators.
+    */
+    ~generator() noexcept;
+
+    generator(const generator& rhs) = delete;
+    generator& operator=(generator&& rhs) = delete;
+    generator& operator=(const generator& rhs) = delete;
+    
+    /*
+        Returns true if this generator is not empty.
+        Applications must not use this object if this->operator bool() is false.
+    */
+    explicit operator bool() const noexcept;
+
+    /*
+        Starts running this generator and returns an iterator.
+        Throws errors::empty_generator if *this is empty.
+        Re-throws any exception that is thrown inside the generator code.
+    */
+    iterator begin();
+
+    /*
+        Returns an end iterator.
+    */
+    static generator_end_iterator end() noexcept;
+};
+
+class generator_iterator {
+  
+    using value_type = std::remove_reference_t<type>;
+    using reference = value_type&;
+    using pointer = value_type*;
+    using iterator_category = std::input_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+
+    /*
+        Resumes the suspended generator and returns *this.
+        Re-throws any exception that was thrown inside the generator code.
+    */
+    generator_iterator& operator++();
+
+    /*
+		    Post-increment version of operator++. 
+    */
+    void operator++(int);
+
+    /*
+        Returns the latest value produced by the associated generator.
+    */
+    reference operator*() const noexcept;
+	  
+    /*
+        Returns a pointer to the latest value produced by the associated generator. 
+    */
+    pointer operator->() const noexcept;
+
+    /*
+        Comparision operators. 
+    */
+    friend bool operator==(const generator_iterator& it0, const generator_iterator& it1) noexcept;
+    friend bool operator==(const generator_iterator& it, generator_end_iterator) noexcept;
+    friend bool operator==(generator_end_iterator end_it, const generator_iterator& it) noexcept;
+    friend bool operator!=(const generator_iterator& it, generator_end_iterator end_it) noexcept;
+    friend bool operator!=(generator_end_iterator end_it, const generator_iterator& it) noexcept;
+};
+```    
 
 ### The runtime object
  
@@ -1481,13 +1745,14 @@ Another important point is to handle shutdown correctly: `shutdown`, `shutdown_r
  * `shutdown` might be called multiple times, and the method must handle this scenario by ignoring any subsequent call to `shutdown` after the first invocation.
 * `enqueue` must throw a `concurrencpp::errors::runtime_shutdown` exception if `shutdown` had been called before.
 
-Implementing an executor is one of the rare cases applications need to work with `concurrencpp::task` class directly. `concurrencpp::task` is a `std::function` like object, but with a few differences.
+#### `task` objects
+ 
+Implementing executors is one of the rare cases applications need to work with `concurrencpp::task` class directly. `concurrencpp::task` is a `std::function` like object, but with a few differences.
 Like `std::function`, the task object stores a callable that acts as the asynchronous operation.
-Unlike `std::function`, `concurrencpp::task` is a move only type. On invocation, task objects receive no parameters and return `void`. Moreover, every task object can be invoked only once. After the first invocation, the task object becomes empty.
+Unlike `std::function`, `task` is a move only type. On invocation, task objects receive no parameters and return `void`. Moreover, every task object can be invoked only once. After the first invocation, the task object becomes empty.
 Invoking an empty task object is equivalent to invoking an empty lambda (`[]{}`), and will not throw any exception.
 Task objects receive their callable as a forwarding reference (`type&&` where `type` is a template parameter), and not by copy (like `std::function`). Construction of the stored callable happens in-place. This allows task objects to contain callables that are move-only type (like `std::unique_ptr` and `concurrencpp::result`).
-Task objects try to use different methods to optimize the usage of the stored types.
-Task objects apply the short-buffer-optimization (sbo) for regular, small callables, and will inline calls to `std::coroutine_handle<void>` by calling them directly without virtual dispatch.    
+Task objects try to use different methods to optimize the usage of the stored types, for example, task objects apply the short-buffer-optimization (sbo) for regular, small callables, and will inline calls to `std::coroutine_handle<void>` by calling them directly without virtual dispatch.    
 
 #### `task` API
 
@@ -1496,64 +1761,62 @@ Task objects apply the short-buffer-optimization (sbo) for regular, small callab
     /*
         Creates an empty task object.
     */
-        task() noexcept;
+    task() noexcept;
         
     /*
         Creates a task object by moving the stored callable of rhs to *this.
-            If rhs is empty, then *this will also be empty after construction.
-            After this call, rhs is empty.
-        */
-        task(task&& rhs) noexcept;
+        If rhs is empty, then *this will also be empty after construction.
+        After this call, rhs is empty.
+    */
+    task(task&& rhs) noexcept;
 
     /*
         Creates a task object by storing callable in *this.
         <<typename std::decay<callable_type>::type>> will be in-place-
         constructed inside *this by perfect forwarding callable.
     */
-        template<class callable_type>
-        task(callable_type&& callable);
+    template<class callable_type>
+    task(callable_type&& callable);
 
     /*
         Destroys stored callable, does nothing if empty.
     */
-        ~task() noexcept;
-
-        task(const task& rhs) = delete;
-        task& operator=(const task&& rhs) = delete;
-
+     ~task() noexcept;
+	
     /*
         If *this is empty, does nothing.
         Invokes stored callable, and immediately destroys it.
         After this call, *this is empty.
         May throw any exception that the invoked callable may throw.
     */
-        void operator()();
+    void operator()();
 
     /*
         Moves the stored callable of rhs to *this.
         If rhs is empty, then *this will also be empty after this call.    
         If *this already contains a stored callable, operator = destroys it first.
     */
-        task& operator=(task&& rhs) noexcept;
+    task& operator=(task&& rhs) noexcept;
 
     /*
         If *this is not empty, task::clear destroys the stored callable and empties *this.
         If *this is empty, clear does nothing.
     */
-        void clear() noexcept;
+    void clear() noexcept;
 
     /*
         Returns true if *this stores a callable. false otherwise.
     */
-        explicit operator bool() const noexcept;
+    explicit operator bool() const noexcept;
 
     /*
         Returns true if *this stores a callable,
         and that stored callable has the same type as <<typename std::decay<callable_type>::type>>  
     */
-        template<class callable_type>
-        bool contains() const noexcept;
-    };
+    template<class callable_type>
+    bool contains() const noexcept;
+
+};
 ```
 When implementing user-defined executors, it is up to the implementation to store tasks (when `enqueue` is called), and execute them according to the executor inner-mechanism.
 
@@ -1722,13 +1985,31 @@ $ cmake -S test -B build/test
   #for TSAN mode: cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_THREAD_SANITIZER=Yes -S test -B build/test
 $ cmake --build build/test  
 $ cd build/test
-$ ctest .
+$ ctest . -V
 ```
 
 ##### Via vcpkg on Windows and *nix platforms
 
-Alternatively to building and installing the library manually, you may get stable releases of concurrencpp as [vcpkg](https://vcpkg.io/) packages:
+Alternatively to building and installing the library manually, developers may get stable releases of concurrencpp as [vcpkg](https://vcpkg.io/) packages:
 
 ```shell
 $ vcpkg install concurrencpp
+```
+
+##### Experimenting with the built-in sandbox
+concurrencpp comes with a built-in sandbox program which developers can modify and experiment, without having to install or link the compiled library to a different code-base. In order to play with the sandbox, developers can modify `sandbox/main.cpp` and compile the application using the following commands:
+
+##### Building and running the sandbox on Windows:
+```cmake
+$ cmake -S sandbox -B build/sandbox
+$ cmake --build build/sandbox
+    <# for release mode: cmake --build build/sandbox --config Release #>
+$ ./build/sandbox <# runs the sandbox>
+```
+##### Building and running the sandbox on *nix platforms:
+```cmake
+$ cmake -S sandbox -B build/sandbox
+  #for release mode: cmake -DCMAKE_BUILD_TYPE=Release -S sandbox -B build/sandbox
+$ cmake --build build/sandbox  
+$ ./build/sandbox #runs the sandbox
 ```
