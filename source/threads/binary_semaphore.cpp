@@ -1,6 +1,6 @@
 #include "concurrencpp/threads/binary_semaphore.h"
 
-#if !defined(__cpp_lib_semaphore)
+#if defined(CRCPP_MAC_OS) && defined(CRCPP_LIBCPP_LIB)
 
 #    include <cassert>
 
@@ -32,7 +32,7 @@ void binary_semaphore::acquire() {
     m_is_signaled = false;
 }
 
-bool binary_semaphore::try_acquire() {
+bool binary_semaphore::try_acquire() noexcept {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_is_signaled) {
         m_is_signaled = false;

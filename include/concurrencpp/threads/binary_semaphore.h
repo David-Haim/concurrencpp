@@ -1,15 +1,9 @@
 #ifndef CONCURRENCPP_BINARY_SEMAPHORE_H
 #define CONCURRENCPP_BINARY_SEMAPHORE_H
 
-#if defined(__cpp_lib_semaphore)
+#include "concurrencpp/platform_defs.h"
 
-#    include <semaphore>
-
-namespace concurrencpp::details {
-    using binary_semaphore = std::binary_semaphore;
-}
-
-#else
+#if defined(CRCPP_MAC_OS) && defined(CRCPP_LIBCPP_LIB)
 
 #    include <mutex>
 #    include <chrono>
@@ -33,7 +27,7 @@ namespace concurrencpp::details {
 
         void release(std::ptrdiff_t update = 1);
         void acquire();
-        bool try_acquire();
+        bool try_acquire() noexcept;
 
         template<class Rep, class Period>
         bool try_acquire_for(const std::chrono::duration<Rep, Period>& rel_time) {
@@ -51,6 +45,14 @@ namespace concurrencpp::details {
     };
 
 }  // namespace concurrencpp::details
+
+#else
+
+#    include <semaphore>
+
+namespace concurrencpp::details {
+    using binary_semaphore = std::binary_semaphore;
+}
 
 #endif
 
