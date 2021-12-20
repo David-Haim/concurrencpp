@@ -296,10 +296,10 @@ The concurrencpp thread pool provides dynamic thread injection and dynamic work 
 
 example:
 ```cpp
-auto result = background_executor.submit([]{/* some blocking action */});
-auto done_result = co_await result.resolve();	
-co_await resume_on(some_cpu_executor);
-auto val = co_await done_result; //runs inside some_cpu_executor
+    auto result = background_executor.submit([] { /* some blocking action */ });
+    auto done_result = co_await result.resolve();
+    co_await resume_on(some_cpu_executor);
+    auto val = co_await done_result;  // runs inside some_cpu_executor
 ```
 * **thread executor** - an executor that launches each enqueued task to run on a new thread of execution. Threads are not reused.
 This executor is good for long running tasks, like objects that run a work loop, or long blocking operations.
@@ -689,42 +689,42 @@ Sometimes, an API might return a lazy result, but applications need its associat
 
 ```cpp
 class lazy_result {
-	/*
+    /*
         Creates an empty lazy result that isn't associated with any task.
-	*/
-	lazy_result() noexcept = default;
+    */
+    lazy_result() noexcept = default;
 
-	/*
+    /*
         Moves the content of rhs to *this. After this call, rhs is empty.
-	*/
-	lazy_result(lazy_result&& rhs) noexcept;
+    */
+    lazy_result(lazy_result&& rhs) noexcept;
 
-	/*
-		Destroys the result. If not empty, the destructor destroys the associated task without resuming it.
-	*/
-	~lazy_result() noexcept;
+    /*
+	    Destroys the result. If not empty, the destructor destroys the associated task without resuming it.
+    */
+    ~lazy_result() noexcept;
 
-	/*
+    /*
         Moves the content of rhs to *this. After this call, rhs is empty. Returns *this.
-		If *this is not empty, then operator= destroys the associated task without resuming it.
-	*/
-	lazy_result& operator=(lazy_result&& rhs) noexcept;
+        If *this is not empty, then operator= destroys the associated task without resuming it.
+    */
+    lazy_result& operator=(lazy_result&& rhs) noexcept;
 
-	/*
-		Returns true if this is a non-empty result.
-		Applications must not use this object if this->operator bool() is false.
-	*/
-	explicit operator bool() const noexcept;
+    /*
+        Returns true if this is a non-empty result.
+        Applications must not use this object if this->operator bool() is false.
+    */
+    explicit operator bool() const noexcept;
 
-	/*
-		Queries the status of *this.
-		The returned value is any of result_status::idle, result_status::value or result_status::exception.
-		Throws errors::empty_result if *this is empty.  
-	*/
-	result_status status() const;
+    /*
+        Queries the status of *this.
+        The returned value is any of result_status::idle, result_status::value or result_status::exception.
+        Throws errors::empty_result if *this is empty.  
+    */
+    result_status status() const;
 
-	/*
-		Returns an awaitable used to start the associated task and await this result.
+    /*
+        Returns an awaitable used to start the associated task and await this result.
         If the result is already ready - the current coroutine resumes immediately
         in the calling thread of execution.
         If the result is not ready yet, the current coroutine is suspended and
@@ -733,28 +733,28 @@ class lazy_result {
         In either way, after resuming, if the result is a valid value, it is returned.
         Otherwise, operator co_await rethrows the asynchronous exception.
         Throws errors::empty_result if *this is empty.   
-	*/
-	auto operator co_await();
+    */
+    auto operator co_await();
 
-	/*
-		Returns an awaitable used to start the associated task and resolve this result.
-		If the result is already ready - the current coroutine resumes immediately
-		in the calling thread of execution.
-		If the result is not ready yet, the current coroutine is suspended and resumed
-		when the asynchronous result is ready, by the thread which
-		had set the asynchronous value or exception.
-		After co_await expression finishes, *this is returned in a non-empty form, in a ready state.	
-		Throws errors::empty_result if *this is empty.
-	*/
-	auto resolve();
+    /*
+        Returns an awaitable used to start the associated task and resolve this result.
+        If the result is already ready - the current coroutine resumes immediately
+        in the calling thread of execution.
+        If the result is not ready yet, the current coroutine is suspended and resumed
+        when the asynchronous result is ready, by the thread which
+        had set the asynchronous value or exception.
+        After co_await expression finishes, *this is returned in a non-empty form, in a ready state.	
+        Throws errors::empty_result if *this is empty.
+    */
+    auto resolve();
 
-	/*
-		Runs the associated task inline and returns a result object that monitors the newly started task.
-		After this call, *this is empty. 
-		Throws errors::empty_result if *this is empty.
-		Might throw std::bad_alloc if fails to allocate memory.
-	*/
-	result<type> run();
+    /*
+        Runs the associated task inline and returns a result object that monitors the newly started task.
+        After this call, *this is empty. 
+        Throws errors::empty_result if *this is empty.
+        Might throw std::bad_alloc if fails to allocate memory.
+    */
+    result<type> run();
 };
 ```
 
@@ -1281,8 +1281,8 @@ lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_t
 If a coroutine was re-scheduled to run on another executor using `resume_on`, but that executor is shut down before it can resume it, that coroutine is resumed and an `erros::broken_task` exception is thrown. In this case, applications need to quite gracefully.  
 ```cpp
 /*
-	Returns an awaitable that suspends the current coroutine and resumes it inside executor.
-	Might throw any exception that executor_type::enqueue throws.
+    Returns an awaitable that suspends the current coroutine and resumes it inside executor.
+    Might throw any exception that executor_type::enqueue throws.
 */
 template<class executor_type>
 auto resume_on(std::shared_ptr<executor_type> executor);
@@ -1549,20 +1549,20 @@ A generator that yields the n-th member of the Sequence `S(n) = 1 + 2 + 3 + ... 
 
 ```cpp
 concurrencpp::generator<int> sequence() {
-	int i = 1;
-	int sum = 0;
-	while(i <= 100){
-		sum += i;
-		++i;
-		co_yield sum;
-	}
+    int i = 1;
+    int sum = 0;
+    while (i <= 100) {
+        sum += i;
+        ++i;
+        co_yield sum;
+    }
 }
 
 int main() {
-	for(auto value : sequence()){
-		std::cout << value << std::end;
-	}
-	return 0;
+    for (auto value : sequence()) {
+        std::cout << value << std::end;
+    }
+    return 0;
 } 
 ```
 Generators are meant to be used synchronously - they can only use the `co_yield` keyword and **must not** use the `co_await` keyword. A generator will continue  to produce values as long as the `co_yield` keyword is called. 
@@ -1625,7 +1625,7 @@ class generator_iterator {
     generator_iterator& operator++();
 
     /*
-		    Post-increment version of operator++. 
+        Post-increment version of operator++. 
     */
     void operator++(int);
 
