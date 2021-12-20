@@ -64,7 +64,7 @@ namespace concurrencpp {
             return m_state.promise().await(caller_handle);
         }
 
-        lazy_result<type> await_resume() {
+        lazy_result<type> await_resume() noexcept {
             return {std::exchange(m_state, {})};
         }
     };

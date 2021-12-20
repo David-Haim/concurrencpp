@@ -36,7 +36,7 @@ namespace concurrencpp::details {
        private:
         producer_context<type> m_producer;
 
-        static void delete_self(coroutine_handle<void> done_handle, result_state<type>* state) noexcept {
+        static void delete_self(coroutine_handle<void> done_handle, const result_state<type>* state) noexcept {
             if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());
                 return done_handle.destroy();
@@ -46,13 +46,13 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(std::true_type /*is_void_type*/, callable_type&& callable) {
+        void from_callable(std::true_type /* is_void_type*/, callable_type&& callable) {
             callable();
             set_result();
         }
 
         template<class callable_type>
-        void from_callable(std::false_type /*is_void_type*/, callable_type&& callable) {
+        void from_callable(std::false_type /* is_void_type */, callable_type&& callable) {
             set_result(callable());
         }
 
@@ -86,7 +86,7 @@ namespace concurrencpp::details {
                 return m_producer.status();
             }
 
-            auto wait_ctx = std::make_shared<wait_context>();
+            const auto wait_ctx = std::make_shared<wait_context>();
             m_consumer.set_wait_context(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
@@ -146,7 +146,7 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(callable_type&& callable) noexcept {
+        void from_callable(callable_type&& callable) {
             using is_void = std::is_same<type, void>;
 
             try {
@@ -156,7 +156,7 @@ namespace concurrencpp::details {
             }
         }
 
-        void complete_producer(result_state_base* self /*for when_any*/, coroutine_handle<void> done_handle = {}) noexcept {
+        void complete_producer(result_state_base* self /*for when_any*/, coroutine_handle<void> done_handle = {}) {
             m_done_handle = done_handle;
 
             const auto state_before = this->m_pc_state.exchange(pc_state::producer_done, std::memory_order_acq_rel);
@@ -203,7 +203,7 @@ namespace concurrencpp::details {
 
     template<class type>
     struct consumer_result_state_deleter {
-        void operator()(result_state<type>* state_ptr) {
+        void operator()(result_state<type>* state_ptr) const noexcept {
             assert(state_ptr != nullptr);
             state_ptr->complete_consumer();
         }
@@ -211,7 +211,7 @@ namespace concurrencpp::details {
 
     template<class type>
     struct producer_result_state_deleter {
-        void operator()(result_state<type>* state_ptr) {
+        void operator()(result_state<type>* state_ptr) const {
             assert(state_ptr != nullptr);
             state_ptr->complete_producer(state_ptr);
         }

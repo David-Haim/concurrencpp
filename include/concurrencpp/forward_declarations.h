@@ -27,6 +27,9 @@ namespace concurrencpp {
     class thread_executor;
     class worker_thread_executor;
     class manual_executor;
+
+    template<typename type>
+    class generator;
 }  // namespace concurrencpp
 
 #endif  // FORWARD_DECLARATIONS_H

@@ -18,7 +18,7 @@ namespace concurrencpp::details {
 
        public:
         void register_executor(std::shared_ptr<executor> executor);
-        void shutdown_all() noexcept;
+        void shutdown_all();
     };
 }  // namespace concurrencpp::details
 

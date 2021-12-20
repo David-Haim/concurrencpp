@@ -15,6 +15,7 @@ foreach(example IN ITEMS
 	10_regular_timer
     11_oneshot_timer
 	12_delay_object
+    13_generator
     )
   add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${example}"
           "${CMAKE_CURRENT_BINARY_DIR}/${example}")

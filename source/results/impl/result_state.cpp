@@ -4,7 +4,7 @@
 using concurrencpp::details::result_state_base;
 
 void result_state_base::assert_done() const noexcept {
-    assert(m_pc_state.load(std::memory_order_relaxed) == pc_state::producer_done);
+    assert(m_pc_state.load(std::memory_order_acquire) == pc_state::producer_done);
 }
 
 void result_state_base::wait() {
@@ -13,7 +13,7 @@ void result_state_base::wait() {
         return;
     }
 
-    auto wait_ctx = std::make_shared<wait_context>();
+    const auto wait_ctx = std::make_shared<wait_context>();
     m_consumer.set_wait_context(wait_ctx);
 
     auto expected_state = pc_state::idle;

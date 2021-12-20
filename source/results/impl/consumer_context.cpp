@@ -66,21 +66,21 @@ void await_via_functor::operator()() noexcept {
  * wait_context
  */
 
-void wait_context::wait() noexcept {
+void wait_context::wait() {
     std::unique_lock<std::mutex> lock(m_lock);
     m_condition.wait(lock, [this] {
         return m_ready;
     });
 }
 
-bool wait_context::wait_for(size_t milliseconds) noexcept {
+bool wait_context::wait_for(size_t milliseconds) {
     std::unique_lock<std::mutex> lock(m_lock);
     return m_condition.wait_for(lock, std::chrono::milliseconds(milliseconds), [this] {
         return m_ready;
     });
 }
 
-void wait_context::notify() noexcept {
+void wait_context::notify() {
     {
         std::unique_lock<std::mutex> lock(m_lock);
         m_ready = true;
@@ -172,7 +172,7 @@ void consumer_context::set_when_any_context(const std::shared_ptr<when_any_conte
     storage::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
-void consumer_context::resume_consumer(result_state_base* self) const noexcept {
+void consumer_context::resume_consumer(result_state_base* self) const {
     switch (m_status) {
         case consumer_status::idle: {
             return;

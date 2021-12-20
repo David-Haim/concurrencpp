@@ -38,7 +38,7 @@ void executor_collection::register_executor(std::shared_ptr<executor> executor) 
     m_executors.emplace_back(std::move(executor));
 }
 
-void executor_collection::shutdown_all() noexcept {
+void executor_collection::shutdown_all() {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     for (auto& executor : m_executors) {
         assert(static_cast<bool>(executor));
@@ -86,8 +86,13 @@ runtime::runtime(const runtime_options& options) {
 }
 
 concurrencpp::runtime::~runtime() noexcept {
-    m_timer_queue->shutdown();
-    m_registered_executors.shutdown_all();
+    try {
+        m_timer_queue->shutdown();
+        m_registered_executors.shutdown_all();
+
+    } catch (...) {
+        std::abort();
+    }
 }
 
 std::shared_ptr<concurrencpp::timer_queue> runtime::timer_queue() const noexcept {

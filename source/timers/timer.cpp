@@ -80,7 +80,7 @@ void timer::cancel() {
         return;
     }
 
-    timer_queue->remove_timer(std::move(state));
+    timer_queue->remove_internal_timer(std::move(state));
 }
 
 void timer::set_frequency(std::chrono::milliseconds new_frequency) {

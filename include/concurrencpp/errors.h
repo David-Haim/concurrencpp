@@ -24,6 +24,10 @@ namespace concurrencpp::errors {
         using empty_object::empty_object;
     };
 
+    struct empty_generator : public empty_object {
+        using empty_object::empty_object;
+    };
+
     struct broken_task : public std::runtime_error {
         using runtime_error::runtime_error;
     };
