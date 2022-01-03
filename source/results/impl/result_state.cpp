@@ -13,18 +13,24 @@ void result_state_base::wait() {
         return;
     }
 
-    const auto wait_ctx = std::make_shared<wait_context>();
-    m_consumer.set_wait_context(wait_ctx);
-
     auto expected_state = pc_state::idle;
-    const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
+    const auto idle = m_pc_state.compare_exchange_strong(expected_state,
+                                                         pc_state::consumer_waiting,
+                                                         std::memory_order_acq_rel,
+                                                         std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
-        return;
     }
 
-    wait_ctx->wait();
+    while (true) {
+        if (m_pc_state.load(std::memory_order_acquire) == pc_state::producer_done) {
+            break;
+        }
+
+        m_pc_state.wait(pc_state::consumer_waiting, std::memory_order_acquire);
+    }
+
     assert_done();
 }
 
@@ -37,7 +43,10 @@ bool result_state_base::await(coroutine_handle<void> caller_handle) noexcept {
     m_consumer.set_await_handle(caller_handle);
 
     auto expected_state = pc_state::idle;
-    const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
+    const auto idle = m_pc_state.compare_exchange_strong(expected_state,
+                                                         pc_state::consumer_set,
+                                                         std::memory_order_acq_rel,
+                                                         std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -55,7 +64,10 @@ result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<wh
     m_consumer.set_when_any_context(when_any_state);
 
     auto expected_state = pc_state::idle;
-    const auto idle = m_pc_state.compare_exchange_strong(expected_state, pc_state::consumer_set, std::memory_order_acq_rel);
+    const auto idle = m_pc_state.compare_exchange_strong(expected_state,
+                                                         pc_state::consumer_set,
+                                                         std::memory_order_acq_rel,
+                                                         std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -71,7 +83,10 @@ void result_state_base::try_rewind_consumer() noexcept {
     }
 
     auto expected_consumer_state = pc_state::consumer_set;
-    const auto consumer = m_pc_state.compare_exchange_strong(expected_consumer_state, pc_state::idle, std::memory_order_acq_rel);
+    const auto consumer = m_pc_state.compare_exchange_strong(expected_consumer_state,
+                                                             pc_state::idle,
+                                                             std::memory_order_acq_rel,
+                                                             std::memory_order_acquire);
 
     if (!consumer) {
         assert_done();

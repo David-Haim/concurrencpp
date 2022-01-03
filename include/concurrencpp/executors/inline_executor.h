@@ -11,7 +11,7 @@ namespace concurrencpp {
         std::atomic_bool m_abort;
 
         void throw_if_aborted() const {
-            if (m_abort.load(std::memory_order_relaxed)) {
+            if (m_abort.load(std::memory_order_acquire)) {
                 details::throw_runtime_shutdown_exception(name);
             }
         }
@@ -36,11 +36,11 @@ namespace concurrencpp {
         }
 
         void shutdown() override {
-            m_abort.store(true, std::memory_order_relaxed);
+            m_abort.store(true, std::memory_order_release);
         }
 
         bool shutdown_requested() const override {
-            return m_abort.load(std::memory_order_relaxed);
+            return m_abort.load(std::memory_order_acquire);
         }
     };
 }  // namespace concurrencpp

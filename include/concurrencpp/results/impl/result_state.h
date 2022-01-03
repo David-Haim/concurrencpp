@@ -13,7 +13,7 @@ namespace concurrencpp::details {
     class result_state_base {
 
        public:
-        enum class pc_state { idle, consumer_set, consumer_done, producer_done };
+        enum class pc_state { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
 
        protected:
         std::atomic<pc_state> m_pc_state {pc_state::idle};
@@ -46,13 +46,13 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(std::true_type /* is_void_type*/, callable_type&& callable) {
+        void from_callable(std::true_type /*is_void_type*/, callable_type&& callable) {
             callable();
             set_result();
         }
 
         template<class callable_type>
-        void from_callable(std::false_type /* is_void_type */, callable_type&& callable) {
+        void from_callable(std::false_type /*is_void_type */, callable_type&& callable) {
             set_result(callable());
         }
 
@@ -87,11 +87,13 @@ namespace concurrencpp::details {
             }
 
             const auto wait_ctx = std::make_shared<wait_context>();
-            m_consumer.set_wait_context(wait_ctx);
+            m_consumer.set_wait_for_context(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
-            const auto idle_0 =
-                m_pc_state.compare_exchange_strong(expected_idle_state, pc_state::consumer_set, std::memory_order_acq_rel);
+            const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
+                                                                   pc_state::consumer_set,
+                                                                   std::memory_order_acq_rel,
+                                                                   std::memory_order_acquire);
 
             if (!idle_0) {
                 assert_done();
@@ -114,7 +116,10 @@ namespace concurrencpp::details {
                 producer will not try to access the consumer if the flag doesn't say so.
             */
             auto expected_consumer_state = pc_state::consumer_set;
-            const auto idle_1 = m_pc_state.compare_exchange_strong(expected_consumer_state, pc_state::idle, std::memory_order_acq_rel);
+            const auto idle_1 = m_pc_state.compare_exchange_strong(expected_consumer_state,
+                                                                   pc_state::idle,
+                                                                   std::memory_order_acq_rel,
+                                                                   std::memory_order_acquire);
 
             if (!idle_1) {
                 assert_done();
@@ -141,10 +146,6 @@ namespace concurrencpp::details {
             return m_producer.get();
         }
 
-        void initialize_producer_from(producer_context<type>& producer_ctx) noexcept {
-            producer_ctx = std::move(m_producer);
-        }
-
         template<class callable_type>
         void from_callable(callable_type&& callable) {
             using is_void = std::is_same<type, void>;
@@ -169,6 +170,11 @@ namespace concurrencpp::details {
                 }
 
                 case pc_state::idle: {
+                    return;
+                }
+
+                case pc_state::consumer_waiting: {
+                    m_pc_state.notify_one();
                     return;
                 }
 
@@ -199,6 +205,11 @@ namespace concurrencpp::details {
 
             assert(pc_state1 == pc_state::idle);
         }
+
+        void complete_joined_consumer() noexcept {
+            assert_done();
+            delete_self(m_done_handle, this);
+        }
     };
 
     template<class type>
@@ -206,6 +217,14 @@ namespace concurrencpp::details {
         void operator()(result_state<type>* state_ptr) const noexcept {
             assert(state_ptr != nullptr);
             state_ptr->complete_consumer();
+        }
+    };
+
+    template<class type>
+    struct joined_consumer_result_state_deleter {
+        void operator()(result_state<type>* state_ptr) const noexcept {
+            assert(state_ptr != nullptr);
+            state_ptr->complete_joined_consumer();
         }
     };
 
@@ -219,6 +238,9 @@ namespace concurrencpp::details {
 
     template<class type>
     using consumer_result_state_ptr = std::unique_ptr<result_state<type>, consumer_result_state_deleter<type>>;
+
+    template<class type>
+    using joined_consumer_result_state_ptr = std::unique_ptr<result_state<type>, joined_consumer_result_state_deleter<type>>;
 
     template<class type>
     using producer_result_state_ptr = std::unique_ptr<result_state<type>, producer_result_state_deleter<type>>;

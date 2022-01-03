@@ -218,7 +218,7 @@ size_t manual_executor::wait_for_tasks_for(size_t count, std::chrono::millisecon
 }
 
 void manual_executor::shutdown() {
-    const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+    const auto abort = m_atomic_abort.exchange(true, std::memory_order_acquire);
     if (abort) {
         return;  // shutdown had been called before.
     }
@@ -237,5 +237,5 @@ void manual_executor::shutdown() {
 }
 
 bool manual_executor::shutdown_requested() const {
-    return m_atomic_abort.load(std::memory_order_relaxed);
+    return m_atomic_abort.load(std::memory_order_acquire);
 }
