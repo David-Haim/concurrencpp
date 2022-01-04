@@ -6,6 +6,7 @@ using concurrencpp::details::wait_context;
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
 using concurrencpp::details::await_via_functor;
+using concurrencpp::details::result_state_base;
 
 /*
  * await_via_functor
@@ -67,30 +68,93 @@ void wait_context::notify() {
  * when_any_context
  */
 
-when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
+/*
+ *   k_processing -> k_done_processing -> (completed) result_state_base*
+ *     |                                             ^
+ *     |                                             |
+ *     ----------------------------------------------
+ */
+
+const result_state_base* when_any_context::k_processing = reinterpret_cast<result_state_base*>(-1);
+const result_state_base* when_any_context::k_done_processing = nullptr;
+
+when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle), m_status(k_processing) {}
+
+bool when_any_context::any_result_finished() const noexcept {
+    const auto status = m_status.load(std::memory_order_acquire);
+    assert(status != k_done_processing);
+    return status != k_processing;
+}
+
+bool when_any_context::finish_processing() noexcept {
+    assert(m_status.load(std::memory_order_relaxed) != k_done_processing);
+
+    // tries to turn k_processing -> k_done_processing.
+    auto expected_state = k_processing;
+    const auto res = m_status.compare_exchange_strong(expected_state, k_done_processing, std::memory_order_acq_rel);
+    return res;  // if k_processing -> k_done_processing, then no result finished before the CAS, suspend.
+}
 
 void when_any_context::try_resume(result_state_base* completed_result) noexcept {
+    /*
+     * tries to turn m_status into the completed_result ptr
+     * if m_status == k_processing, we just leave the pointer and bail out, the processor thread will pick
+     *  the pointer up and resume from there
+     * if m_status == k_done_processing AND we were able to CAS it into the completed result
+     *   then we were the first ones to complete and we resume the caller
+     */
     assert(completed_result != nullptr);
 
-    const auto already_resumed = m_fulfilled.exchange(true, std::memory_order_acq_rel);
-    if (already_resumed) {
-        return;
+    while (true) {
+        auto status = m_status.load(std::memory_order_acquire);
+        if (status != k_processing && status != k_done_processing) {
+            return;  // another task finished before us, bail out
+        }
+
+        if (status == k_done_processing) {
+            const auto swapped = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+
+            if (!swapped) {
+                return;  // another task finished before us, bail out
+            }
+
+            // k_done_processing -> result_state_base ptr, we are the first to finish and CAS the status
+            m_coro_handle();
+            return;
+        }
+
+        assert(status == k_processing);
+        const auto res = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+
+        if (res) {  // k_processing -> completed result_state_base*
+            return;
+        }
+
+        // either another result raced us, either m_status is now k_done_processing, retry and act
+    }
+}
+
+bool when_any_context::try_resume_inline(result_state_base* completed_result) noexcept {
+    assert(completed_result != nullptr);
+
+    auto status = m_status.load(std::memory_order_acquire);
+    assert(status != k_done_processing);
+
+    if (status != k_processing) {
+        return false;
     }
 
-    assert(m_completed_result == nullptr);
-    m_completed_result = completed_result;
+    const auto swapped = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+    if (swapped) {
+        m_coro_handle();
+        return true;
+    }
 
-    assert(static_cast<bool>(m_coro_handle));
-    m_coro_handle();
+    return false;
 }
 
-bool when_any_context::fulfilled() const noexcept {
-    return m_fulfilled.load(std::memory_order_acquire);
-}
-
-concurrencpp::details::result_state_base* when_any_context::completed_result() const noexcept {
-    assert(m_completed_result != nullptr);
-    return m_completed_result;
+const result_state_base* when_any_context::completed_result() const noexcept {
+    return m_status.load(std::memory_order_acquire);
 }
 
 /*

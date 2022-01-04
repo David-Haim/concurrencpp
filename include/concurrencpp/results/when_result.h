@@ -113,22 +113,23 @@ namespace concurrencpp::details {
                 return false;
             }
 
-            void await_suspend(coroutine_handle<void> coro_handle) {
+            bool await_suspend(coroutine_handle<void> coro_handle) {
                 m_promise = std::make_shared<when_any_context>(coro_handle);
 
-                const auto range_length = size(m_results);
+            	const auto range_length = size(m_results);
                 for (size_t i = 0; i < range_length; i++) {
-                    if (m_promise->fulfilled()) {
-                        return;
+                    if (m_promise->any_result_finished()) {
+                    	return false;
                     }
 
                     auto state_ptr = get_at(m_results, i);
                     const auto status = state_ptr->when_any(m_promise);
                     if (status == result_state_base::pc_state::producer_done) {
-                        m_promise->try_resume(state_ptr);
-                        return;
+                        return m_promise->try_resume_inline(state_ptr);
                     }
                 }
+
+                return m_promise->finish_processing();
             }
 
             size_t await_resume() noexcept {

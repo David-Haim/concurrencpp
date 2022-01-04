@@ -37,17 +37,23 @@ namespace concurrencpp::details {
     };
 
     class when_any_context {
-       private:
-        std::atomic_bool m_fulfilled = false;
-        result_state_base* m_completed_result = nullptr;
+
+    public:
+        static const result_state_base* k_processing;
+        static const result_state_base* k_done_processing;
+
+    	private:
+        std::atomic<const result_state_base*> m_status;
         coroutine_handle<void> m_coro_handle;
 
        public:
         when_any_context(coroutine_handle<void> coro_handle) noexcept;
 
-        bool fulfilled() const noexcept;
-        result_state_base* completed_result() const noexcept;
+        bool any_result_finished() const noexcept;
+    	bool finish_processing() noexcept;
+        const result_state_base* completed_result() const noexcept;
         void try_resume(result_state_base* completed_result) noexcept;
+        bool try_resume_inline(result_state_base* completed_result) noexcept;
     };
 
     class consumer_context {
