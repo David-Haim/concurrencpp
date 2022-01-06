@@ -9,64 +9,41 @@
 
 #include <vector>
 
+#include "constants.h"
+#include "concurrencpp/errors.h"
+
 namespace concurrencpp::details {
     struct coroutine_per_thread_data {
-        executor* executor = nullptr;
         std::vector<task>* accumulator = nullptr;
 
         static thread_local coroutine_per_thread_data s_tl_per_thread_data;
     };
 
-    template<class executor_type>
-    class initial_scheduling_awaiter : public suspend_always {
-
-       private:
-        await_context m_await_context;
-
-       public:
-        void await_suspend(coroutine_handle<void> handle) {
-            m_await_context.set_coro_handle(handle);
-
-            auto& per_thread_data = coroutine_per_thread_data::s_tl_per_thread_data;
-            auto executor_base_ptr = std::exchange(per_thread_data.executor, nullptr);
-
-            assert(executor_base_ptr != nullptr);
-            assert(dynamic_cast<executor_type*>(executor_base_ptr) != nullptr);
-
-            auto& executor = *static_cast<executor_type*>(executor_base_ptr);
-            executor.template post<await_via_functor>(&m_await_context);
-        }
-
-        void await_resume() const {
-            m_await_context.throw_if_interrupted();
-        }
-    };
-
-    template<>
-    struct initial_scheduling_awaiter<inline_executor> : public suspend_never {};
-
     class initial_accumulating_awaiter : public suspend_always {
-
        private:
-        await_context m_await_context;
+        bool m_interrupted = false;
 
        public:
         void await_suspend(coroutine_handle<void> handle) noexcept;
-        void await_resume();
+        void await_resume() const;
     };
 
     template<class executor_type>
-    struct initialy_rescheduled_promise {
+    class initialy_rescheduled_promise {
+
+       protected:
+        static thread_local executor_type* s_tl_initial_executor;
 
         static_assert(
             std::is_base_of_v<concurrencpp::executor, executor_type>,
             "concurrencpp::initialy_rescheduled_promise<<executor_type>> - <<executor_type>> isn't driven from concurrencpp::executor.");
 
+       public:
         template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) {
-            assert(executor_ptr != nullptr);
-            assert(coroutine_per_thread_data::s_tl_per_thread_data.executor == nullptr);
-            coroutine_per_thread_data::s_tl_per_thread_data.executor = executor_ptr;
+        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) noexcept
+        {
+            assert(executor_ptr!= nullptr);
+            s_tl_initial_executor = executor_ptr;
         }
 
         template<class... argument_types>
@@ -77,10 +54,31 @@ namespace concurrencpp::details {
         initialy_rescheduled_promise(executor_tag, executor_type& executor, argument_types&&... args) :
             initialy_rescheduled_promise(executor_tag {}, std::addressof(executor), std::forward<argument_types>(args)...) {}
 
-        initial_scheduling_awaiter<executor_type> initial_suspend() const noexcept {
+            class initial_scheduling_awaiter : public suspend_always {
+
+           private:
+            bool m_interrupted = false;
+
+           public:
+            void await_suspend(coroutine_handle<void> handle) {
+                auto executor = std::exchange(s_tl_initial_executor, nullptr);
+                executor->post(await_via_functor {handle, &m_interrupted});
+            }
+
+            void await_resume() const {
+                if (m_interrupted) {
+                    throw errors::broken_task(consts::k_broken_task_exception_error_msg);
+                }
+            }
+        };
+
+        initial_scheduling_awaiter initial_suspend() const noexcept {
             return {};
         }
     };
+
+    template<class executor_type>
+    thread_local executor_type* initialy_rescheduled_promise<executor_type>::s_tl_initial_executor = nullptr;
 
     struct initialy_resumed_promise {
         suspend_never initial_suspend() const noexcept {

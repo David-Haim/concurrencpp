@@ -48,11 +48,11 @@ int thread_executor::max_concurrency_level() const noexcept {
 }
 
 bool thread_executor::shutdown_requested() const {
-    return m_atomic_abort.load(std::memory_order_relaxed);
+    return m_atomic_abort.load(std::memory_order_acquire);
 }
 
 void thread_executor::shutdown() {
-    const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+    const auto abort = m_atomic_abort.exchange(true, std::memory_order_release);
     if (abort) {
         return;  // shutdown had been called before.
     }

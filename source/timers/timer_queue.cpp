@@ -224,7 +224,7 @@ bool timer_queue::shutdown_requested() const noexcept {
 }
 
 void timer_queue::shutdown() {
-    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_relaxed);
+    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_release);
     if (state_before) {
         return;  // timer_queue has been shut down already.
     }
@@ -268,7 +268,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
         const size_t m_due_time_ms;
         timer_queue& m_parent_queue;
         std::shared_ptr<concurrencpp::executor> m_executor;
-        details::await_context m_await_context;
+        bool m_interrupted = false;
 
        public:
         delay_object_awaitable(size_t due_time_ms,
@@ -278,14 +278,12 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
             m_parent_queue(parent_queue), m_executor(std::move(executor)) {}
 
         void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
-            m_await_context.set_coro_handle(coro_handle);
-
             try {
                 m_parent_queue.make_timer_impl(m_due_time_ms,
                                                0,
                                                std::move(m_executor),
                                                true,
-                                               details::await_via_functor {&m_await_context});
+                                               details::await_via_functor {coro_handle, &m_interrupted});
 
             } catch (...) {
                 // if an exception is thrown, await_via_functor d.tor will set an interrupt and resume the coro
@@ -294,7 +292,9 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
         }
 
         void await_resume() const {
-            m_await_context.throw_if_interrupted();
+            if (m_interrupted) {
+                throw errors::broken_task(details::consts::k_broken_task_exception_error_msg);
+            }
         }
     };
 

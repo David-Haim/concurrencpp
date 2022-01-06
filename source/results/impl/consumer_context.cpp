@@ -2,64 +2,38 @@
 
 #include "concurrencpp/executors/executor.h"
 
-using concurrencpp::details::await_context;
 using concurrencpp::details::wait_context;
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
 using concurrencpp::details::await_via_functor;
 
 /*
- * await_context
- */
-
-void await_context::resume() noexcept {
-    assert(static_cast<bool>(m_caller_handle));
-    assert(!m_caller_handle.done());
-    m_caller_handle();
-}
-
-void await_context::set_coro_handle(coroutine_handle<void> coro_handle) noexcept {
-    assert(!static_cast<bool>(m_caller_handle));
-    assert(static_cast<bool>(coro_handle));
-    assert(!coro_handle.done());
-    m_caller_handle = coro_handle;
-}
-
-void await_context::set_interrupt(const std::exception_ptr& interrupt) noexcept {
-    assert(m_interrupt_exception == nullptr);
-    assert(static_cast<bool>(interrupt));
-    m_interrupt_exception = interrupt;
-}
-
-void await_context::throw_if_interrupted() const {
-    if (m_interrupt_exception != nullptr) {
-        std::rethrow_exception(m_interrupt_exception);
-    }
-}
-
-/*
  * await_via_functor
  */
 
-await_via_functor::await_via_functor(await_context* ctx) noexcept : m_ctx(ctx) {}
-
-await_via_functor::await_via_functor(await_via_functor&& rhs) noexcept : m_ctx(rhs.m_ctx) {
-    rhs.m_ctx = nullptr;
+await_via_functor::await_via_functor(coroutine_handle<void> caller_handle, bool* interrupted) noexcept :
+    m_caller_handle(caller_handle), m_interrupted(interrupted) {
+    assert(static_cast<bool>(caller_handle));
+    assert(!caller_handle.done());
+    assert(interrupted != nullptr);
 }
 
+await_via_functor::await_via_functor(await_via_functor&& rhs) noexcept :
+    m_caller_handle(std::exchange(rhs.m_caller_handle, {})), m_interrupted(std::exchange(rhs.m_interrupted, nullptr)) {}
+
 await_via_functor ::~await_via_functor() noexcept {
-    if (m_ctx == nullptr) {
+    if (m_interrupted == nullptr) {
         return;
     }
 
-    m_ctx->set_interrupt(std::make_exception_ptr(errors::broken_task(consts::k_broken_task_exception_error_msg)));
-    m_ctx->resume();
+    *m_interrupted = true;
+    m_caller_handle();
 }
 
 void await_via_functor::operator()() noexcept {
-    assert(m_ctx != nullptr);
-    const auto await_context = std::exchange(m_ctx, nullptr);
-    await_context->resume();
+    assert(m_interrupted != nullptr);
+    m_interrupted = nullptr;
+    m_caller_handle();
 }
 
 /*
@@ -140,8 +114,8 @@ void consumer_context::clear() noexcept {
             return;
         }
 
-        case consumer_status::wait: {
-            storage::destroy(m_storage.wait_ctx);
+        case consumer_status::wait_for: {
+            storage::destroy(m_storage.wait_for_ctx);
             return;
         }
 
@@ -160,10 +134,10 @@ void consumer_context::set_await_handle(coroutine_handle<void> caller_handle) no
     storage::build(m_storage.caller_handle, caller_handle);
 }
 
-void consumer_context::set_wait_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept {
+void consumer_context::set_wait_for_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept {
     assert(m_status == consumer_status::idle);
-    m_status = consumer_status::wait;
-    storage::build(m_storage.wait_ctx, wait_ctx);
+    m_status = consumer_status::wait_for;
+    storage::build(m_storage.wait_for_ctx, wait_ctx);
 }
 
 void consumer_context::set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept {
@@ -185,8 +159,8 @@ void consumer_context::resume_consumer(result_state_base* self) const {
             return caller_handle();
         }
 
-        case consumer_status::wait: {
-            const auto wait_ctx = m_storage.wait_ctx;
+        case consumer_status::wait_for: {
+            const auto wait_ctx = m_storage.wait_for_ctx;
             assert(static_cast<bool>(wait_ctx));
             return wait_ctx->notify();
         }

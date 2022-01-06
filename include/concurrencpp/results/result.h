@@ -75,8 +75,9 @@ namespace concurrencpp {
 
         type get() {
             throw_if_empty(details::consts::k_result_get_error_msg);
-            auto state = std::move(m_state);
-            state->wait();
+            m_state->wait();
+
+        	details::joined_consumer_result_state_ptr<type> state (m_state.release());
             return state->get();
         }
 
