@@ -78,7 +78,10 @@ void wait_context::notify() {
 const result_state_base* when_any_context::k_processing = reinterpret_cast<result_state_base*>(-1);
 const result_state_base* when_any_context::k_done_processing = nullptr;
 
-when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle), m_status(k_processing) {}
+when_any_context::when_any_context(coroutine_handle<void> coro_handle) noexcept : m_status(k_processing), m_coro_handle(coro_handle) {
+    assert(static_cast<bool>(coro_handle));
+    assert(!coro_handle.done());
+}
 
 bool when_any_context::any_result_finished() const noexcept {
     const auto status = m_status.load(std::memory_order_acquire);
@@ -95,15 +98,15 @@ bool when_any_context::finish_processing() noexcept {
     return res;  // if k_processing -> k_done_processing, then no result finished before the CAS, suspend.
 }
 
-void when_any_context::try_resume(result_state_base* completed_result) noexcept {
+void when_any_context::try_resume(result_state_base& completed_result) noexcept {
     /*
      * tries to turn m_status into the completed_result ptr
      * if m_status == k_processing, we just leave the pointer and bail out, the processor thread will pick
      *  the pointer up and resume from there
      * if m_status == k_done_processing AND we were able to CAS it into the completed result
-     *   then we were the first ones to complete and we resume the caller
+     *   then we were the first ones to complete, processing is done for all input-results
+     *   and we resume the caller
      */
-    assert(completed_result != nullptr);
 
     while (true) {
         auto status = m_status.load(std::memory_order_acquire);
@@ -112,7 +115,7 @@ void when_any_context::try_resume(result_state_base* completed_result) noexcept 
         }
 
         if (status == k_done_processing) {
-            const auto swapped = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+            const auto swapped = m_status.compare_exchange_strong(status, &completed_result, std::memory_order_acq_rel);
 
             if (!swapped) {
                 return;  // another task finished before us, bail out
@@ -124,19 +127,17 @@ void when_any_context::try_resume(result_state_base* completed_result) noexcept 
         }
 
         assert(status == k_processing);
-        const auto res = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+        const auto res = m_status.compare_exchange_strong(status, &completed_result, std::memory_order_acq_rel);
 
         if (res) {  // k_processing -> completed result_state_base*
             return;
         }
 
-        // either another result raced us, either m_status is now k_done_processing, retry and act
+        // either another result raced us, either m_status is now k_done_processing, retry and act accordingly
     }
 }
 
-bool when_any_context::try_resume_inline(result_state_base* completed_result) noexcept {
-    assert(completed_result != nullptr);
-
+bool when_any_context::try_resume_inline(result_state_base& completed_result) noexcept {
     auto status = m_status.load(std::memory_order_acquire);
     assert(status != k_done_processing);
 
@@ -144,7 +145,7 @@ bool when_any_context::try_resume_inline(result_state_base* completed_result) no
         return false;
     }
 
-    const auto swapped = m_status.compare_exchange_strong(status, completed_result, std::memory_order_acq_rel);
+    const auto swapped = m_status.compare_exchange_strong(status, &completed_result, std::memory_order_acq_rel);
     if (swapped) {
         m_coro_handle();
         return true;
@@ -162,34 +163,34 @@ const result_state_base* when_any_context::completed_result() const noexcept {
  */
 
 consumer_context::~consumer_context() noexcept {
-    clear();
+    destroy();
 }
 
-void consumer_context::clear() noexcept {
-    const auto status = std::exchange(m_status, consumer_status::idle);
-
-    switch (status) {
+void consumer_context::destroy() noexcept {
+    switch (m_status) {
         case consumer_status::idle: {
             return;
         }
 
         case consumer_status::await: {
-            storage::destroy(m_storage.caller_handle);
-            return;
+            return storage::destroy(m_storage.caller_handle);
         }
 
         case consumer_status::wait_for: {
-            storage::destroy(m_storage.wait_for_ctx);
-            return;
+            return storage::destroy(m_storage.wait_for_ctx);
         }
 
         case consumer_status::when_any: {
-            storage::destroy(m_storage.when_any_ctx);
-            return;
+            return storage::destroy(m_storage.when_any_ctx);
         }
     }
 
     assert(false);
+}
+
+void consumer_context::clear() noexcept {
+    destroy();
+    m_status = consumer_status::idle;
 }
 
 void consumer_context::set_await_handle(coroutine_handle<void> caller_handle) noexcept {
@@ -210,7 +211,7 @@ void consumer_context::set_when_any_context(const std::shared_ptr<when_any_conte
     storage::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
-void consumer_context::resume_consumer(result_state_base* self) const {
+void consumer_context::resume_consumer(result_state_base& self) const {
     switch (m_status) {
         case consumer_status::idle: {
             return;

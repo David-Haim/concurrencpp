@@ -5,8 +5,8 @@
 #include "concurrencpp/results/resume_on.h"
 #include "concurrencpp/results/lazy_result.h"
 
-#include <memory>
 #include <tuple>
+#include <memory>
 #include <vector>
 
 namespace concurrencpp::details {
@@ -31,19 +31,21 @@ namespace concurrencpp::details {
         }
 
         template<class type>
-        static result_state_base* get_state_base(result<type>& result) noexcept {
-            return result.m_state.get();
+        static result_state_base& get_state_base(result<type>& result) noexcept {
+            assert(static_cast<bool>(res.m_state));
+        	return *result.m_state;
         }
 
         template<std::size_t... is, typename tuple_type>
-        static result_state_base* at_impl(std::index_sequence<is...>, tuple_type& tuple, size_t n) noexcept {
-            result_state_base* bases[] = {get_state_base(std::get<is>(tuple))...};
-            return bases[n];
+        static result_state_base& at_impl(std::index_sequence<is...>, tuple_type& tuple, size_t n) noexcept {
+            result_state_base* bases[] = {(&get_state_base(std::get<is>(tuple)))...};
+            assert(bases[n] != nullptr);
+            return *bases[n];
         }
 
        public:
         template<typename tuple_type>
-        static result_state_base* at(tuple_type& tuple, size_t n) noexcept {
+        static result_state_base& at(tuple_type& tuple, size_t n) noexcept {
             auto seq = std::make_index_sequence<std::tuple_size<tuple_type>::value>();
             return at_impl(seq, tuple, n);
         }
@@ -87,7 +89,7 @@ namespace concurrencpp::details {
             result_types& m_results;
 
             template<class type>
-            static result_state_base* get_at(std::vector<type>& vector, size_t i) noexcept {
+            static result_state_base& get_at(std::vector<type>& vector, size_t i) noexcept {
                 return get_state_base(vector[i]);
             }
 
@@ -97,7 +99,7 @@ namespace concurrencpp::details {
             }
 
             template<class... types>
-            static result_state_base* get_at(std::tuple<types...>& tuple, size_t i) noexcept {
+            static result_state_base& get_at(std::tuple<types...>& tuple, size_t i) noexcept {
                 return at(tuple, i);
             }
 
@@ -116,16 +118,16 @@ namespace concurrencpp::details {
             bool await_suspend(coroutine_handle<void> coro_handle) {
                 m_promise = std::make_shared<when_any_context>(coro_handle);
 
-            	const auto range_length = size(m_results);
+                const auto range_length = size(m_results);
                 for (size_t i = 0; i < range_length; i++) {
                     if (m_promise->any_result_finished()) {
-                    	return false;
+                        return false;
                     }
 
-                    auto state_ptr = get_at(m_results, i);
-                    const auto status = state_ptr->when_any(m_promise);
+                    auto& state_ref = get_at(m_results, i);
+                    const auto status = state_ref.when_any(m_promise);
                     if (status == result_state_base::pc_state::producer_done) {
-                        return m_promise->try_resume_inline(state_ptr);
+                        return m_promise->try_resume_inline(state_ref);
                     }
                 }
 
@@ -138,9 +140,9 @@ namespace concurrencpp::details {
 
                 const auto range_length = size(m_results);
                 for (size_t i = 0; i < range_length; i++) {
-                    auto state_ptr = get_at(m_results, i);
-                    state_ptr->try_rewind_consumer();
-                    if (completed_result_state == state_ptr) {
+                    auto& state_ref = get_at(m_results, i);
+                    state_ref.try_rewind_consumer();
+                    if (completed_result_state == &state_ref) {
                         completed_result_index = i;
                     }
                 }
@@ -178,8 +180,8 @@ namespace concurrencpp::details {
     template<class executor_type, class tuple_type>
     lazy_result<tuple_type> when_all_impl(std::shared_ptr<executor_type> resume_executor, tuple_type tuple) {
         for (size_t i = 0; i < std::tuple_size_v<tuple_type>; i++) {
-            auto state_ptr = when_result_helper::at(tuple, i);
-            co_await when_result_helper::when_all_awaitable {*state_ptr};
+            auto& state_ref = when_result_helper::at(tuple, i);
+            co_await when_result_helper::when_all_awaitable {state_ref};
         }
 
         co_await resume_on(resume_executor);

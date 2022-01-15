@@ -36,8 +36,9 @@ namespace concurrencpp::details {
        private:
         producer_context<type> m_producer;
 
-        static void delete_self(coroutine_handle<void> done_handle, const result_state<type>* state) noexcept {
-            if (static_cast<bool>(done_handle)) {
+        static void delete_self(result_state<type>* state) noexcept {
+            auto done_handle = state->m_done_handle;
+        	if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());
                 return done_handle.destroy();
             }
@@ -52,7 +53,7 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(std::false_type /*is_void_type */, callable_type&& callable) {
+        void from_callable(std::false_type /*is_void_type*/, callable_type&& callable) {
             set_result(callable());
         }
 
@@ -157,7 +158,7 @@ namespace concurrencpp::details {
             }
         }
 
-        void complete_producer(result_state_base* self /*for when_any*/, coroutine_handle<void> done_handle = {}) {
+        void complete_producer(coroutine_handle<void> done_handle = {}) {
             m_done_handle = done_handle;
 
             const auto state_before = this->m_pc_state.exchange(pc_state::producer_done, std::memory_order_acq_rel);
@@ -165,8 +166,7 @@ namespace concurrencpp::details {
 
             switch (state_before) {
                 case pc_state::consumer_set: {
-                    m_consumer.resume_consumer(self);
-                    return;
+                    return m_consumer.resume_consumer(*this);
                 }
 
                 case pc_state::idle: {
@@ -174,12 +174,11 @@ namespace concurrencpp::details {
                 }
 
                 case pc_state::consumer_waiting: {
-                    m_pc_state.notify_one();
-                    return;
+                    return m_pc_state.notify_one();
                 }
 
                 case pc_state::consumer_done: {
-                    return delete_self(done_handle, this);
+                    return delete_self(this);
                 }
 
                 default: {
@@ -193,14 +192,14 @@ namespace concurrencpp::details {
         void complete_consumer() noexcept {
             const auto pc_state = this->m_pc_state.load(std::memory_order_acquire);
             if (pc_state == pc_state::producer_done) {
-                return delete_self(m_done_handle, this);
+                return delete_self(this);
             }
 
             const auto pc_state1 = this->m_pc_state.exchange(pc_state::consumer_done, std::memory_order_acq_rel);
             assert(pc_state1 != pc_state::consumer_set);
 
             if (pc_state1 == pc_state::producer_done) {
-                return delete_self(m_done_handle, this);
+                return delete_self(this);
             }
 
             assert(pc_state1 == pc_state::idle);
@@ -208,7 +207,7 @@ namespace concurrencpp::details {
 
         void complete_joined_consumer() noexcept {
             assert_done();
-            delete_self(m_done_handle, this);
+            delete_self(this);
         }
     };
 
@@ -232,7 +231,7 @@ namespace concurrencpp::details {
     struct producer_result_state_deleter {
         void operator()(result_state<type>* state_ptr) const {
             assert(state_ptr != nullptr);
-            state_ptr->complete_producer(state_ptr);
+            state_ptr->complete_producer();
         }
     };
 

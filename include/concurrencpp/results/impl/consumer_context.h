@@ -38,22 +38,22 @@ namespace concurrencpp::details {
 
     class when_any_context {
 
-    public:
-        static const result_state_base* k_processing;
-        static const result_state_base* k_done_processing;
-
-    	private:
+       private:
         std::atomic<const result_state_base*> m_status;
         coroutine_handle<void> m_coro_handle;
+
+        static const result_state_base* k_processing;
+        static const result_state_base* k_done_processing;
 
        public:
         when_any_context(coroutine_handle<void> coro_handle) noexcept;
 
         bool any_result_finished() const noexcept;
-    	bool finish_processing() noexcept;
+        bool finish_processing() noexcept;
         const result_state_base* completed_result() const noexcept;
-        void try_resume(result_state_base* completed_result) noexcept;
-        bool try_resume_inline(result_state_base* completed_result) noexcept;
+
+    	void try_resume(result_state_base& completed_result) noexcept;
+        bool try_resume_inline(result_state_base& completed_result) noexcept;
     };
 
     class consumer_context {
@@ -84,11 +84,13 @@ namespace concurrencpp::details {
         consumer_status m_status = consumer_status::idle;
         storage m_storage;
 
+        void destroy() noexcept;
+
        public:
         ~consumer_context() noexcept;
 
         void clear() noexcept;
-        void resume_consumer(result_state_base* self) const;
+        void resume_consumer(result_state_base& self) const;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_for_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;

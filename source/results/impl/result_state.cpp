@@ -20,8 +20,8 @@ void result_state_base::wait() {
                                                          std::memory_order_acquire);
 
     if (!idle) {
-        return;
         assert_done();
+        return;
     }
 
     while (true) {
