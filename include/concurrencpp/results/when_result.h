@@ -32,7 +32,7 @@ namespace concurrencpp::details {
 
         template<class type>
         static result_state_base& get_state_base(result<type>& result) noexcept {
-            assert(static_cast<bool>(res.m_state));
+            assert(static_cast<bool>(result.m_state));
         	return *result.m_state;
         }
 
