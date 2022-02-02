@@ -32,20 +32,10 @@ namespace concurrencpp::details {
             std::unique_lock<std::mutex> lock(m_parent.m_awaiter_lock);
             if (!m_parent.m_locked) {
                 m_parent.m_locked = true;
-
-#ifdef CRCPP_DEBUG_MODE
-                assert(!static_cast<bool>(m_parent.m_owning_coro));
-                m_parent.m_owning_coro = handle;
-#endif
-
                 lock.unlock();
                 m_locked = true;
                 return false;
             }
-
-#ifdef CRCPP_DEBUG_MODE
-            assert(static_cast<bool>(m_parent.m_owning_coro));
-#endif
 
             m_parent.enqueue_awaiter(lock, *this);
             lock.unlock();
@@ -83,20 +73,10 @@ namespace concurrencpp::details {
             std::unique_lock<std::mutex> lock(m_parent.m_awaiter_lock);
             if (!m_parent.m_locked) {
                 m_parent.m_locked = true;
-
-#ifdef CRCPP_DEBUG_MODE
-                assert(!static_cast<bool>(m_parent.m_owning_coro));
-                m_parent.m_owning_coro = handle;
-#endif
-
                 lock.unlock();
                 m_locked = true;
                 return false;
             }
-
-#ifdef CRCPP_DEBUG_MODE
-            assert(static_cast<bool>(m_parent.m_owning_coro));
-#endif
 
             lock.unlock();
             return false;
@@ -148,7 +128,7 @@ async_lock_awaiter* async_lock::try_dequeue_awaiter(std::unique_lock<std::mutex>
     return node;
 }
 
-concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_ptr<executor> resume_executor) {
+concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_ptr<executor> resume_executor, bool with_raii_guard) {
     auto resume_synchronously = true;
 
     while (true) {
@@ -167,10 +147,14 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_p
 #endif
 
     if (!resume_synchronously) {
-        co_await resume_on(resume_executor);
+        co_await resume_on(resume_executor);  // TODO: if this throws, we must handle
     }
 
-    co_return scoped_async_lock(*this, std::adopt_lock);
+    if (with_raii_guard) {
+        co_return scoped_async_lock(*this, std::adopt_lock);
+    }
+
+    co_return scoped_async_lock(*this, std::defer_lock);
 }
 
 concurrencpp::lazy_result<scoped_async_lock> async_lock::lock(std::shared_ptr<executor> resume_executor) {
@@ -178,10 +162,10 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock(std::shared_ptr<ex
         throw std::invalid_argument(details::consts::k_async_lock_null_resume_executor_err_msg);
     }
 
-    return lock_impl(std::move(resume_executor));
+    return lock_impl(std::move(resume_executor), true);
 }
 
-concurrencpp::lazy_result<bool> async_lock::try_lock() noexcept {
+concurrencpp::lazy_result<bool> async_lock::try_lock() {
     details::async_try_lock_awaiter awaiter(*this);
     const auto res = co_await awaiter;
 
@@ -204,14 +188,11 @@ void async_lock::unlock() {
                                 details::consts::k_async_lock_unlock_invalid_lock_err_msg);
     }
 
-	m_locked = false;
+    m_locked = false;
 
 #ifdef CRCPP_DEBUG_MODE
     const auto current_count = m_thread_count_in_critical_section.fetch_sub(1, std::memory_order_relaxed);
     assert(current_count == 1);
-
-    assert(static_cast<bool>(m_owning_coro));
-    m_owning_coro = {};
 #endif
 
     const auto awaiter = try_dequeue_awaiter(lock);
@@ -221,6 +202,10 @@ void async_lock::unlock() {
         awaiter->retry();
     }
 }
+
+/*
+ *  scoped_async_lock
+ */
 
 scoped_async_lock::scoped_async_lock(scoped_async_lock&& rhs) noexcept :
     m_lock(std::exchange(rhs.m_lock, nullptr)), m_owns(std::exchange(rhs.m_owns, false)) {}
@@ -236,21 +221,33 @@ scoped_async_lock::~scoped_async_lock() noexcept {
 }
 
 concurrencpp::lazy_result<void> scoped_async_lock::lock(std::shared_ptr<executor> resume_executor) {
+    if (!static_cast<bool>(resume_executor)) {
+        throw std::invalid_argument(details::consts::k_scoped_async_lock_null_resume_executor_err_msg);
+    }
+
     if (m_lock == nullptr) {
-        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted), std::system_category());
+        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted),
+                                std::system_category(),
+                                details::consts::k_scoped_async_lock_lock_no_mutex_err_msg);
     } else if (m_owns) {
-        throw std::system_error(static_cast<int>(std::errc::resource_deadlock_would_occur), std::system_category());
+        throw std::system_error(static_cast<int>(std::errc::resource_deadlock_would_occur),
+                                std::system_category(),
+                                details::consts::k_scoped_async_lock_lock_deadlock_err_msg);
     } else {
-        co_await m_lock->lock(resume_executor);
+        co_await m_lock->lock_impl(std::move(resume_executor), false);
         m_owns = true;
     }
 }
 
 concurrencpp::lazy_result<bool> scoped_async_lock::try_lock() {
     if (m_lock == nullptr) {
-        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted), std::system_category());
+        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted),
+                                std::system_category(),
+                                concurrencpp::details::consts::k_scoped_async_lock_try_lock_no_mutex_err_msg);
     } else if (m_owns) {
-        throw std::system_error(static_cast<int>(std::errc::resource_deadlock_would_occur), std::system_category());
+        throw std::system_error(static_cast<int>(std::errc::resource_deadlock_would_occur),
+                                std::system_category(),
+                                concurrencpp::details::consts::k_scoped_async_lock_try_lock_deadlock_err_msg);
     } else {
         m_owns = co_await m_lock->try_lock();
     }
@@ -260,7 +257,9 @@ concurrencpp::lazy_result<bool> scoped_async_lock::try_lock() {
 
 void scoped_async_lock::unlock() {
     if (!m_owns) {
-        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted), std::system_category());
+        throw std::system_error(static_cast<int>(std::errc::operation_not_permitted),
+                                std::system_category(),
+                                concurrencpp::details::consts::k_scoped_async_lock_unlock_invalid_lock_err_msg);
     } else if (m_lock != nullptr) {
         m_lock->unlock();
         m_owns = false;

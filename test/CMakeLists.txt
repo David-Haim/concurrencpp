@@ -114,6 +114,9 @@ add_test(NAME generator_tests PATH source/tests/result_tests/generator_tests.cpp
 add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
 add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)
 
+add_test(NAME async_lock_tests PATH source/tests/async_lock_tests.cpp)
+add_test(NAME scoped_async_lock_tests PATH source/tests/scoped_async_lock_tests.cpp)
+
 add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
 add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)
 
