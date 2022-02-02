@@ -120,6 +120,20 @@ namespace concurrencpp::tests {
         assert_false(true);
     }
 
+    template<class exception_type, class task_type>
+    void assert_throws_contains_error_message(task_type&& task, std::string_view error_msg) {
+        try {
+            task();
+        } catch (const exception_type& e) {
+            const auto pos = std::string(e.what()).find(error_msg);
+            assert_not_equal(pos, std::string::npos);
+            return;
+        } catch (...) {
+        }
+
+        assert_false(true);
+    }
+
 }  // namespace concurrencpp::tests
 
 #endif  // CONCURRENCPP_ASSERTIONS_H
