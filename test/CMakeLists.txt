@@ -48,6 +48,16 @@ set(test_headers
         include/utils/test_ready_result.h
         include/utils/test_ready_lazy_result.h)
 
+add_library(concurrencpp_test_infra ${test_headers} ${test_sources})
+
+target_compile_features(concurrencpp_test_infra PRIVATE cxx_std_20)
+target_include_directories(concurrencpp_test_infra PRIVATE "${PROJECT_SOURCE_DIR}/../include")
+target_include_directories(concurrencpp_test_infra PRIVATE "${PROJECT_SOURCE_DIR}/include")
+
+target_link_libraries(concurrencpp_test_infra PRIVATE concurrencpp::concurrencpp)
+
+target_coroutine_options(concurrencpp_test_infra)
+
 # add_test(NAME <name> PATH <path> [PROPERTIES ...])
 #
 # Add test with the name <name> with the source file at
@@ -64,9 +74,10 @@ function(add_test)
   set(target "${TEST_NAME}")
   set(test_name "${TEST_NAME}")
 
-  add_executable(${target} ${TEST_PATH} ${test_headers} ${test_sources})
+  add_executable(${target} ${TEST_PATH})
 
   target_link_libraries(${target} PRIVATE concurrencpp::concurrencpp)
+  target_link_libraries(${target} PRIVATE concurrencpp_test_infra)
 
   target_compile_features(${target} PRIVATE cxx_std_20)
 
