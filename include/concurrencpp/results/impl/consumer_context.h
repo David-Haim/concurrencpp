@@ -52,7 +52,7 @@ namespace concurrencpp::details {
         bool finish_processing() noexcept;
         const result_state_base* completed_result() const noexcept;
 
-    	void try_resume(result_state_base& completed_result) noexcept;
+        void try_resume(result_state_base& completed_result) noexcept;
         bool try_resume_inline(result_state_base& completed_result) noexcept;
     };
 

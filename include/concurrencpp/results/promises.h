@@ -40,9 +40,11 @@ namespace concurrencpp::details {
 
        public:
         template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) noexcept
-        {
-            assert(executor_ptr!= nullptr);
+        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) {
+            if (executor_ptr == nullptr) {
+                throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
+            }
+
             s_tl_initial_executor = executor_ptr;
         }
 
@@ -54,7 +56,11 @@ namespace concurrencpp::details {
         initialy_rescheduled_promise(executor_tag, executor_type& executor, argument_types&&... args) :
             initialy_rescheduled_promise(executor_tag {}, std::addressof(executor), std::forward<argument_types>(args)...) {}
 
-            class initial_scheduling_awaiter : public suspend_always {
+        template<class class_type, class... argument_types>
+        initialy_rescheduled_promise(class_type&&, executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
+            initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
+
+        class initial_scheduling_awaiter : public suspend_always {
 
            private:
             bool m_interrupted = false;

@@ -266,8 +266,22 @@ void concurrencpp::tests::test_initialy_rescheduled_null_result_promise_exceptio
     shutdown_workers(workers);
 }
 
+namespace concurrencpp::tests
+{
+    null_result null_executor_null_result_coro(executor_tag, std::shared_ptr<executor> ex) {
+        co_return;
+    }
+}
+
 void concurrencpp::tests::test_initialy_rescheduled_null_result_promise() {
-    test_initialy_rescheduled_null_result_promise_value();
+    // null resume executor
+    assert_throws_with_error_message<std::invalid_argument>(
+        [] {
+            null_executor_null_result_coro({}, {});
+        },
+        concurrencpp::details::consts::k_parallel_coroutine_null_exception_err_msg);
+
+	test_initialy_rescheduled_null_result_promise_value();
     test_initialy_rescheduled_null_result_promise_exception();
 }
 
@@ -361,8 +375,21 @@ void concurrencpp::tests::test_initialy_rescheduled_result_promise_exception() {
     shutdown_workers(workers);
 }
 
+namespace concurrencpp::tests {
+    result<void> null_executor_result_coro(executor_tag, std::shared_ptr<executor> ex) {
+        co_return;
+    }
+}  // namespace concurrencpp::tests
+
 void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
-    test_initialy_rescheduled_result_promise_value();
+    // null resume executor
+    assert_throws_with_error_message<std::invalid_argument>(
+        [] {
+            null_executor_result_coro({}, {});
+        },
+        concurrencpp::details::consts::k_parallel_coroutine_null_exception_err_msg);
+
+	test_initialy_rescheduled_result_promise_value();
     test_initialy_rescheduled_result_promise_exception();
 }
 

@@ -25,7 +25,7 @@ namespace concurrencpp::details {
 
         void await_suspend(coroutine_handle<void> handle) {
             try {
-                m_executor.post(await_via_functor{ handle, &m_interrupted });
+                m_executor.post(await_via_functor {handle, &m_interrupted});
             } catch (...) {
                 // the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
             }

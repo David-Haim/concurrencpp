@@ -38,7 +38,7 @@ namespace concurrencpp::details {
 
         static void delete_self(result_state<type>* state) noexcept {
             auto done_handle = state->m_done_handle;
-        	if (static_cast<bool>(done_handle)) {
+            if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());
                 return done_handle.destroy();
             }

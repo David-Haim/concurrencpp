@@ -99,6 +99,12 @@ namespace concurrencpp::details::consts {
      * generator
      */
     inline const char* k_empty_generator_begin_err_msg = "generator::begin - generator is empty.";
+
+    /*
+     * parallel-coroutine
+     */
+    inline const char* k_parallel_coroutine_null_exception_err_msg = "parallel-coroutine - given executor is null.";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

@@ -33,7 +33,7 @@ namespace concurrencpp::details {
         template<class type>
         static result_state_base& get_state_base(result<type>& result) noexcept {
             assert(static_cast<bool>(result.m_state));
-        	return *result.m_state;
+            return *result.m_state;
         }
 
         template<std::size_t... is, typename tuple_type>
