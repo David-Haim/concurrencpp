@@ -20,7 +20,7 @@ bool worker_thread_executor::drain_queue_impl() {
         auto task = std::move(m_private_queue.front());
         m_private_queue.pop_front();
 
-        if (m_private_atomic_abort.load(std::memory_order_acquire)) {
+        if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
             return false;
         }
 
@@ -77,7 +77,7 @@ void worker_thread_executor::work_loop() {
 }
 
 void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
-    if (m_private_atomic_abort.load(std::memory_order_acquire)) {
+    if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
         details::throw_runtime_shutdown_exception(name);
     }
 
@@ -85,7 +85,7 @@ void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
 }
 
 void worker_thread_executor::enqueue_local(std::span<concurrencpp::task> tasks) {
-    if (m_private_atomic_abort.load(std::memory_order_acquire)) {
+    if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
         details::throw_runtime_shutdown_exception(name);
     }
 
@@ -143,11 +143,11 @@ int worker_thread_executor::max_concurrency_level() const noexcept {
 }
 
 bool worker_thread_executor::shutdown_requested() const {
-    return m_atomic_abort.load(std::memory_order_acquire);
+    return m_atomic_abort.load(std::memory_order_relaxed);
 }
 
 void worker_thread_executor::shutdown() {
-    const auto abort = m_atomic_abort.exchange(true, std::memory_order_release);
+    const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (abort) {
         return;  // shutdown had been called before.
     }

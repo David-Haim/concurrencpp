@@ -28,25 +28,25 @@ namespace concurrencpp::details {
 idle_worker_set::idle_worker_set(size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {}
 
 void idle_worker_set::set_idle(size_t idle_thread) noexcept {
-    const auto before = m_idle_flags[idle_thread].flag.exchange(status::idle, std::memory_order_acquire);
+    const auto before = m_idle_flags[idle_thread].flag.exchange(status::idle, std::memory_order_relaxed);
     if (before == status::idle) {
         return;
     }
 
-    m_approx_size.fetch_add(1, std::memory_order_release);
+    m_approx_size.fetch_add(1, std::memory_order_relaxed);
 }
 
 void idle_worker_set::set_active(size_t idle_thread) noexcept {
-    const auto before = m_idle_flags[idle_thread].flag.exchange(status::active, std::memory_order_acquire);
+    const auto before = m_idle_flags[idle_thread].flag.exchange(status::active, std::memory_order_relaxed);
     if (before == status::active) {
         return;
     }
 
-    m_approx_size.fetch_sub(1, std::memory_order_release);
+    m_approx_size.fetch_sub(1, std::memory_order_relaxed);
 }
 
 bool idle_worker_set::try_acquire_flag(size_t index) noexcept {
-    const auto worker_status = m_idle_flags[index].flag.load(std::memory_order_acquire);
+    const auto worker_status = m_idle_flags[index].flag.load(std::memory_order_relaxed);
     if (worker_status == status::active) {
         return false;
     }
@@ -54,14 +54,14 @@ bool idle_worker_set::try_acquire_flag(size_t index) noexcept {
     const auto before = m_idle_flags[index].flag.exchange(status::active, std::memory_order_relaxed);
     const auto swapped = (before == status::idle);
     if (swapped) {
-        m_approx_size.fetch_sub(1, std::memory_order_release);
+        m_approx_size.fetch_sub(1, std::memory_order_relaxed);
     }
 
     return swapped;
 }
 
 size_t idle_worker_set::find_idle_worker(size_t caller_index) noexcept {
-    if (m_approx_size.load(std::memory_order_acquire) <= 0) {
+    if (m_approx_size.load(std::memory_order_relaxed) <= 0) {
         return static_cast<size_t>(-1);
     }
 
@@ -85,7 +85,7 @@ size_t idle_worker_set::find_idle_worker(size_t caller_index) noexcept {
 void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>& result_buffer, size_t max_count) noexcept {
     assert(result_buffer.capacity() >= max_count);
 
-    const auto approx_size = m_approx_size.load(std::memory_order_acquire);
+    const auto approx_size = m_approx_size.load(std::memory_order_relaxed);
     if (approx_size <= 0) {
         return;
     }
@@ -257,7 +257,7 @@ bool thread_pool_worker::drain_queue_impl() {
     while (!m_private_queue.empty()) {
         balance_work();
 
-        if (m_atomic_abort.load(std::memory_order_acquire)) {
+        if (m_atomic_abort.load(std::memory_order_relaxed)) {
             aborted = true;
             break;
         }
@@ -390,7 +390,7 @@ void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task>::iterator
 }
 
 void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
-    if (m_atomic_abort.load(std::memory_order_acquire)) {
+    if (m_atomic_abort.load(std::memory_order_relaxed)) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
@@ -398,7 +398,7 @@ void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
 }
 
 void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
-    if (m_atomic_abort.load(std::memory_order_acquire)) {
+    if (m_atomic_abort.load(std::memory_order_relaxed)) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
@@ -407,14 +407,14 @@ void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
 
 void thread_pool_worker::shutdown() {
     assert(!m_atomic_abort.load(std::memory_order_relaxed));
-    m_atomic_abort.store(true, std::memory_order_release);
+    m_atomic_abort.store(true, std::memory_order_relaxed);
 
     {
         std::unique_lock<std::mutex> lock(m_lock);
         m_abort = true;
     }
 
-    m_task_found_or_abort.store(true, std::memory_order_release);  // make sure the store is finished before notifying the worker.
+    m_task_found_or_abort.store(true, std::memory_order_relaxed);  // make sure the store is finished before notifying the worker.
 
     m_semaphore.release();
 
@@ -440,7 +440,7 @@ std::chrono::milliseconds thread_pool_worker::max_worker_idle_time() const noexc
 }
 
 bool thread_pool_worker::appears_empty() const noexcept {
-    return m_private_queue.empty() && !m_task_found_or_abort.load(std::memory_order_acquire);
+    return m_private_queue.empty() && !m_task_found_or_abort.load(std::memory_order_relaxed);
 }
 
 thread_pool_executor::thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time) :
@@ -546,11 +546,11 @@ int thread_pool_executor::max_concurrency_level() const noexcept {
 }
 
 bool thread_pool_executor::shutdown_requested() const {
-    return m_abort.load(std::memory_order_acquire);
+    return m_abort.load(std::memory_order_relaxed);
 }
 
 void thread_pool_executor::shutdown() {
-    const auto abort = m_abort.exchange(true, std::memory_order_release);
+    const auto abort = m_abort.exchange(true, std::memory_order_relaxed);
     if (abort) {
         return;  // shutdown had been called before.
     }

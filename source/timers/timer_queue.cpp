@@ -220,11 +220,11 @@ void timer_queue::work_loop() {
 }
 
 bool timer_queue::shutdown_requested() const noexcept {
-    return m_atomic_abort.load(std::memory_order_acquire);
+    return m_atomic_abort.load(std::memory_order_relaxed);
 }
 
 void timer_queue::shutdown() {
-    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_release);
+    const auto state_before = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (state_before) {
         return;  // timer_queue has been shut down already.
     }

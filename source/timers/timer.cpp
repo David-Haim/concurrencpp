@@ -22,7 +22,7 @@ timer_state_base::timer_state_base(size_t due_time,
 }
 
 void timer_state_base::fire() {
-    const auto frequency = m_frequency.load(std::memory_order_acquire);
+    const auto frequency = m_frequency.load(std::memory_order_relaxed);
     m_deadline = make_deadline(milliseconds(frequency));
 
     assert(static_cast<bool>(m_executor));

@@ -50,7 +50,7 @@ namespace concurrencpp::details {
         }
 
         size_t get_frequency() const noexcept {
-            return m_frequency.load(std::memory_order_acquire);
+            return m_frequency.load(std::memory_order_relaxed);
         }
 
         size_t get_due_time() const noexcept {
@@ -70,15 +70,15 @@ namespace concurrencpp::details {
         }
 
         void set_new_frequency(size_t new_frequency) noexcept {
-            m_frequency.store(new_frequency, std::memory_order_release);
+            m_frequency.store(new_frequency, std::memory_order_relaxed);
         }
 
         void cancel() noexcept {
-            m_cancelled.store(true, std::memory_order_release);
+            m_cancelled.store(true, std::memory_order_relaxed);
         }
 
         bool cancelled() const noexcept {
-            return m_cancelled.load(std::memory_order_acquire);
+            return m_cancelled.load(std::memory_order_relaxed);
         }
     };
 
