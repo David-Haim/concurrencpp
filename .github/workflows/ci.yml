@@ -43,7 +43,7 @@ jobs:
             tsan: NO
 
           - name: Windows (Visual Studio Enterprise 2019)
-            os: windows-latest
+            os: windows-2019
             cc: cl
             cxx: cl
             tsan: NO
