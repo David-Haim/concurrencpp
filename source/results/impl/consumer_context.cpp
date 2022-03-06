@@ -145,12 +145,10 @@ bool when_any_context::try_resume_inline(result_state_base& completed_result) no
         return false;
     }
 
-    const auto swapped = m_status.compare_exchange_strong(status, &completed_result, std::memory_order_acq_rel);
-    if (swapped) {
-        m_coro_handle();
-        return true;
-    }
-
+	// either we succeed turning k_processing to &completed_result, then we can resume inline, either we failed
+	// meaning another thread had turned k_processing -> &completed_result, either way, testing if the cas succeeded 
+	// is redundant as we need to resume inline.
+    m_status.compare_exchange_strong(status, &completed_result, std::memory_order_acq_rel);
     return false;
 }
 
