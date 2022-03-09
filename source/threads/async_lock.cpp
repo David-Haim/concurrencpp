@@ -129,7 +129,7 @@ async_lock_awaiter* async_lock::try_dequeue_awaiter(std::unique_lock<std::mutex>
 }
 
 concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_ptr<executor> resume_executor, bool with_raii_guard) {
-    auto resume_synchronously = true;
+    auto resume_synchronously = true;  // indicates if the locking coroutine managed to lock the lock on first attempt
 
     while (true) {
         async_lock_awaiter awaiter(*this);
@@ -138,17 +138,32 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_p
             break;
         }
 
-        resume_synchronously = false;
+        resume_synchronously =
+            false;  // if we haven't managed to lock the lock on first attempt, we need to resume using resume_executor
+    }
+
+    if (!resume_synchronously) {
+        try {
+            co_await resume_on(resume_executor);
+        } catch (...) {
+            std::unique_lock<std::mutex> lock(m_awaiter_lock);
+            assert(m_locked);
+            m_locked = false;
+        	const auto awaiter = try_dequeue_awaiter(lock);
+            lock.unlock();
+
+            if (awaiter != nullptr) {
+                awaiter->retry();
+            }
+
+            throw;
+        }
     }
 
 #ifdef CRCPP_DEBUG_MODE
     const auto current_count = m_thread_count_in_critical_section.fetch_add(1, std::memory_order_relaxed);
     assert(current_count == 0);
 #endif
-
-    if (!resume_synchronously) {
-        co_await resume_on(resume_executor);  // TODO: if this throws, we must handle
-    }
 
     if (with_raii_guard) {
         co_return scoped_async_lock(*this, std::adopt_lock);

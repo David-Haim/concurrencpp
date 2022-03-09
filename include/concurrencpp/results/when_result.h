@@ -127,7 +127,7 @@ namespace concurrencpp::details {
                     auto& state_ref = get_at(m_results, i);
                     const auto status = state_ref.when_any(m_promise);
                     if (status == result_state_base::pc_state::producer_done) {
-                        return m_promise->try_resume_inline(state_ref);
+                        return m_promise->resume_inline(state_ref);
                     }
                 }
 

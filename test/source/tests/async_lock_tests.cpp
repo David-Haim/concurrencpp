@@ -13,6 +13,7 @@ namespace concurrencpp::tests {
 
     void test_async_lock_try_lock();
 
+    void test_async_lock_unlock_resumption_fails();
     void test_async_lock_unlock();
 
     void test_async_lock_mini_load_test1();
@@ -96,6 +97,59 @@ void concurrencpp::tests::test_async_lock_try_lock() {
     lock.unlock();
 }
 
+namespace concurrencpp::tests {
+    result<void> lock_coro(async_lock& lock, std::shared_ptr<executor> ex) {
+        auto g = co_await lock.lock(ex);
+    }
+}  // namespace concurrencpp::tests
+
+void concurrencpp::tests::test_async_lock_unlock_resumption_fails() {
+    /* let's say that one coroutine tried to lock a lock and failed because the lock is already locked.
+     * that coroutine was queued for resumption for when async_lock::unlock is called.
+     * when unlock is called, the coroutine manages to lock the lock but executor::shutdown is called
+     * on the resume-executor.
+     * In this case, another coroutine must be resumed instead, otherwise the chain of locking/unlocking will be lost.
+     */
+
+    runtime runtime;
+    std::shared_ptr<worker_thread_executor> executors[5];
+    std::shared_ptr<worker_thread_executor> working_executor = runtime.make_worker_thread_executor();
+
+    result<void> results[5];
+    result<void> result;
+
+    for (auto& executor : executors)
+    {
+        executor = runtime.make_worker_thread_executor();
+    }
+
+    async_lock lock;
+
+    auto g = lock.lock(runtime.thread_pool_executor()).run().get();
+
+    for (size_t i = 0; i < std::size(executors); i++) {
+        results[i] = lock_coro(lock, executors[i]);
+    }
+
+    result = lock_coro(lock, working_executor);
+
+
+    for (auto& executor : executors)
+    {
+        executor->shutdown();
+    }
+
+    g.unlock();
+
+    for (auto& err_result : results) {
+        assert_throws<errors::broken_task>([&err_result] {
+            err_result.get();
+        });
+    }
+
+    result.get(); //make sure nothing is thrown
+}
+
 void concurrencpp::tests::test_async_lock_unlock() {
     // unlocking an un-owned lock throws
     assert_throws_contains_error_message<std::system_error>(
@@ -104,6 +158,8 @@ void concurrencpp::tests::test_async_lock_unlock() {
             lock.unlock();
         },
         concurrencpp::details::consts::k_async_lock_unlock_invalid_lock_err_msg);
+
+    test_async_lock_unlock_resumption_fails();
 }
 
 void concurrencpp::tests::test_async_lock_mini_load_test1() {

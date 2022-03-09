@@ -137,7 +137,7 @@ void when_any_context::try_resume(result_state_base& completed_result) noexcept 
     }
 }
 
-bool when_any_context::try_resume_inline(result_state_base& completed_result) noexcept {
+bool when_any_context::resume_inline(result_state_base& completed_result) noexcept {
     auto status = m_status.load(std::memory_order_acquire);
     assert(status != k_done_processing);
 

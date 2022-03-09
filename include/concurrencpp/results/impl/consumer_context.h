@@ -53,7 +53,7 @@ namespace concurrencpp::details {
         const result_state_base* completed_result() const noexcept;
 
         void try_resume(result_state_base& completed_result) noexcept;
-        bool try_resume_inline(result_state_base& completed_result) noexcept;
+        bool resume_inline(result_state_base& completed_result) noexcept;
     };
 
     class consumer_context {
