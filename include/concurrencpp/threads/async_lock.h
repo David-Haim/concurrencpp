@@ -7,7 +7,6 @@
 
 namespace concurrencpp::details {
     class async_lock_awaiter;
-    class async_try_lock_awaiter;
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
@@ -17,7 +16,6 @@ namespace concurrencpp {
 
         friend class scoped_async_lock;
         friend class details::async_lock_awaiter;
-        friend class details::async_try_lock_awaiter;
 
        private:
         std::mutex m_awaiter_lock;
