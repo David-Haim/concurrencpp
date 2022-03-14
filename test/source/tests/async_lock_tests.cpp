@@ -118,8 +118,7 @@ void concurrencpp::tests::test_async_lock_unlock_resumption_fails() {
     result<void> results[5];
     result<void> result;
 
-    for (auto& executor : executors)
-    {
+    for (auto& executor : executors) {
         executor = runtime.make_worker_thread_executor();
     }
 
@@ -133,9 +132,7 @@ void concurrencpp::tests::test_async_lock_unlock_resumption_fails() {
 
     result = lock_coro(lock, working_executor);
 
-
-    for (auto& executor : executors)
-    {
+    for (auto& executor : executors) {
         executor->shutdown();
     }
 
@@ -147,7 +144,7 @@ void concurrencpp::tests::test_async_lock_unlock_resumption_fails() {
         });
     }
 
-    result.get(); //make sure nothing is thrown
+    result.get();  // make sure nothing is thrown
 }
 
 void concurrencpp::tests::test_async_lock_unlock() {

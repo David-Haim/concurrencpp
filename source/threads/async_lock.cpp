@@ -15,7 +15,8 @@ namespace concurrencpp::details {
         coroutine_handle<void> m_resume_handle;
 
        public:
-        async_lock_awaiter(async_lock& parent, std::unique_lock<std::mutex>& lock) noexcept : m_parent(parent), m_lock(std::move(lock)) {}
+        async_lock_awaiter(async_lock& parent, std::unique_lock<std::mutex>& lock) noexcept :
+            m_parent(parent), m_lock(std::move(lock)) {}
 
         static bool await_ready() noexcept {
             return false;
@@ -30,7 +31,7 @@ namespace concurrencpp::details {
             m_resume_handle = handle;
             m_parent.enqueue_awaiter(m_lock, *this);
 
-            auto lock = std::move(m_lock); // will unlock underlying lock
+            auto lock = std::move(m_lock);  // will unlock underlying lock
         }
 
         static void await_resume() noexcept {}
@@ -94,7 +95,7 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_p
 
         co_await async_lock_awaiter(*this, lock);
 
-    	resume_synchronously =
+        resume_synchronously =
             false;  // if we haven't managed to lock the lock on first attempt, we need to resume using resume_executor
     }
 
@@ -139,7 +140,7 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock(std::shared_ptr<ex
 concurrencpp::lazy_result<bool> async_lock::try_lock() {
     auto res = false;
 
-	std::unique_lock<std::mutex> lock(m_awaiter_lock);
+    std::unique_lock<std::mutex> lock(m_awaiter_lock);
     if (!m_locked) {
         m_locked = true;
         lock.unlock();
