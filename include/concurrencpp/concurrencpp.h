@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_H
 #define CONCURRENCPP_H
 
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 #include "concurrencpp/platform_defs.h"
 
 #include "concurrencpp/timers/timer.h"
@@ -15,6 +15,8 @@
 #include "concurrencpp/results/shared_result_awaitable.h"
 #include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/resume_on.h"
+#include "concurrencpp/results/generator.h"
 #include "concurrencpp/executors/executor_all.h"
+#include "concurrencpp/threads/async_lock.h"
 
 #endif

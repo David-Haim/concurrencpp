@@ -197,7 +197,8 @@ result<void> test_when_all_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     std::this_thread::sleep_until(tp);
 
-    auto when_all_result = co_await when_all(std::move(int_val_res_0),
+    auto when_all_result = co_await when_all(te,
+                                             std::move(int_val_res_0),
                                              std::move(int_val_res_1),
                                              std::move(int_val_res_2),
 
@@ -296,7 +297,7 @@ result<void> test_when_all_vector_val_impl(std::shared_ptr<concurrencpp::thread_
 
     std::this_thread::sleep_until(tp);
 
-    auto when_all_done = co_await when_all(results.begin(), results.end());
+    auto when_all_done = co_await when_all(te, results.begin(), results.end());
 
     tests::test_result_array(std::move(when_all_done), get_method {}, converter);
 }
@@ -310,7 +311,7 @@ result<void> test_when_all_vector_ex_impl(std::shared_ptr<concurrencpp::thread_e
 
     std::this_thread::sleep_until(tp);
 
-    auto when_all_done = co_await when_all(results.begin(), results.end());
+    auto when_all_done = co_await when_all(te, results.begin(), results.end());
 
     tests::test_exceptional_array(std::move(when_all_done), get_method {});
 }

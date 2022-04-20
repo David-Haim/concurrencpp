@@ -2,6 +2,7 @@
 #define CONCURRENCPP_THREAD_EXECUTOR_H
 
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <list>
@@ -10,7 +11,7 @@
 #include <condition_variable>
 
 namespace concurrencpp {
-    class alignas(64) thread_executor final : public derivable_executor<thread_executor> {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_executor final : public derivable_executor<thread_executor> {
 
        private:
         std::mutex m_lock;
@@ -32,8 +33,8 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        bool shutdown_requested() const noexcept override;
-        void shutdown() noexcept override;
+        bool shutdown_requested() const override;
+        void shutdown() override;
     };
 }  // namespace concurrencpp
 

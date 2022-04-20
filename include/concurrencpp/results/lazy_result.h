@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_LAZY_RESULT_H
 #define CONCURRENCPP_LAZY_RESULT_H
 
+#include "concurrencpp/results/promises.h"
 #include "concurrencpp/results/constants.h"
 #include "concurrencpp/results/lazy_result_awaitable.h"
 #include "concurrencpp/results/impl/lazy_result_state.h"

@@ -556,7 +556,7 @@ void concurrencpp::tests::test_timer_delay_object() {
         const auto before = high_resolution_clock::now();
         auto delay_object = timer_queue->make_delay_object(expected_interval, wt_executor);
         assert_true(static_cast<bool>(delay_object));
-        delay_object.get();
+        delay_object.run().get();
         const auto after = high_resolution_clock::now();
         const auto interval_ms = duration_cast<milliseconds>(after - before);
         timer_tester::interval_ok(interval_ms.count(), expected_interval.count());

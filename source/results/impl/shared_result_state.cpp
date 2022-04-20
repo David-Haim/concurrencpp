@@ -14,7 +14,7 @@ void shared_result_state_base::await_impl(std::unique_lock<std::mutex>& lock, sh
     m_awaiters = &awaiter;
 }
 
-void shared_result_state_base::wait_impl(std::unique_lock<std::mutex>& lock) noexcept {
+void shared_result_state_base::wait_impl(std::unique_lock<std::mutex>& lock) {
     assert(lock.owns_lock());
 
     if (!m_condition.has_value()) {
@@ -26,7 +26,7 @@ void shared_result_state_base::wait_impl(std::unique_lock<std::mutex>& lock) noe
     });
 }
 
-bool shared_result_state_base::wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms) noexcept {
+bool shared_result_state_base::wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms) {
     assert(lock.owns_lock());
 
     if (!m_condition.has_value()) {
@@ -38,7 +38,7 @@ bool shared_result_state_base::wait_for_impl(std::unique_lock<std::mutex>& lock,
     });
 }
 
-void shared_result_state_base::complete_producer() noexcept {
+void shared_result_state_base::complete_producer() {
     shared_await_context* awaiters;
 
     {
@@ -58,7 +58,7 @@ void shared_result_state_base::complete_producer() noexcept {
     }
 }
 
-bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
+bool shared_result_state_base::await(shared_await_context& awaiter) {
     if (m_ready.load(std::memory_order_acquire)) {
         return false;
     }
@@ -75,7 +75,7 @@ bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
     return true;
 }
 
-void shared_result_state_base::wait() noexcept {
+void shared_result_state_base::wait() {
     if (m_ready.load(std::memory_order_acquire)) {
         return;
     }

@@ -198,7 +198,8 @@ result<void> test_when_any_tuple(std::shared_ptr<concurrencpp::thread_executor> 
 
     std::this_thread::sleep_until(tp);
 
-    auto when_any_result = co_await when_any(std::move(int_val_res_0),
+    auto when_any_result = co_await when_any(te,
+                                             std::move(int_val_res_0),
                                              std::move(int_val_res_1),
                                              std::move(int_val_res_2),
 
@@ -412,7 +413,7 @@ result<void> test_when_any_vector_val_impl(std::shared_ptr<concurrencpp::thread_
 
     std::this_thread::sleep_until(tp);
 
-    auto when_any_done = co_await when_any(results.begin(), results.end());
+    auto when_any_done = co_await when_any(te, results.begin(), results.end());
 
     if constexpr (!std::is_same_v<void, type>) {
         tests::test_ready_result(std::move(when_any_done.results[when_any_done.index]), converter.value_of(when_any_done.index));
@@ -431,7 +432,7 @@ result<void> test_when_any_vector_ex_impl(std::shared_ptr<concurrencpp::thread_e
 
     std::this_thread::sleep_until(tp);
 
-    auto when_any_done = co_await when_any(results.begin(), results.end());
+    auto when_any_done = co_await when_any(te, results.begin(), results.end());
 
     tests::test_ready_result_custom_exception(std::move(when_any_done.results[when_any_done.index]), when_any_done.index);
 }

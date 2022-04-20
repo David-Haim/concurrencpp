@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_TIMER_H
 #define CONCURRENCPP_TIMER_H
 
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 
 #include <atomic>
 #include <memory>

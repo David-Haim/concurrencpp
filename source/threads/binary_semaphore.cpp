@@ -17,11 +17,9 @@ void binary_semaphore::release(std::ptrdiff_t update) {
         m_is_signaled = true;
     }
 
-    if (!was_signaled)
-    {
+    if (!was_signaled) {
         m_condition.notify_one();
     }
-
 }
 
 void binary_semaphore::acquire() {

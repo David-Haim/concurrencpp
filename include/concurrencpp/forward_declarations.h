@@ -1,5 +1,5 @@
-#ifndef CONCURRENCPP_FORWARD_DECLERATIONS_H
-#define CONCURRENCPP_FORWARD_DECLERATIONS_H
+#ifndef CONCURRENCPP_FORWARD_DECLARATIONS_H
+#define CONCURRENCPP_FORWARD_DECLARATIONS_H
 
 namespace concurrencpp {
     struct null_result;
@@ -27,6 +27,11 @@ namespace concurrencpp {
     class thread_executor;
     class worker_thread_executor;
     class manual_executor;
+
+    template<typename type>
+    class generator;
+
+    class async_lock;
 }  // namespace concurrencpp
 
-#endif  // FORWARD_DECLERATIONS_H
+#endif  // FORWARD_DECLARATIONS_H

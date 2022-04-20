@@ -2,7 +2,7 @@
 #define CONCURRENCPP_RUNTIME_H
 
 #include "concurrencpp/runtime/constants.h"
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 
 #include <memory>
 #include <mutex>
@@ -18,7 +18,7 @@ namespace concurrencpp::details {
 
        public:
         void register_executor(std::shared_ptr<executor> executor);
-        void shutdown_all() noexcept;
+        void shutdown_all();
     };
 }  // namespace concurrencpp::details
 

@@ -9,7 +9,7 @@ using concurrencpp::worker_thread_executor;
 
 worker_thread_executor::worker_thread_executor() :
     derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
-    m_private_atomic_abort(false), m_abort(false), m_semaphore(0), m_atomic_abort(false) {
+    m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false), m_abort(false) {
     m_thread = details::thread(details::make_executor_worker_name(name), [this] {
         work_loop();
     });
@@ -49,7 +49,7 @@ void worker_thread_executor::wait_for_task(std::unique_lock<std::mutex>& lock) {
 }
 
 bool worker_thread_executor::drain_queue() {
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
+    std::unique_lock<std::mutex> lock(m_lock);
     wait_for_task(lock);
 
     assert(lock.owns_lock());
@@ -66,7 +66,7 @@ bool worker_thread_executor::drain_queue() {
     return drain_queue_impl();
 }
 
-void worker_thread_executor::work_loop() noexcept {
+void worker_thread_executor::work_loop() {
     details::s_tl_this_worker = this;
 
     while (true) {
@@ -93,7 +93,7 @@ void worker_thread_executor::enqueue_local(std::span<concurrencpp::task> tasks) 
 }
 
 void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
+    std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
         details::throw_runtime_shutdown_exception(name);
     }
@@ -108,7 +108,7 @@ void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
 }
 
 void worker_thread_executor::enqueue_foreign(std::span<concurrencpp::task> tasks) {
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
+    std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
         details::throw_runtime_shutdown_exception(name);
     }
@@ -142,11 +142,11 @@ int worker_thread_executor::max_concurrency_level() const noexcept {
     return details::consts::k_worker_thread_max_concurrency_level;
 }
 
-bool worker_thread_executor::shutdown_requested() const noexcept {
+bool worker_thread_executor::shutdown_requested() const {
     return m_atomic_abort.load(std::memory_order_relaxed);
 }
 
-void worker_thread_executor::shutdown() noexcept {
+void worker_thread_executor::shutdown() {
     const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (abort) {
         return;  // shutdown had been called before.

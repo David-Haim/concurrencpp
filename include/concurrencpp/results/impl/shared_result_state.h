@@ -2,7 +2,7 @@
 #define CONCURRENCPP_SHARED_RESULT_STATE_H
 
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/forward_declerations.h"
+#include "concurrencpp/forward_declarations.h"
 #include "concurrencpp/results/impl/producer_context.h"
 #include "concurrencpp/results/impl/return_value_struct.h"
 
@@ -30,13 +30,13 @@ namespace concurrencpp::details {
         std::optional<std::condition_variable> m_condition;
 
         void await_impl(std::unique_lock<std::mutex>& lock, shared_await_context& awaiter) noexcept;
-        void wait_impl(std::unique_lock<std::mutex>& lock) noexcept;
-        bool wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms) noexcept;
+        void wait_impl(std::unique_lock<std::mutex>& lock);
+        bool wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms);
 
        public:
-        void complete_producer() noexcept;
-        bool await(shared_await_context& awaiter) noexcept;
-        void wait() noexcept;
+        void complete_producer();
+        bool await(shared_await_context& awaiter);
+        void wait();
     };
 
     template<class type>
@@ -60,7 +60,7 @@ namespace concurrencpp::details {
         }
 
         template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) noexcept {
+        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
             if (m_ready.load(std::memory_order_acquire)) {
                 return m_producer.status();
             }
@@ -83,7 +83,7 @@ namespace concurrencpp::details {
         }
 
         template<class clock, class duration>
-        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) noexcept {
+        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
             const auto now = clock::now();
             if (timeout_time <= now) {
                 return status();
@@ -112,6 +112,7 @@ namespace concurrencpp::details {
     struct shared_result_publisher : public suspend_always {
         template<class promise_type>
         bool await_suspend(coroutine_handle<promise_type> handle) const noexcept {
+            // TODO : this can (very rarely) throw, but the standard mandates us to have a noexcept finalizer
             handle.promise().complete_producer();
             return false;
         }
@@ -129,7 +130,7 @@ namespace concurrencpp::details {
             m_state->set_result(std::forward<argument_types>(arguments)...);
         }
 
-        void unhandled_exception() noexcept {
+        void unhandled_exception() const noexcept {
             m_state->unhandled_exception();
         }
 
@@ -145,7 +146,7 @@ namespace concurrencpp::details {
             return {};
         }
 
-        void complete_producer() noexcept {
+        void complete_producer() const {
             m_state->complete_producer();
         }
     };

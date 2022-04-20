@@ -2,6 +2,7 @@
 #define CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
@@ -13,7 +14,7 @@ namespace concurrencpp::details {
 
         enum class status { active, idle };
 
-        struct alignas(64) padded_flag {
+        struct alignas(CRCPP_CACHE_LINE_ALIGNMENT) padded_flag {
             std::atomic<status> flag {status::active};
         };
 
@@ -36,7 +37,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp::details {
-    class alignas(64) thread_pool_worker {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_worker {
 
        private:
         std::deque<task> m_private_queue;
@@ -47,21 +48,21 @@ namespace concurrencpp::details {
         const size_t m_pool_size;
         const std::chrono::milliseconds m_max_idle_time;
         const std::string m_worker_name;
-        alignas(64) std::mutex m_lock;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
         std::deque<task> m_public_queue;
         binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
-        std::atomic_bool m_event_found;
+        std::atomic_bool m_task_found_or_abort;
         thread m_thread;
 
         void balance_work();
 
-        bool wait_for_task(std::unique_lock<std::mutex>& lock) noexcept;
+        bool wait_for_task(std::unique_lock<std::mutex>& lock);
         bool drain_queue_impl();
         bool drain_queue();
 
-        void work_loop() noexcept;
+        void work_loop();
 
         void ensure_worker_active(bool first_enqueuer, std::unique_lock<std::mutex>& lock);
 
@@ -79,7 +80,7 @@ namespace concurrencpp::details {
         void enqueue_local(concurrencpp::task& task);
         void enqueue_local(std::span<concurrencpp::task> tasks);
 
-        void shutdown() noexcept;
+        void shutdown();
 
         std::chrono::milliseconds max_worker_idle_time() const noexcept;
 
@@ -88,19 +89,18 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class alignas(64) thread_pool_executor final : public derivable_executor<thread_pool_executor> {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_executor final : public derivable_executor<thread_pool_executor> {
 
         friend class details::thread_pool_worker;
 
        private:
         std::vector<details::thread_pool_worker> m_workers;
-        alignas(64) std::atomic_size_t m_round_robin_cursor;
-        alignas(64) details::idle_worker_set m_idle_workers;
-        alignas(64) std::atomic_bool m_abort;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::atomic_size_t m_round_robin_cursor;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) details::idle_worker_set m_idle_workers;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::atomic_bool m_abort;
 
         void mark_worker_idle(size_t index) noexcept;
         void mark_worker_active(size_t index) noexcept;
-
         void find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept;
 
         details::thread_pool_worker& worker_at(size_t index) noexcept;
@@ -113,8 +113,8 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        bool shutdown_requested() const noexcept override;
-        void shutdown() noexcept override;
+        bool shutdown_requested() const override;
+        void shutdown() override;
 
         std::chrono::milliseconds max_worker_idle_time() const noexcept;
     };

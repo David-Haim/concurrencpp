@@ -31,7 +31,7 @@ namespace concurrencpp {
         }
 
         type await_resume() {
-            auto state = std::move(this->m_state);
+            details::joined_consumer_result_state_ptr<type> state(this->m_state.release());
             return state->get();
         }
     };

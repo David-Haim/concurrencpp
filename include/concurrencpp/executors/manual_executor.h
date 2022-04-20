@@ -1,13 +1,14 @@
 #ifndef CONCURRENCPP_MANUAL_EXECUTOR_H
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
+#include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
 #include <chrono>
 
 namespace concurrencpp {
-    class alignas(64) manual_executor final : public derivable_executor<manual_executor> {
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public derivable_executor<manual_executor> {
 
        private:
         mutable std::mutex m_lock;
@@ -18,13 +19,13 @@ namespace concurrencpp {
 
         template<class clock_type, class duration_type>
         static std::chrono::system_clock::time_point to_system_time_point(
-            std::chrono::time_point<clock_type, duration_type> time_point) {
+            std::chrono::time_point<clock_type, duration_type> time_point) noexcept(noexcept(clock_type::now())) {
             const auto src_now = clock_type::now();
             const auto dst_now = std::chrono::system_clock::now();
             return dst_now + std::chrono::duration_cast<std::chrono::milliseconds>(time_point - src_now);
         }
 
-        static std::chrono::system_clock::time_point time_point_from_now(std::chrono::milliseconds ms) {
+        static std::chrono::system_clock::time_point time_point_from_now(std::chrono::milliseconds ms) noexcept {
             return std::chrono::system_clock::now() + ms;
         }
 
@@ -42,11 +43,11 @@ namespace concurrencpp {
 
         int max_concurrency_level() const noexcept override;
 
-        void shutdown() noexcept override;
-        bool shutdown_requested() const noexcept override;
+        void shutdown() override;
+        bool shutdown_requested() const override;
 
-        size_t size() const noexcept;
-        bool empty() const noexcept;
+        size_t size() const;
+        bool empty() const;
 
         size_t clear();
 

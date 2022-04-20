@@ -13,7 +13,7 @@ namespace concurrencpp::details {
     class result_state_base {
 
        public:
-        enum class pc_state { idle, consumer_set, consumer_done, producer_done };
+        enum class pc_state { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
 
        protected:
         std::atomic<pc_state> m_pc_state {pc_state::idle};
@@ -36,7 +36,8 @@ namespace concurrencpp::details {
        private:
         producer_context<type> m_producer;
 
-        static void delete_self(coroutine_handle<void> done_handle, result_state<type>* state) noexcept {
+        static void delete_self(result_state<type>* state) noexcept {
+            auto done_handle = state->m_done_handle;
             if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());
                 return done_handle.destroy();
@@ -86,12 +87,14 @@ namespace concurrencpp::details {
                 return m_producer.status();
             }
 
-            auto wait_ctx = std::make_shared<wait_context>();
-            m_consumer.set_wait_context(wait_ctx);
+            const auto wait_ctx = std::make_shared<wait_context>();
+            m_consumer.set_wait_for_context(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
-            const auto idle_0 =
-                m_pc_state.compare_exchange_strong(expected_idle_state, pc_state::consumer_set, std::memory_order_acq_rel);
+            const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
+                                                                   pc_state::consumer_set,
+                                                                   std::memory_order_acq_rel,
+                                                                   std::memory_order_acquire);
 
             if (!idle_0) {
                 assert_done();
@@ -114,7 +117,10 @@ namespace concurrencpp::details {
                 producer will not try to access the consumer if the flag doesn't say so.
             */
             auto expected_consumer_state = pc_state::consumer_set;
-            const auto idle_1 = m_pc_state.compare_exchange_strong(expected_consumer_state, pc_state::idle, std::memory_order_acq_rel);
+            const auto idle_1 = m_pc_state.compare_exchange_strong(expected_consumer_state,
+                                                                   pc_state::idle,
+                                                                   std::memory_order_acq_rel,
+                                                                   std::memory_order_acquire);
 
             if (!idle_1) {
                 assert_done();
@@ -141,12 +147,8 @@ namespace concurrencpp::details {
             return m_producer.get();
         }
 
-        void initialize_producer_from(producer_context<type>& producer_ctx) noexcept {
-            producer_ctx = std::move(m_producer);
-        }
-
         template<class callable_type>
-        void from_callable(callable_type&& callable) noexcept {
+        void from_callable(callable_type&& callable) {
             using is_void = std::is_same<type, void>;
 
             try {
@@ -156,7 +158,7 @@ namespace concurrencpp::details {
             }
         }
 
-        void complete_producer(result_state_base* self /*for when_any*/, coroutine_handle<void> done_handle = {}) noexcept {
+        void complete_producer(coroutine_handle<void> done_handle = {}) {
             m_done_handle = done_handle;
 
             const auto state_before = this->m_pc_state.exchange(pc_state::producer_done, std::memory_order_acq_rel);
@@ -164,16 +166,19 @@ namespace concurrencpp::details {
 
             switch (state_before) {
                 case pc_state::consumer_set: {
-                    m_consumer.resume_consumer(self);
-                    return;
+                    return m_consumer.resume_consumer(*this);
                 }
 
                 case pc_state::idle: {
                     return;
                 }
 
+                case pc_state::consumer_waiting: {
+                    return m_pc_state.notify_one();
+                }
+
                 case pc_state::consumer_done: {
-                    return delete_self(done_handle, this);
+                    return delete_self(this);
                 }
 
                 default: {
@@ -187,38 +192,54 @@ namespace concurrencpp::details {
         void complete_consumer() noexcept {
             const auto pc_state = this->m_pc_state.load(std::memory_order_acquire);
             if (pc_state == pc_state::producer_done) {
-                return delete_self(m_done_handle, this);
+                return delete_self(this);
             }
 
             const auto pc_state1 = this->m_pc_state.exchange(pc_state::consumer_done, std::memory_order_acq_rel);
             assert(pc_state1 != pc_state::consumer_set);
 
             if (pc_state1 == pc_state::producer_done) {
-                return delete_self(m_done_handle, this);
+                return delete_self(this);
             }
 
             assert(pc_state1 == pc_state::idle);
+        }
+
+        void complete_joined_consumer() noexcept {
+            assert_done();
+            delete_self(this);
         }
     };
 
     template<class type>
     struct consumer_result_state_deleter {
-        void operator()(result_state<type>* state_ptr) {
+        void operator()(result_state<type>* state_ptr) const noexcept {
             assert(state_ptr != nullptr);
             state_ptr->complete_consumer();
         }
     };
 
     template<class type>
-    struct producer_result_state_deleter {
-        void operator()(result_state<type>* state_ptr) {
+    struct joined_consumer_result_state_deleter {
+        void operator()(result_state<type>* state_ptr) const noexcept {
             assert(state_ptr != nullptr);
-            state_ptr->complete_producer(state_ptr);
+            state_ptr->complete_joined_consumer();
+        }
+    };
+
+    template<class type>
+    struct producer_result_state_deleter {
+        void operator()(result_state<type>* state_ptr) const {
+            assert(state_ptr != nullptr);
+            state_ptr->complete_producer();
         }
     };
 
     template<class type>
     using consumer_result_state_ptr = std::unique_ptr<result_state<type>, consumer_result_state_deleter<type>>;
+
+    template<class type>
+    using joined_consumer_result_state_ptr = std::unique_ptr<result_state<type>, joined_consumer_result_state_deleter<type>>;
 
     template<class type>
     using producer_result_state_ptr = std::unique_ptr<result_state<type>, producer_result_state_deleter<type>>;

@@ -35,12 +35,12 @@ int manual_executor::max_concurrency_level() const noexcept {
     return details::consts::k_manual_executor_max_concurrency_level;
 }
 
-size_t manual_executor::size() const noexcept {
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
+size_t manual_executor::size() const {
+    std::unique_lock<std::mutex> lock(m_lock);
     return m_tasks.size();
 }
 
-bool manual_executor::empty() const noexcept {
+bool manual_executor::empty() const {
     return size() == 0;
 }
 
@@ -217,7 +217,7 @@ size_t manual_executor::wait_for_tasks_for(size_t count, std::chrono::millisecon
     return wait_for_tasks_impl(count, time_point_from_now(max_waiting_time));
 }
 
-void manual_executor::shutdown() noexcept {
+void manual_executor::shutdown() {
     const auto abort = m_atomic_abort.exchange(true, std::memory_order_relaxed);
     if (abort) {
         return;  // shutdown had been called before.
@@ -236,6 +236,6 @@ void manual_executor::shutdown() noexcept {
     tasks.clear();
 }
 
-bool manual_executor::shutdown_requested() const noexcept {
+bool manual_executor::shutdown_requested() const {
     return m_atomic_abort.load(std::memory_order_relaxed);
 }
