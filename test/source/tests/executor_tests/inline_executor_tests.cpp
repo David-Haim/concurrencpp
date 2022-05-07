@@ -221,7 +221,7 @@ void concurrencpp::tests::test_inline_executor_bulk_post_foreign() {
         stubs.emplace_back(observer.get_testing_stub());
     }
 
-    std::span<testing_stub> span = stubs;
+    std::span<testing_stub> span(stubs.data(), stubs.size());
     executor->bulk_post<testing_stub>(span);
 
     assert_equal(observer.get_execution_count(), task_count);
