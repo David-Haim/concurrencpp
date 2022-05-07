@@ -33,7 +33,7 @@ namespace concurrencpp {
 
         template<class callable_type>
         void bulk_post(std::vector<callable_type> &callable_list) {
-            return do_bulk_post(self(), std::span<callable_type>(callable_list.begin(), callable_list.end()));
+            return do_bulk_post(self(), std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
 
         template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
@@ -43,7 +43,7 @@ namespace concurrencpp {
 
         template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
         std::vector<concurrencpp::result<return_type>> bulk_submit(std::vector<callable_type> &callable_list) {
-            return do_bulk_submit(self(), std::span<callable_type>(callable_list.begin(), callable_list.end()));
+            return do_bulk_submit(self(), std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
     };
 }  // namespace concurrencpp
