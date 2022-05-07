@@ -3,28 +3,23 @@
 
 #include "../platform_defs.h"
 
-#ifdef CRCPP_MSVC_COMPILER
-
-#    include <coroutine>
-
-namespace concurrencpp::details {
-    template<class promise_type>
-    using coroutine_handle = std::coroutine_handle<promise_type>;
-    using suspend_never = std::suspend_never;
-    using suspend_always = std::suspend_always;
-}  // namespace concurrencpp::details
-
-#elif defined(CRCPP_CLANG_COMPILER)
+#if !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
 
 #    include <experimental/coroutine>
+#    define CRCPP_COROUTINE_NAMESPACE std::experimental
+
+#else
+
+#    include <coroutine>
+#    define CRCPP_COROUTINE_NAMESPACE std
+
+#endif
 
 namespace concurrencpp::details {
     template<class promise_type>
-    using coroutine_handle = std::experimental::coroutine_handle<promise_type>;
-    using suspend_never = std::experimental::suspend_never;
-    using suspend_always = std::experimental::suspend_always;
+    using coroutine_handle = CRCPP_COROUTINE_NAMESPACE::coroutine_handle<promise_type>;
+    using suspend_never = CRCPP_COROUTINE_NAMESPACE::suspend_never;
+    using suspend_always = CRCPP_COROUTINE_NAMESPACE::suspend_always;
 }  // namespace concurrencpp::details
-
-#endif
 
 #endif

@@ -183,7 +183,7 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
-namespace std::experimental {
+namespace CRCPP_COROUTINE_NAMESPACE {
     // No executor + No result
     template<class... arguments>
     struct coroutine_traits<::concurrencpp::null_result, arguments...> {
@@ -252,6 +252,6 @@ namespace std::experimental {
         using promise_type = concurrencpp::details::lazy_promise<type>;
     };
 
-}  // namespace std::experimental
+}  // namespace CRCPP_COROUTINE_NAMESPACE
 
 #endif
