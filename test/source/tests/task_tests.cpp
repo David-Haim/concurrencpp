@@ -143,13 +143,13 @@ namespace concurrencpp::tests::functions {
 
 }  // namespace concurrencpp::tests::functions
 
-namespace std::experimental {
+namespace CRCPP_COROUTINE_NAMESPACE {
     template<class... arguments>
     struct coroutine_traits<coroutine_handle<>, functions::dummy_test_tag, arguments...> {
         using promise_type = functions::test_promise;
     };
 
-}  // namespace std::experimental
+}  // namespace CRCPP_COROUTINE_NAMESPACE
 
 namespace concurrencpp::tests::functions {
     coroutine_handle<void> coro_function(dummy_test_tag) {
