@@ -17,5 +17,6 @@
 #include "concurrencpp/results/resume_on.h"
 #include "concurrencpp/results/generator.h"
 #include "concurrencpp/executors/executor_all.h"
+#include "concurrencpp/threads/async_lock.h"
 
 #endif

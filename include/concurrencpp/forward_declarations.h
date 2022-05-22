@@ -30,6 +30,8 @@ namespace concurrencpp {
 
     template<typename type>
     class generator;
+
+    class async_lock;
 }  // namespace concurrencpp
 
 #endif  // FORWARD_DECLARATIONS_H

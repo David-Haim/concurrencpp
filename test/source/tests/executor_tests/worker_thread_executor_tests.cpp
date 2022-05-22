@@ -292,7 +292,7 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit_exception() {
     executor_shutdowner shutdown(executor);
     constexpr intptr_t id = 12345;
 
-    auto thrower = [id] {
+    auto thrower = [] {
         throw custom_exception(id);
     };
 
