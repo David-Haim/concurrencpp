@@ -111,23 +111,15 @@ namespace concurrencpp {
             return do_submit(*this, std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
         }
 
-        template<class callable_type>
-        void bulk_post(std::span<callable_type> callable_list) {
-            return do_bulk_post(*this, callable_list);
-        }
-
-        template<class callable_type>
-        void bulk_post(std::vector<callable_type> &callable_list) {
+        template<class callable_list_type>
+        void bulk_post(callable_list_type &&callable_list) {
+            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
             return do_bulk_post(*this, std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
 
-        template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
-        std::vector<concurrencpp::result<return_type>> bulk_submit(std::span<callable_type> callable_list) {
-            return do_bulk_submit(*this, callable_list);
-        }
-
-        template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
-        std::vector<concurrencpp::result<return_type>> bulk_submit(std::vector<callable_type> &callable_list) {
+        template<class callable_list_type>
+        auto bulk_submit(callable_list_type &&callable_list) {
+            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
             return do_bulk_submit(*this, std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
     };

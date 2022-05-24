@@ -226,7 +226,7 @@ void test_executor_bulk_post(std::shared_ptr<concurrencpp::executor> executor, s
 
             std::this_thread::sleep_until(post_tp);
 
-            executor->bulk_post<decltype(task)>(tasks);
+            executor->bulk_post(tasks);
         });
     }
 
@@ -276,7 +276,7 @@ void test_executor_bulk_submit(std::shared_ptr<concurrencpp::executor> executor,
 
             std::this_thread::sleep_until(submit_tp);
 
-            auto results = executor->bulk_submit<val_returner>(tasks);
+            auto results = executor->bulk_submit(tasks);
 
             for (size_t i = 0; i < tasks_per_thread; i++) {
                 const auto val = results[i].get();

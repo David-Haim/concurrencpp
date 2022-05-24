@@ -241,7 +241,7 @@ void concurrencpp::tests::test_thread_executor_bulk_post_exception() {
     std::vector<decltype(thrower)> tasks;
     tasks.resize(4);
 
-    executor->bulk_post<decltype(thrower)>(tasks);
+    executor->bulk_post(tasks);
 }
 
 void concurrencpp::tests::test_thread_executor_bulk_post_foreign() {
@@ -257,7 +257,7 @@ void concurrencpp::tests::test_thread_executor_bulk_post_foreign() {
         stubs.emplace_back(observer.get_testing_stub());
     }
 
-    executor->bulk_post<testing_stub>(stubs);
+    executor->bulk_post(stubs);
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
     assert_true(observer.wait_destruction_count(task_count, std::chrono::minutes(1)));
@@ -279,7 +279,7 @@ void concurrencpp::tests::test_thread_executor_bulk_post_inline() {
             stubs.emplace_back(observer.get_testing_stub());
         }
 
-        executor->bulk_post<testing_stub>(stubs);
+        executor->bulk_post(stubs);
     });
 
     assert_true(observer.wait_execution_count(task_count, std::chrono::minutes(1)));
@@ -306,7 +306,7 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_exception() {
     std::vector<decltype(thrower)> tasks;
     tasks.resize(4, thrower);
 
-    auto results = executor->bulk_submit<decltype(thrower)>(tasks);
+    auto results = executor->bulk_submit(tasks);
 
     for (auto& result : results) {
         result.wait();
@@ -327,7 +327,7 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_foreign() {
         stubs.emplace_back(observer.get_testing_stub(i));
     }
 
-    auto results = executor->bulk_submit<value_testing_stub>(stubs);
+    auto results = executor->bulk_submit(stubs);
 
     for (size_t i = 0; i < task_count; i++) {
         assert_equal(results[i].get(), i);
@@ -353,7 +353,7 @@ void concurrencpp::tests::test_thread_executor_bulk_submit_inline() {
             stubs.emplace_back(observer.get_testing_stub(i));
         }
 
-        return executor->bulk_submit<value_testing_stub>(stubs);
+        return executor->bulk_submit(stubs);
     });
 
     auto results = results_res.get();

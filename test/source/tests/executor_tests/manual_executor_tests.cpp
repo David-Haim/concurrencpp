@@ -364,7 +364,7 @@ void concurrencpp::tests::test_manual_executor_bulk_post_exception() {
     std::vector<decltype(thrower)> tasks;
     tasks.resize(4);
 
-    executor->bulk_post<decltype(thrower)>(tasks);
+    executor->bulk_post(tasks);
     assert_equal(executor->loop(4), 4);
 }
 
@@ -380,7 +380,7 @@ void concurrencpp::tests::test_manual_executor_bulk_post_foreign() {
         stubs.emplace_back(observer.get_testing_stub());
     }
 
-    executor->bulk_post<testing_stub>(stubs);
+    executor->bulk_post(stubs);
 
     assert_equal(executor->size(), task_count);
     assert_false(executor->empty());
@@ -414,7 +414,7 @@ void concurrencpp::tests::test_manual_executor_bulk_post_inline() {
             stubs.emplace_back(observer.get_testing_stub());
         }
 
-        executor->bulk_post<testing_stub>(stubs);
+        executor->bulk_post(stubs);
     });
 
     // the tasks are not enqueued yet, only the spawning task is.
@@ -458,7 +458,7 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_exception() {
     std::vector<decltype(thrower)> tasks;
     tasks.resize(4, thrower);
 
-    auto results = executor->bulk_submit<decltype(thrower)>(tasks);
+    auto results = executor->bulk_submit(tasks);
     assert_equal(executor->loop(4), 4);
 
     for (auto& result : results) {
@@ -480,7 +480,7 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_foreign() {
         stubs.emplace_back(observer.get_testing_stub(i));
     }
 
-    auto results = executor->bulk_submit<value_testing_stub>(stubs);
+    auto results = executor->bulk_submit(stubs);
 
     assert_false(executor->empty());
     assert_equal(executor->size(), task_count);
@@ -522,7 +522,7 @@ void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
             stubs.emplace_back(observer.get_testing_stub(i));
         }
 
-        return executor->bulk_submit<value_testing_stub>(stubs);
+        return executor->bulk_submit(stubs);
     });
 
     // the tasks are not enqueued yet, only the spawning task is.
