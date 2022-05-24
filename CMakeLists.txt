@@ -93,6 +93,9 @@ target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
 target_coroutine_options(concurrencpp)
 
+find_package(Threads REQUIRED)
+target_link_libraries(concurrencpp PUBLIC Threads::Threads)
+
 find_library(LIBRT NAMES rt DOC "Path to the Real Time shared library")
 target_link_libraries(concurrencpp PUBLIC "$<$<BOOL:${LIBRT}>:${LIBRT}>")
 
