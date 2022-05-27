@@ -4,7 +4,6 @@
 #include "concurrencpp/task.h"
 #include "concurrencpp/results/result.h"
 
-#include <iterator>
 #include <span>
 #include <vector>
 #include <string>
@@ -114,13 +113,13 @@ namespace concurrencpp {
 
         template<class callable_list_type>
         void bulk_post(callable_list_type &&callable_list) {
-            using callable_type = std::iter_value_t<callable_list_type>;
+            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
             return do_bulk_post(*this, std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
 
         template<class callable_list_type>
         auto bulk_submit(callable_list_type &&callable_list) {
-            using callable_type = std::iter_value_t<callable_list_type>;
+            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
             return do_bulk_submit(*this, std::span<callable_type>(callable_list.data(), callable_list.size()));
         }
     };
