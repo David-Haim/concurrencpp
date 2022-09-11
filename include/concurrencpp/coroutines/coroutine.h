@@ -3,12 +3,16 @@
 
 #include "../platform_defs.h"
 
-#if defined(CRCPP_MSVC_COMPILER) || defined(CRCPP_GCC_COMPILER)
-#    include <coroutine>
-#    define CRCPP_COROUTINE_NAMESPACE std
-#elif defined(CRCPP_CLANG_COMPILER)
+#if !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
+
 #    include <experimental/coroutine>
 #    define CRCPP_COROUTINE_NAMESPACE std::experimental
+
+#else
+
+#    include <coroutine>
+#    define CRCPP_COROUTINE_NAMESPACE std
+
 #endif
 
 namespace concurrencpp::details {

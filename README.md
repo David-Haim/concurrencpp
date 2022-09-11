@@ -1,5 +1,3 @@
-
-
 # concurrencpp, the C++ concurrency library
 
 ![Latest Release](https://img.shields.io/github/v/release/David-Haim/concurrencpp.svg) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -1988,13 +1986,16 @@ $ cd build/test
 $ ctest . -V
 ```
 
-##### Via vcpkg on Windows and *nix platforms
+##### Via package managers on Windows and *nix platforms
 
-Alternatively to building and installing the library manually, developers may get stable releases of concurrencpp as [vcpkg](https://vcpkg.io/) packages:
+Alternatively to building and installing the library manually, developers may get stable releases of concurrencpp via the [vcpkg](https://vcpkg.io/) and [Conan](https://conan.io/) package managers:
 
+vcpkg:
 ```shell
 $ vcpkg install concurrencpp
 ```
+
+Conan: [concurrencpp on ConanCenter](https://conan.io/center/concurrencpp)
 
 ##### Experimenting with the built-in sandbox
 concurrencpp comes with a built-in sandbox program which developers can modify and experiment, without having to install or link the compiled library to a different code-base. In order to play with the sandbox, developers can modify `sandbox/main.cpp` and compile the application using the following commands:

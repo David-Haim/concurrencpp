@@ -10,6 +10,8 @@
 
 #include "concurrencpp/timers/timer_queue.h"
 
+#include <algorithm>
+
 namespace concurrencpp::details {
     size_t default_max_cpu_workers() noexcept {
         return static_cast<size_t>(thread::hardware_concurrency() * consts::k_cpu_threadpool_worker_count_factor);
