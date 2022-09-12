@@ -1973,7 +1973,7 @@ $ cmake --build build/lib
 ```
 ##### Running the tests on *nix platforms 
 
-With clang, it is also possible to run the tests with TSAN (thread sanitizer) support.
+With clang and gcc, it is also possible to run the tests with TSAN (thread sanitizer) support.
 
 ```cmake
 $ git clone https://github.com/David-Haim/concurrencpp.git

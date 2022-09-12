@@ -7,11 +7,11 @@ include(../cmake/coroutineOptions.cmake)
 # ---- Add root project ----
 
 option(ENABLE_THREAD_SANITIZER "\
-Build concurrencpp with LLVM thread sanitizer. \
-Does not have an effect if the compiler is not Clang based." OFF)
+Build concurrencpp with ThreadSanitizer. \
+Does not have an effect if the compiler is not Clang-based or GCC." OFF)
 
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} compiler_id)
-if(ENABLE_THREAD_SANITIZER AND compiler_id MATCHES "clang")
+if(ENABLE_THREAD_SANITIZER AND (compiler_id MATCHES "clang" OR compiler_id MATCHES "gnu"))
   # Instead of polluting the lists file, we inject a command definition
   # override that will apply the sanitizer flag
   set(CMAKE_PROJECT_concurrencpp_INCLUDE
