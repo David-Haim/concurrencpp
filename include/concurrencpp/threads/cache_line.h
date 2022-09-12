@@ -6,6 +6,9 @@
 #include <new>
 
 #if !defined(CRCPP_MAC_OS) && defined(__cpp_lib_hardware_interference_size)
+#    if defined(__GNUC__) 
+#        pragma GCC diagnostic ignored "-Winterference-size"
+#    endif
 #    define CRCPP_CACHE_LINE_ALIGNMENT std::hardware_destructive_interference_size
 #else
 #    define CRCPP_CACHE_LINE_ALIGNMENT 64
