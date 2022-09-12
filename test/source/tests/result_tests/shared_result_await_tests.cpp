@@ -130,7 +130,7 @@ namespace concurrencpp::tests {
 
             auto result = inner_task(manual_executor);
 
-            co_await thread_executor->submit([this, manual_executor] {
+            co_await thread_executor->submit([this, &manual_executor] {
                 m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
                 assert_true(manual_executor->loop_once());
             });
@@ -173,7 +173,7 @@ namespace concurrencpp::tests {
 
             auto result = inner_task(manual_executor);
 
-            co_await thread_executor->submit([this, manual_executor] {
+            co_await thread_executor->submit([this, &manual_executor] {
                 m_setting_thread_id = concurrencpp::details::thread::get_current_virtual_id();
                 assert_true(manual_executor->loop_once());
             });
