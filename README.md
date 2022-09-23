@@ -1783,8 +1783,8 @@ class scoped_async_lock {
     ~scoped_async_lock() noexcept;
 
     /*
-		Moves rhs to *this.
-		After this call, *rhs does not wrap any async lock.
+        Moves rhs to *this.
+        After this call, *rhs does not wrap any async lock.
     */
     scoped_async_lock(scoped_async_lock&& rhs) noexcept;
 
@@ -1796,7 +1796,7 @@ class scoped_async_lock {
 		
     /*
         Wrapps locked lock.
-		lock must be already acquired when calling this method.
+        lock must be already acquired when calling this method.
     */
     scoped_async_lock(async_lock& lock, std::adopt_lock_t) noexcept;
 
