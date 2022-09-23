@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.1.4
+        VERSION 0.1.5
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -29,6 +29,7 @@ set(concurrencpp_sources
         source/results/impl/shared_result_state.cpp
         source/results/promises.cpp
         source/runtime/runtime.cpp
+        source/threads/async_lock.cpp
         source/threads/binary_semaphore.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
@@ -71,6 +72,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/generator.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
+        include/concurrencpp/threads/async_lock.h
         include/concurrencpp/threads/binary_semaphore.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/threads/cache_line.h
@@ -90,6 +92,9 @@ target_include_directories(concurrencpp
 target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
 target_coroutine_options(concurrencpp)
+
+find_package(Threads REQUIRED)
+target_link_libraries(concurrencpp PUBLIC Threads::Threads)
 
 find_library(LIBRT NAMES rt DOC "Path to the Real Time shared library")
 target_link_libraries(concurrencpp PUBLIC "$<$<BOOL:${LIBRT}>:${LIBRT}>")

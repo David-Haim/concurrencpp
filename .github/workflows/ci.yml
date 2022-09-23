@@ -42,8 +42,8 @@ jobs:
             cxx: clang++
             tsan: NO
 
-          - name: Windows (Visual Studio Enterprise 2019)
-            os: windows-latest
+          - name: Windows (Visual Studio Enterprise 2022)
+            os: windows-2022
             cc: cl
             cxx: cl
             tsan: NO

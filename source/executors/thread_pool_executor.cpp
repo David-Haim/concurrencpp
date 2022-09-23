@@ -33,7 +33,7 @@ void idle_worker_set::set_idle(size_t idle_thread) noexcept {
         return;
     }
 
-    m_approx_size.fetch_add(1, std::memory_order_release);
+    m_approx_size.fetch_add(1, std::memory_order_relaxed);
 }
 
 void idle_worker_set::set_active(size_t idle_thread) noexcept {
@@ -42,7 +42,7 @@ void idle_worker_set::set_active(size_t idle_thread) noexcept {
         return;
     }
 
-    m_approx_size.fetch_sub(1, std::memory_order_release);
+    m_approx_size.fetch_sub(1, std::memory_order_relaxed);
 }
 
 bool idle_worker_set::try_acquire_flag(size_t index) noexcept {
@@ -406,7 +406,7 @@ void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
 }
 
 void thread_pool_worker::shutdown() {
-    assert(m_atomic_abort.load(std::memory_order_relaxed) == false);
+    assert(!m_atomic_abort.load(std::memory_order_relaxed));
     m_atomic_abort.store(true, std::memory_order_relaxed);
 
     {
@@ -414,7 +414,7 @@ void thread_pool_worker::shutdown() {
         m_abort = true;
     }
 
-    m_task_found_or_abort.store(true, std::memory_order_release);  // make sure the store is finished before notifying the worker.
+    m_task_found_or_abort.store(true, std::memory_order_relaxed);  // make sure the store is finished before notifying the worker.
 
     m_semaphore.release();
 

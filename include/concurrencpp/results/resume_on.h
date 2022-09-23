@@ -11,8 +11,8 @@ namespace concurrencpp::details {
     class resume_on_awaitable : public suspend_always {
 
        private:
-        await_context m_await_ctx;
         executor_type& m_executor;
+        bool m_interrupted = false;
 
        public:
         resume_on_awaitable(executor_type& executor) noexcept : m_executor(executor) {}
@@ -24,17 +24,17 @@ namespace concurrencpp::details {
         resume_on_awaitable& operator=(resume_on_awaitable&&) = delete;
 
         void await_suspend(coroutine_handle<void> handle) {
-            m_await_ctx.set_coro_handle(handle);
-
             try {
-                m_executor.template post<await_via_functor>(&m_await_ctx);
+                m_executor.post(await_via_functor {handle, &m_interrupted});
             } catch (...) {
                 // the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
             }
         }
 
         void await_resume() const {
-            m_await_ctx.throw_if_interrupted();
+            if (m_interrupted) {
+                throw errors::broken_task(consts::k_broken_task_exception_error_msg);
+            }
         }
     };
 }  // namespace concurrencpp::details
