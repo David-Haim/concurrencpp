@@ -1,4 +1,3 @@
-
 # concurrencpp, the C++ concurrency library
 
 ![Latest Release](https://img.shields.io/github/v/release/David-Haim/concurrencpp.svg) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -777,7 +776,7 @@ If all the above applies, the function is a parallel coroutine:
 concurrencpp will start the coroutine suspended and immediately reschedule it to run in the provided executor.
 `concurrencpp::executor_tag` is a dummy placeholder to tell the concurrencpp runtime that this function is not a regular function, it needs to start running inside the given executor.
 If the executor passed to the parallel coroutine is null, the coroutine will not start to run and an `std::invalid_argument` exception will be thrown synchronously. 
-Applications can then consume the result of the parallel coroutine by using the returned result object. 
+If all preconditions are met, Applications can consume the result of the parallel coroutine by using the returned result object. 
 
 #### *Parallel Fibonacci example:*
 ```cpp
@@ -1845,8 +1844,8 @@ class scoped_async_lock {
         Empties *this and returns a pointer to the previously wrapped lock.
         After a call to this method, *this doesn't wrap any lock.			
         The previously wrapped lock is not released, 
-		it must be released by either unlocking it manually through the returned pointer or by 
-		capturing the pointer with another scoped_async_lock which will take ownerwhip over it.
+        it must be released by either unlocking it manually through the returned pointer or by 
+        capturing the pointer with another scoped_async_lock which will take ownerwhip over it.
     */
     async_lock* release() noexcept;
 	
