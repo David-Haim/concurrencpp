@@ -1,5 +1,6 @@
 #include "concurrencpp/concurrencpp.h"
 
+#include <algorithm>
 #include <iostream>
 
 void async_increment(concurrencpp::runtime& runtime);
