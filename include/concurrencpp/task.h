@@ -92,13 +92,14 @@ namespace concurrencpp::details {
             void (*move_destroy_fn)(void* src, void* dst) noexcept = nullptr;
             void (*destroy_fn)(void* target) noexcept = nullptr;
 
-            if constexpr (std::is_trivially_copy_constructible_v<callable_type> && std::is_trivially_destructible_v<callable_type>) {
+            if constexpr (std::is_trivially_copy_constructible_v<callable_type> && std::is_trivially_destructible_v<callable_type> &&
+                          is_inlinable()) {
                 move_destroy_fn = nullptr;
             } else {
                 move_destroy_fn = move_destroy;
             }
 
-            if constexpr (std::is_trivially_destructible_v<callable_type>) {
+            if constexpr (std::is_trivially_destructible_v<callable_type> && is_inlinable()) {
                 destroy_fn = nullptr;
             } else {
                 destroy_fn = destroy;
