@@ -104,7 +104,6 @@ namespace concurrencpp {
 
        private:
         details::producer_result_state_ptr<type> m_state;
-        bool m_result_retrieved;
 
         void throw_if_empty(const char* message) const {
             if (!static_cast<bool>(m_state)) {
@@ -117,19 +116,15 @@ namespace concurrencpp {
                 return;
             }
 
-            if (!m_result_retrieved) {  // no result to break.
-                return;
-            }
-
             auto exception_ptr = std::make_exception_ptr(errors::broken_task(details::consts::k_broken_task_exception_error_msg));
             m_state->set_exception(exception_ptr);
             m_state.reset();
         }
 
        public:
-        result_promise() : m_state(new details::result_state<type>()), m_result_retrieved(false) {}
+        result_promise() : m_state() {}
 
-        result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
+        result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)) {}
 
         ~result_promise() noexcept {
             break_task_if_needed();
@@ -139,7 +134,6 @@ namespace concurrencpp {
             if (this != &rhs) {
                 break_task_if_needed();
                 m_state = std::move(rhs.m_state);
-                m_result_retrieved = rhs.m_result_retrieved;
             }
 
             return *this;
@@ -188,13 +182,11 @@ namespace concurrencpp {
         }
 
         result<type> get_result() {
-            throw_if_empty(details::consts::k_result_get_error_msg);
-
-            if (m_result_retrieved) {
+            if (static_cast<bool>(m_state)) {
                 throw errors::result_already_retrieved(details::consts::k_result_promise_get_result_already_retrieved_error_msg);
             }
+            m_state.reset(new details::result_state<type>());
 
-            m_result_retrieved = true;
             return result<type>(m_state.get());
         }
     };

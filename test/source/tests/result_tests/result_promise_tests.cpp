@@ -58,10 +58,16 @@ using concurrencpp::result_status;
 template<class type>
 void concurrencpp::tests::test_result_promise_constructor_impl() {
     result_promise<type> rp;
-    assert_true(static_cast<bool>(rp));
+    assert_false(static_cast<bool>(rp));
 
-    auto other = std::move(rp);
-    assert_true(static_cast<bool>(other));
+    auto other1 = std::move(rp);
+    assert_false(static_cast<bool>(other1));
+    assert_false(static_cast<bool>(rp));
+
+    rp.get_result();
+
+    auto other2 = std::move(rp);
+    assert_true(static_cast<bool>(other2));
     assert_false(static_cast<bool>(rp));
 }
 
@@ -119,17 +125,9 @@ void concurrencpp::tests::test_result_promise_destructor() {
 
 template<class type>
 void concurrencpp::tests::test_result_promise_get_result_impl() {
-    // empty result_promise should throw
-    assert_throws<concurrencpp::errors::empty_result_promise>([] {
-        ::concurrencpp::result_promise<type> rp;
-        auto dummy = std::move(rp);
-        rp.get_result();
-    });
-
-    // valid result_promise returns a valid result
+    // empty result_promise returns a valid result
     ::concurrencpp::result_promise<type> rp;
     auto result = rp.get_result();
-
     assert_true(static_cast<bool>(result));
     assert_equal(result.status(), concurrencpp::result_status::idle);
 
@@ -259,7 +257,6 @@ void concurrencpp::tests::test_result_promise_set_exception_impl() {
     // can't set result to an empty rp
     {
         result_promise<type> rp;
-        auto dummy = std::move(rp);
         assert_throws<concurrencpp::errors::empty_result_promise>([&rp] {
             const auto exception = std::make_exception_ptr(std::exception());
             rp.set_exception(exception);
@@ -270,6 +267,7 @@ void concurrencpp::tests::test_result_promise_set_exception_impl() {
     {
         assert_throws<std::invalid_argument>([] {
             result_promise<type> rp;
+            rp.get_result();
             rp.set_exception(std::exception_ptr {});
         });
     }
@@ -356,6 +354,10 @@ void concurrencpp::tests::test_rp_assignment_operator_impl_empty_to_empty() {
 template<class type>
 void concurrencpp::tests::test_rp_assignment_operator_impl_non_empty_to_empty() {
     result_promise<type> rp1, rp2;
+
+    rp1.get_result();
+    rp2.get_result();
+
     auto dummy(std::move(rp2));
 
     assert_true(static_cast<bool>(rp1));
@@ -411,6 +413,10 @@ void concurrencpp::tests::test_rp_assignment_operator_impl_non_empty_to_non_empt
 template<class type>
 void concurrencpp::tests::test_rp_assignment_operator_assign_to_self() {
     result_promise<type> rp;
+    rp = std::move(rp);
+    assert_false(static_cast<bool>(rp));
+
+    rp.get_result();
     rp = std::move(rp);
     assert_true(static_cast<bool>(rp));
 }
