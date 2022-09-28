@@ -28,14 +28,14 @@ namespace concurrencpp {
 
         template<class callable_list_type>
         void bulk_post(callable_list_type &&callable_list) {
-            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
-            return do_bulk_post(self(), std::span<callable_type>(callable_list.data(), callable_list.size()));
+            using callable_type = std::remove_reference_t<decltype(*std::data(callable_list))>;
+            return do_bulk_post(self(), std::span<callable_type>(std::data(callable_list), std::size(callable_list)));
         }
 
         template<class callable_list_type>
         auto bulk_submit(callable_list_type &&callable_list) {
-            using callable_type = std::remove_reference_t<decltype(*callable_list.data())>;
-            return do_bulk_submit(self(), std::span<callable_type>(callable_list.data(), callable_list.size()));
+            using callable_type = std::remove_reference_t<decltype(*std::data(callable_list))>;
+            return do_bulk_submit(self(), std::span<callable_type>(std::data(callable_list), std::size(callable_list)));
         }
     };
 }  // namespace concurrencpp
