@@ -124,7 +124,7 @@ namespace concurrencpp::tests {
 
         try {
             result.get();
-        } catch (custom_exception e) {
+        } catch (const custom_exception& e) {
             return assert_equal(e.id, id);
         } catch (...) {
         }
@@ -140,7 +140,7 @@ namespace concurrencpp::tests {
         for (size_t i = 0; i < 10; i++) {
             try {
                 result.get();
-            } catch (custom_exception e) {
+            } catch (const custom_exception& e) {
                 assert_equal(e.id, id);
                 if (i == 9) {
                     return;

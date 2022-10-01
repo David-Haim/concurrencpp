@@ -60,7 +60,7 @@ namespace concurrencpp::tests {
 
         try {
             co_await result;
-        } catch (custom_exception e) {
+        } catch (const custom_exception& e) {
             assert_equal(e.id, id);
             co_return;
         } catch (...) {
