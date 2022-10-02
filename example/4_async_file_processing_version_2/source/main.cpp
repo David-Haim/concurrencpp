@@ -12,6 +12,7 @@
         Both versions are identical in terms of functionality and the final outcome.
 */
 
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include <fstream>
