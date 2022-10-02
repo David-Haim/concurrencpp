@@ -29,36 +29,42 @@ jobs:
             cc: clang-15
             cxx: clang++-15
             tsan: YES
+            toolchain: ""
 
           - name: Ubuntu 22.04 (Clang 15 - no TSAN)
             os: ubuntu-22.04
             cc: clang-15
             cxx: clang++-15
             tsan: NO
+            toolchain: ""
 
           - name: Ubuntu 20.04 (Clang 12 - TSAN)
             os: ubuntu-20.04
             cc: clang-12
             cxx: clang++-12
             tsan: YES
+            toolchain: ../cmake/libc++.cmake
 
           - name: Ubuntu 20.04 (Clang 12 - no TSAN)
             os: ubuntu-20.04
             cc: clang-12
             cxx: clang++-12
             tsan: NO
+            toolchain: ../cmake/libc++.cmake
 
           - name: macOS (Clang 11 - no TSAN)
             os: macos-latest
             cc: clang
             cxx: clang++
             tsan: NO
+            toolchain: ../cmake/libc++.cmake
 
           - name: Windows (Visual Studio Enterprise 2022)
             os: windows-2022
             cc: cl
             cxx: cl
             tsan: NO
+            toolchain: ""
 
     name: ${{ matrix.conf.name }}
 
@@ -110,6 +116,7 @@ jobs:
       - name: Build examples
         run: cmake -P cmake/ciBuild.cmake -- example build/example
           ${{ steps.args.outputs.args }}
+          -D CMAKE_TOOLCHAIN_FILE=${{ matrix.conf.toolchain }}
         continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
 
       - name: Build tests
@@ -117,6 +124,7 @@ jobs:
         continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
         run: cmake -P cmake/ciBuild.cmake -- test build/test
           ${{ steps.args.outputs.args }}
+          -D CMAKE_TOOLCHAIN_FILE=${{ matrix.conf.toolchain }}
           -D ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
 
       - name: Run tests
