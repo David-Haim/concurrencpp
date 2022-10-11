@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 
 project(concurrencppTests LANGUAGES CXX)
 
@@ -88,19 +88,21 @@ function(add_test)
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
 
-  set_property(TEST ${test_name} PROPERTY RUN_SERIAL YES)
+  set(pre_parent_path "$<1:$><PATH:GET_PARENT_PATH$<COMMA>")
+  set(post_parent_path "$<ANGLE-R>")
+  set(parent_path_glue "${post_parent_path}$<SEMICOLON>${pre_parent_path}")
 
-  if(TEST_PROPERTIES)
-    set_tests_properties(${test_name} PROPERTIES ${TEST_PROPERTIES})
-  endif()
+  set(dlls "$<TARGET_RUNTIME_DLLS:${target}>")
 
-  set(dll_command ${CMAKE_COMMAND} -E copy_if_different
-      $<TARGET_RUNTIME_DLLS:${target}> $<TARGET_FILE_DIR:${target}>)
-  add_custom_command(
-    TARGET ${target} POST_BUILD
-    COMMAND "$<$<BOOL:$<TARGET_RUNTIME_DLLS:${target}>>:${dll_command}>"
-    COMMAND_EXPAND_LISTS
+  set(directories
+      "$<SHELL_PATH:$<REMOVE_DUPLICATES:$<GENEX_EVAL:${pre_parent_path}$<JOIN:${dlls},${parent_path_glue}>${post_parent_path}>>>"
   )
+  set(prepend_path "PATH=path_list_prepend:")
+  set(path_modification
+      $<$<BOOL:${dlls}>:${prepend_path}$<JOIN:${directories},;${prepend_path}>>)
+  set_tests_properties(
+    ${test_name} PROPERTIES ENVIRONMENT_MODIFICATION "${path_modification}"
+                            RUN_SERIAL YES ${TEST_PROPERTIES})
 endfunction()
 
 add_test(NAME task_tests PATH source/tests/task_tests.cpp)
