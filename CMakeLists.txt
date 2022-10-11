@@ -14,9 +14,6 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
   set(concurrencpp_warning_guard "")
 endif()
 
-# ---- Declare library ----
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-
 set(concurrencpp_sources
         source/task.cpp
         source/executors/executor.cpp
@@ -91,7 +88,17 @@ target_include_directories(concurrencpp
 
 target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
+set_target_properties(concurrencpp PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+)
+
 target_coroutine_options(concurrencpp)
+
+target_compile_definitions(concurrencpp
+        PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_EXPORT_API>
+        INTERFACE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_IMPORT_API>
+)
 
 find_package(Threads REQUIRED)
 target_link_libraries(concurrencpp PUBLIC Threads::Threads)

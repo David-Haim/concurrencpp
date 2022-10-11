@@ -2,13 +2,14 @@
 #define CONCURRENCPP_TIMER_H
 
 #include "concurrencpp/forward_declarations.h"
+#include "concurrencpp/platform_defs.h"
 
 #include <atomic>
 #include <memory>
 #include <chrono>
 
 namespace concurrencpp::details {
-    class timer_state_base : public std::enable_shared_from_this<timer_state_base> {
+    class CRCPP_API timer_state_base : public std::enable_shared_from_this<timer_state_base> {
 
        public:
         using clock_type = std::chrono::high_resolution_clock;
@@ -110,7 +111,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class timer {
+    class CRCPP_API timer {
 
        private:
         std::shared_ptr<details::timer_state_base> m_state;

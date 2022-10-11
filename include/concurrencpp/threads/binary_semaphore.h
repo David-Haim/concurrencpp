@@ -13,7 +13,7 @@
 
 namespace concurrencpp::details {
 
-    class binary_semaphore {
+    class CRCPP_API binary_semaphore {
 
        private:
         std::mutex m_lock;

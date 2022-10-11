@@ -10,7 +10,8 @@
 #include <mutex>
 
 namespace concurrencpp {
-    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final :
+        public derivable_executor<worker_thread_executor> {
 
        private:
         std::deque<task> m_private_queue;

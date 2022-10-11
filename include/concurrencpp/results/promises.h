@@ -1,11 +1,12 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
-#include "concurrencpp/task.h"
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/results/impl/result_state.h"
+#include "concurrencpp/executors/executor_all.h"
 #include "concurrencpp/results/impl/lazy_result_state.h"
+#include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/impl/return_value_struct.h"
+#include "concurrencpp/task.h"
 
 #include <vector>
 
@@ -15,11 +16,9 @@
 namespace concurrencpp::details {
     struct coroutine_per_thread_data {
         std::vector<task>* accumulator = nullptr;
-
-        static thread_local coroutine_per_thread_data s_tl_per_thread_data;
     };
 
-    class initial_accumulating_awaiter : public suspend_always {
+    class CRCPP_API initial_accumulating_awaiter : public suspend_always {
        private:
         bool m_interrupted = false;
 
@@ -31,8 +30,7 @@ namespace concurrencpp::details {
     template<class executor_type>
     class initialy_rescheduled_promise {
 
-       protected:
-        static thread_local executor_type* s_tl_initial_executor;
+        executor_type* m_initial_executor;
 
         static_assert(
             std::is_base_of_v<concurrencpp::executor, executor_type>,
@@ -40,12 +38,11 @@ namespace concurrencpp::details {
 
        public:
         template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) {
+        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) :
+            m_initial_executor(executor_ptr) {
             if (executor_ptr == nullptr) {
                 throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
             }
-
-            s_tl_initial_executor = executor_ptr;
         }
 
         template<class... argument_types>
@@ -66,8 +63,10 @@ namespace concurrencpp::details {
             bool m_interrupted = false;
 
            public:
-            void await_suspend(coroutine_handle<void> handle) {
-                auto executor = std::exchange(s_tl_initial_executor, nullptr);
+            template<class promise_type>
+            void await_suspend(coroutine_handle<promise_type> handle) {
+                auto executor =
+                    std::exchange(static_cast<initialy_rescheduled_promise&>(handle.promise()).m_initial_executor, nullptr);
                 executor->post(await_via_functor {handle, &m_interrupted});
             }
 
@@ -83,8 +82,11 @@ namespace concurrencpp::details {
         }
     };
 
-    template<class executor_type>
-    thread_local executor_type* initialy_rescheduled_promise<executor_type>::s_tl_initial_executor = nullptr;
+    extern template class CRCPP_API initialy_rescheduled_promise<inline_executor>;
+    extern template class CRCPP_API initialy_rescheduled_promise<manual_executor>;
+    extern template class CRCPP_API initialy_rescheduled_promise<thread_executor>;
+    extern template class CRCPP_API initialy_rescheduled_promise<thread_pool_executor>;
+    extern template class CRCPP_API initialy_rescheduled_promise<worker_thread_executor>;
 
     struct initialy_resumed_promise {
         suspend_never initial_suspend() const noexcept {
@@ -92,12 +94,11 @@ namespace concurrencpp::details {
         }
     };
 
-    struct bulk_promise {
+    struct CRCPP_API bulk_promise {
+        bulk_promise(executor_bulk_tag, std::vector<concurrencpp::task>& accumulator);
         template<class... argument_types>
-        bulk_promise(executor_bulk_tag, std::vector<concurrencpp::task>& accumulator, argument_types&&...) {
-            assert(coroutine_per_thread_data::s_tl_per_thread_data.accumulator == nullptr);
-            coroutine_per_thread_data::s_tl_per_thread_data.accumulator = &accumulator;
-        }
+        bulk_promise(executor_bulk_tag, std::vector<concurrencpp::task>& accumulator, argument_types&&...) :
+            bulk_promise(executor_bulk_tag {}, accumulator) {}
 
         initial_accumulating_awaiter initial_suspend() const noexcept {
             return {};

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 project(concurrencppTests LANGUAGES CXX)
 
@@ -48,7 +48,7 @@ set(test_headers
         include/utils/test_ready_result.h
         include/utils/test_ready_lazy_result.h)
 
-add_library(concurrencpp_test_infra ${test_headers} ${test_sources})
+add_library(concurrencpp_test_infra STATIC ${test_headers} ${test_sources})
 
 target_compile_features(concurrencpp_test_infra PRIVATE cxx_std_20)
 target_include_directories(concurrencpp_test_infra PRIVATE "${PROJECT_SOURCE_DIR}/../include")
@@ -93,6 +93,14 @@ function(add_test)
   if(TEST_PROPERTIES)
     set_tests_properties(${test_name} PROPERTIES ${TEST_PROPERTIES})
   endif()
+
+  set(dll_command ${CMAKE_COMMAND} -E copy_if_different
+      $<TARGET_RUNTIME_DLLS:${target}> $<TARGET_FILE_DIR:${target}>)
+  add_custom_command(
+    TARGET ${target} POST_BUILD
+    COMMAND "$<$<BOOL:$<TARGET_RUNTIME_DLLS:${target}>>:${dll_command}>"
+    COMMAND_EXPAND_LISTS
+  )
 endfunction()
 
 add_test(NAME task_tests PATH source/tests/task_tests.cpp)
