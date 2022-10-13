@@ -126,7 +126,7 @@ install(
   INCLUDES
   DESTINATION "${concurrencpp_include_directory}"
   COMPONENT concurrencpp_Development
-  LIBRARY DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
           COMPONENT concurrencpp_Runtime
           NAMELINK_COMPONENT concurrencpp_Developement
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Runtime)
