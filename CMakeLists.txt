@@ -91,6 +91,8 @@ target_compile_features(concurrencpp PUBLIC cxx_std_20)
 set_target_properties(concurrencpp PROPERTIES
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}"
 )
 
 target_coroutine_options(concurrencpp)
