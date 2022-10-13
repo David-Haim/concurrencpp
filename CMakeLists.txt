@@ -116,11 +116,18 @@ include(GNUInstallDirs)
 set(concurrencpp_directory "concurrencpp-${PROJECT_VERSION}")
 set(concurrencpp_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${concurrencpp_directory}")
 
-install(TARGETS concurrencpp
-        EXPORT concurrencppTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT concurrencpp_Development
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Development
-        INCLUDES DESTINATION "${concurrencpp_include_directory}")
+install(
+  TARGETS concurrencpp
+  EXPORT concurrencppTargets
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          COMPONENT concurrencpp_Development
+  INCLUDES
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development
+  LIBRARY DESTINATION "${CMAKE_INSTALL_BINDIR}"
+          COMPONENT concurrencpp_Runtime
+          NAMELINK_COMPONENT concurrencpp_Developement
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Runtime)
 
 set(concurrencpp_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${concurrencpp_directory}")
@@ -131,14 +138,19 @@ write_basic_package_version_file(
         COMPATIBILITY SameMinorVersion
         ARCH_INDEPENDENT)
 
-install(EXPORT concurrencppTargets
-        NAMESPACE concurrencpp::
-        DESTINATION "${concurrencpp_install_cmakedir}")
+install(
+  EXPORT concurrencppTargets
+  NAMESPACE concurrencpp::
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(FILES
-        "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
+install(
+  FILES "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
         "${PROJECT_BINARY_DIR}/concurrencppConfigVersion.cmake"
-        DESTINATION "${concurrencpp_install_cmakedir}")
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
-        DESTINATION "${concurrencpp_include_directory}")
+install(
+  DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development)
