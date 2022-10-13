@@ -14,6 +14,8 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
   set(concurrencpp_warning_guard "")
 endif()
 
+# ---- Declare library ----
+
 set(concurrencpp_sources
         source/task.cpp
         source/executors/executor.cpp
