@@ -128,7 +128,7 @@ install(
   COMPONENT concurrencpp_Development
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
           COMPONENT concurrencpp_Runtime
-          NAMELINK_COMPONENT concurrencpp_Developement
+          NAMELINK_COMPONENT concurrencpp_Development
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Runtime)
 
 set(concurrencpp_install_cmakedir
