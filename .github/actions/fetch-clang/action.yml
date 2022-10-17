@@ -1,0 +1,63 @@
+name: Fetch Clang
+description: Puts clang's path into the output
+
+inputs:
+  version:
+    description: Version of Clang to fetch
+    required: true
+  base-directory:
+    description: Directory in which to install clang
+outputs:
+  clang:
+    description: Path of clang executable
+    value: ${{ steps.script.outputs.clang }}
+  clangxx:
+    description: Path of clang++ executable
+    value: ${{ steps.script.outputs.clangxx }}
+
+runs:
+  using: composite
+  steps:
+    - id: script
+      shell: pwsh
+      working-directory: ${{ inputs.base-directory }}
+      run: |
+        $version = ${{ inputs.version }}
+        function Invoke-NativeCommand {
+          $command = $args[0]
+          $arguments = $args[1..($args.Length)]
+          & $command @arguments
+          if ($LastExitCode -ne 0) {
+            Write-Error "Exit code $LastExitCode while running $command $arguments"
+          }
+        }
+        if ($IsMacOs) {
+        } elseif ($IsLinux) {
+          $tmp = New-TemporaryFile
+          Invoke-WebRequest -Uri 'https://apt.llvm.org/llvm-snapshot.gpg.key' -OutFile $tmp
+          Invoke-NativeCommand sudo apt-key add $tmp
+          $tmp | Remove-Item
+          Invoke-NativeCommand sudo add-apt-repository -y "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${version} main"
+          Invoke-NativeCommand sudo apt-get update
+          $pkgs = @("clang-${version}", "libc++-${version}-dev", "libc++abi-${version}-dev")
+          if (${version} -eq 12) {
+            $pkgs += "libunwind-${version}-dev"
+          }
+          Invoke-NativeCommand sudo apt-get install -y $pkgs
+          Add-Content "${env:GITHUB_OUTPUT}" "clang=$((Get-Command clang-${version}).Source)"
+          Add-Content "${env:GITHUB_OUTPUT}" "clangxx=$((Get-Command clang++-${version}).Source)"
+        } elseif ($IsWindows) {
+          $release = Invoke-WebRequest -Uri 'https://api.github.com/repos/llvm/llvm-project/releases' -UseBasicParsing |
+            ConvertFrom-Json |
+            Select-Object -Property @{Name = 'version'; Expression = {[System.Management.Automation.SemanticVersion]$_.tag_name.Substring('llvmorg-'.Length)}},assets |
+            Where-Object {$_.version.Major -eq $version -and ($_.assets | Where-Object {$_.name -like "LLVM-*-win64.exe"})} |
+            Sort-Object |
+            Select-Object -First 1
+          $uri = ($release.assets | Where-Object {$_.name -eq "LLVM-$($release.version)-win64.exe"}).browser_download_url
+          $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'exe' } –PassThru
+          Invoke-WebRequest -Uri $uri -OutFile $tmp
+          Start-Process "$tmp" -Wait -NoNewWindow -ArgumentList /S,"/D=$(Join-Path (Get-Location) LLVM)"
+          $tmp | Remove-Item
+          Add-Content "${env:GITHUB_OUTPUT}" "clang=$(Join-Path (Get-Location) LLVM bin clang)"
+          Add-Content "${env:GITHUB_OUTPUT}" "clangxx=$(Join-Path (Get-Location) LLVM bin clang++)"
+        }

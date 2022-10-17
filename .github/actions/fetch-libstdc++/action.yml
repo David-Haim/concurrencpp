@@ -1,0 +1,23 @@
+name: Fetch libstdc++
+description: Fetches libstdc++
+
+inputs:
+  version:
+    description: Version of libstdc++ to fetch
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        function Invoke-NativeCommand {
+          $command = $args[0]
+          $arguments = $args[1..($args.Length)]
+          & $command @arguments
+          if ($LastExitCode -ne 0) {
+            Write-Error "Exit code $LastExitCode while running $command $arguments"
+          }
+        }
+        Invoke-NativeCommand sudo apt-get update
+        Invoke-NativeCommand sudo apt-get install -y libstdc++-${{ inputs.version }}-dev

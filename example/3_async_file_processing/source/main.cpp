@@ -21,9 +21,10 @@
    background_executor.
 */
 
+#include <cstring>
+#include <fstream>
 #include <iostream>
 #include <vector>
-#include <fstream>
 
 #include "concurrencpp/concurrencpp.h"
 
