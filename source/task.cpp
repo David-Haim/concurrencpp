@@ -86,6 +86,7 @@ task::task() noexcept : m_buffer(), m_vtable(nullptr) {}
 task::task(task&& rhs) noexcept {
     build(std::move(rhs));
 }
+
 task::task(details::coroutine_handle<void> coro_handle) noexcept {
     build(coro_handle);
 }
