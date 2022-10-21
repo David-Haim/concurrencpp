@@ -24,9 +24,3 @@ void concurrencpp::details::initial_accumulating_awaiter::await_resume() const {
         throw errors::broken_task(consts::k_broken_task_exception_error_msg);
     }
 }
-
-template class CRCPP_API concurrencpp::details::initialy_rescheduled_promise<concurrencpp::inline_executor>;
-template class CRCPP_API concurrencpp::details::initialy_rescheduled_promise<concurrencpp::manual_executor>;
-template class CRCPP_API concurrencpp::details::initialy_rescheduled_promise<concurrencpp::thread_executor>;
-template class CRCPP_API concurrencpp::details::initialy_rescheduled_promise<concurrencpp::thread_pool_executor>;
-template class CRCPP_API concurrencpp::details::initialy_rescheduled_promise<concurrencpp::worker_thread_executor>;

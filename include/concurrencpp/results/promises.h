@@ -82,12 +82,6 @@ namespace concurrencpp::details {
         }
     };
 
-    extern template class CRCPP_API initialy_rescheduled_promise<inline_executor>;
-    extern template class CRCPP_API initialy_rescheduled_promise<manual_executor>;
-    extern template class CRCPP_API initialy_rescheduled_promise<thread_executor>;
-    extern template class CRCPP_API initialy_rescheduled_promise<thread_pool_executor>;
-    extern template class CRCPP_API initialy_rescheduled_promise<worker_thread_executor>;
-
     struct initialy_resumed_promise {
         suspend_never initial_suspend() const noexcept {
             return {};
