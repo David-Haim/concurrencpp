@@ -4,6 +4,12 @@ project(concurrencppTests LANGUAGES CXX)
 
 include(../cmake/coroutineOptions.cmake)
 
+if(CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/$<CONFIG>/bin)
+else()
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+endif()
+
 # ---- Add root project ----
 
 option(ENABLE_THREAD_SANITIZER "\
@@ -88,21 +94,8 @@ function(add_test)
   # Call the original add_test
   _add_test(NAME ${test_name} COMMAND ${target})
 
-  set(pre_parent_path "$<1:$><PATH:GET_PARENT_PATH$<COMMA>")
-  set(post_parent_path "$<ANGLE-R>")
-  set(parent_path_glue "${post_parent_path}$<SEMICOLON>${pre_parent_path}")
-
-  set(dlls "$<TARGET_RUNTIME_DLLS:${target}>")
-
-  set(directories
-      "$<SHELL_PATH:$<REMOVE_DUPLICATES:$<GENEX_EVAL:${pre_parent_path}$<JOIN:${dlls},${parent_path_glue}>${post_parent_path}>>>"
-  )
-  set(prepend_path "PATH=path_list_prepend:")
-  set(path_modification
-      $<$<BOOL:${dlls}>:${prepend_path}$<JOIN:${directories},;${prepend_path}>>)
-  set_tests_properties(
-    ${test_name} PROPERTIES ENVIRONMENT_MODIFICATION "${path_modification}"
-                            RUN_SERIAL YES ${TEST_PROPERTIES})
+  set_tests_properties(${test_name} PROPERTIES RUN_SERIAL YES
+                                               ${TEST_PROPERTIES})
 endfunction()
 
 add_test(NAME task_tests PATH source/tests/task_tests.cpp)
