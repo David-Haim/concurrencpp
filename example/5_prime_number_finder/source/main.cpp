@@ -2,6 +2,7 @@
     In this example we will collect all prime numbers from 0 to 1,000,000 in a parallel manner, using parallel coroutines.
  */
 
+#include <cmath>
 #include <iostream>
 
 #include "concurrencpp/concurrencpp.h"
@@ -15,7 +16,7 @@ bool is_prime(int num) {
         return true;
     }
 
-    const auto range = static_cast<int>(sqrt(num));
+    const auto range = static_cast<int>(std::sqrt(num));
     if (num % 2 == 0 || num % 3 == 0) {
         return false;
     }
