@@ -30,7 +30,7 @@ namespace concurrencpp::details {
     template<class executor_type>
     class initialy_rescheduled_promise {
 
-        executor_type* m_initial_executor;
+        executor_type& m_initial_executor;
 
         static_assert(
             std::is_base_of_v<concurrencpp::executor, executor_type>,
@@ -38,24 +38,16 @@ namespace concurrencpp::details {
 
        public:
         template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) :
-            m_initial_executor(executor_ptr) {
-            if (executor_ptr == nullptr) {
-                throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
-            }
-        }
+        initialy_rescheduled_promise(executor_tag, executor_type& executor_ptr, argument_types&&...) :
+            m_initial_executor(executor_ptr) {}
 
         template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
-
-        template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type& executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, std::addressof(executor), std::forward<argument_types>(args)...) {}
+            initialy_rescheduled_promise(executor_tag {}, *executor, std::forward<argument_types>(args)...) {}
 
         template<class class_type, class... argument_types>
         initialy_rescheduled_promise(class_type&&, executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
+            initialy_rescheduled_promise(executor_tag {}, *executor, std::forward<argument_types>(args)...) {}
 
         class initial_scheduling_awaiter : public suspend_always {
 
@@ -65,9 +57,7 @@ namespace concurrencpp::details {
            public:
             template<class promise_type>
             void await_suspend(coroutine_handle<promise_type> handle) {
-                auto executor =
-                    std::exchange(static_cast<initialy_rescheduled_promise&>(handle.promise()).m_initial_executor, nullptr);
-                executor->post(await_via_functor {handle, &m_interrupted});
+                handle.promise().m_initial_executor.post(await_via_functor {handle, &m_interrupted});
             }
 
             void await_resume() const {
