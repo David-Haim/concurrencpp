@@ -11,14 +11,14 @@
 #include <chrono>
 
 namespace concurrencpp::details {
-    class executor_collection {
+    class CRCPP_API executor_collection {
 
        private:
         std::mutex m_lock;
         std::vector<std::shared_ptr<executor>> m_executors;
 
        public:
-        CRCPP_API void register_executor(std::shared_ptr<executor> executor);
+        void register_executor(std::shared_ptr<executor> executor);
         void shutdown_all();
     };
 }  // namespace concurrencpp::details
