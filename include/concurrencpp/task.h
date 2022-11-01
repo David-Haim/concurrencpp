@@ -175,41 +175,10 @@ namespace concurrencpp::details {
         static constexpr inline vtable s_vtable = make_vtable();
     };
 
-    class coroutine_handle_functor {
-
-       private:
-        coroutine_handle<void> m_coro_handle;
-
-       public:
-        coroutine_handle_functor() noexcept : m_coro_handle() {}
-
-        coroutine_handle_functor(const coroutine_handle_functor&) = delete;
-        coroutine_handle_functor& operator=(const coroutine_handle_functor&) = delete;
-
-        coroutine_handle_functor(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
-
-        coroutine_handle_functor(coroutine_handle_functor&& rhs) noexcept : m_coro_handle(std::exchange(rhs.m_coro_handle, {})) {}
-
-        ~coroutine_handle_functor() noexcept {
-            if (static_cast<bool>(m_coro_handle)) {
-                m_coro_handle.destroy();
-            }
-        }
-
-        void execute_destroy() noexcept {
-            auto coro_handle = std::exchange(m_coro_handle, {});
-            coro_handle();
-        }
-
-        void operator()() noexcept {
-            execute_destroy();
-        }
-    };
-
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class task {
+    class CRCPP_API task {
 
        private:
         alignas(std::max_align_t) std::byte m_buffer[details::task_constants::buffer_size];
@@ -231,9 +200,12 @@ namespace concurrencpp {
             return vtable == &details::callable_vtable<callable_type>::s_vtable;
         }
 
+        bool contains_coroutine_handle() const noexcept;
+
        public:
         task() noexcept;
         task(task&& rhs) noexcept;
+        task(details::coroutine_handle<void> coro_handle) noexcept;
 
         template<class callable_type>
         task(callable_type&& callable) {
@@ -258,7 +230,7 @@ namespace concurrencpp {
             using decayed_type = typename std::decay_t<callable_type>;
 
             if constexpr (std::is_same_v<decayed_type, details::coroutine_handle<void>>) {
-                return contains<details::coroutine_handle_functor>();
+                return contains_coroutine_handle();
             }
 
             return m_vtable == &details::callable_vtable<decayed_type>::s_vtable;

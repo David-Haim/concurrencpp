@@ -8,7 +8,7 @@
 #include <condition_variable>
 
 namespace concurrencpp::details {
-    class await_via_functor {
+    class CRCPP_API await_via_functor {
 
        private:
         coroutine_handle<void> m_caller_handle;
@@ -22,7 +22,7 @@ namespace concurrencpp::details {
         void operator()() noexcept;
     };
 
-    class wait_context {
+    class CRCPP_API wait_context {
 
        private:
         std::mutex m_lock;
@@ -36,7 +36,7 @@ namespace concurrencpp::details {
         void notify();
     };
 
-    class when_any_context {
+    class CRCPP_API when_any_context {
 
        private:
         std::atomic<const result_state_base*> m_status;
@@ -56,7 +56,7 @@ namespace concurrencpp::details {
         bool resume_inline(result_state_base& completed_result) noexcept;
     };
 
-    class consumer_context {
+    class CRCPP_API consumer_context {
 
        private:
         enum class consumer_status { idle, await, wait_for, when_any };

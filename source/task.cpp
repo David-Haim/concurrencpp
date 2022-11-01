@@ -11,6 +11,43 @@ static_assert(sizeof(task) == concurrencpp::details::task_constants::total_size,
 
 using concurrencpp::details::callable_vtable;
 using concurrencpp::details::await_via_functor;
+
+namespace concurrencpp::details {
+    namespace {
+        class coroutine_handle_functor {
+
+           private:
+            coroutine_handle<void> m_coro_handle;
+
+           public:
+            coroutine_handle_functor() noexcept : m_coro_handle() {}
+
+            coroutine_handle_functor(const coroutine_handle_functor&) = delete;
+            coroutine_handle_functor& operator=(const coroutine_handle_functor&) = delete;
+
+            coroutine_handle_functor(coroutine_handle<void> coro_handle) noexcept : m_coro_handle(coro_handle) {}
+
+            coroutine_handle_functor(coroutine_handle_functor&& rhs) noexcept : m_coro_handle(std::exchange(rhs.m_coro_handle, {})) {}
+
+            ~coroutine_handle_functor() noexcept {
+                if (static_cast<bool>(m_coro_handle)) {
+                    m_coro_handle.destroy();
+                }
+            }
+
+            void execute_destroy() noexcept {
+                auto coro_handle = std::exchange(m_coro_handle, {});
+                coro_handle();
+            }
+
+            void operator()() noexcept {
+                execute_destroy();
+            }
+        };
+    }  // namespace
+
+}  // namespace concurrencpp::details
+
 using concurrencpp::details::coroutine_handle_functor;
 
 void task::build(task&& rhs) noexcept {
@@ -40,10 +77,18 @@ void task::build(details::coroutine_handle<void> coro_handle) noexcept {
     build(details::coroutine_handle_functor {coro_handle});
 }
 
+bool task::contains_coroutine_handle() const noexcept {
+    return contains<details::coroutine_handle_functor>();
+}
+
 task::task() noexcept : m_buffer(), m_vtable(nullptr) {}
 
 task::task(task&& rhs) noexcept {
     build(std::move(rhs));
+}
+
+task::task(details::coroutine_handle<void> coro_handle) noexcept {
+    build(coro_handle);
 }
 
 task::~task() noexcept {

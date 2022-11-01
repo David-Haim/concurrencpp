@@ -21,7 +21,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp::details {
-    class shared_result_state_base {
+    class CRCPP_API shared_result_state_base {
 
        protected:
         std::atomic_bool m_ready {false};

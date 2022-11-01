@@ -3,6 +3,7 @@
 
 #include "concurrencpp/runtime/constants.h"
 #include "concurrencpp/forward_declarations.h"
+#include "concurrencpp/platform_defs.h"
 
 #include <memory>
 #include <mutex>
@@ -10,7 +11,7 @@
 #include <chrono>
 
 namespace concurrencpp::details {
-    class executor_collection {
+    class CRCPP_API executor_collection {
 
        private:
         std::mutex m_lock;
@@ -23,7 +24,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    struct runtime_options {
+    struct CRCPP_API runtime_options {
         size_t max_cpu_threads;
         std::chrono::milliseconds max_thread_pool_executor_waiting_time;
 
@@ -38,7 +39,7 @@ namespace concurrencpp {
         runtime_options& operator=(const runtime_options&) noexcept = default;
     };
 
-    class runtime {
+    class CRCPP_API runtime {
 
        private:
         std::shared_ptr<inline_executor> m_inline_executor;

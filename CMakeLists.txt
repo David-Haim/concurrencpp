@@ -15,7 +15,6 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
 endif()
 
 # ---- Declare library ----
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 set(concurrencpp_sources
         source/task.cpp
@@ -91,7 +90,19 @@ target_include_directories(concurrencpp
 
 target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
+set_target_properties(concurrencpp PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
 target_coroutine_options(concurrencpp)
+
+target_compile_definitions(concurrencpp
+        PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_EXPORT_API>
+        INTERFACE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_IMPORT_API>
+)
 
 find_package(Threads REQUIRED)
 target_link_libraries(concurrencpp PUBLIC Threads::Threads)
@@ -107,11 +118,18 @@ include(GNUInstallDirs)
 set(concurrencpp_directory "concurrencpp-${PROJECT_VERSION}")
 set(concurrencpp_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${concurrencpp_directory}")
 
-install(TARGETS concurrencpp
-        EXPORT concurrencppTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT concurrencpp_Development
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Development
-        INCLUDES DESTINATION "${concurrencpp_include_directory}")
+install(
+  TARGETS concurrencpp
+  EXPORT concurrencppTargets
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          COMPONENT concurrencpp_Development
+  INCLUDES
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          COMPONENT concurrencpp_Runtime
+          NAMELINK_COMPONENT concurrencpp_Development
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Runtime)
 
 set(concurrencpp_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${concurrencpp_directory}")
@@ -122,14 +140,19 @@ write_basic_package_version_file(
         COMPATIBILITY SameMinorVersion
         ARCH_INDEPENDENT)
 
-install(EXPORT concurrencppTargets
-        NAMESPACE concurrencpp::
-        DESTINATION "${concurrencpp_install_cmakedir}")
+install(
+  EXPORT concurrencppTargets
+  NAMESPACE concurrencpp::
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(FILES
-        "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
+install(
+  FILES "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
         "${PROJECT_BINARY_DIR}/concurrencppConfigVersion.cmake"
-        DESTINATION "${concurrencpp_install_cmakedir}")
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
-        DESTINATION "${concurrencpp_include_directory}")
+install(
+  DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development)
