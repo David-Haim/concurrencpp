@@ -36,14 +36,26 @@ namespace concurrencpp::details {
             std::is_base_of_v<concurrencpp::executor, executor_type>,
             "concurrencpp::initialy_rescheduled_promise<<executor_type>> - <<executor_type>> isn't driven from concurrencpp::executor.");
 
+        static executor_type& to_ref(executor_type* executor_ptr) {
+            if (executor_ptr == nullptr) {
+                throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
+            }
+
+            return *executor_ptr;
+        }
+
        public:
+        template<class... argument_types>
+        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) :
+            m_initial_executor(to_ref(executor_ptr)) {}
+
         template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, executor_type& executor_ptr, argument_types&&...) :
             m_initial_executor(executor_ptr) {}
 
         template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, *executor, std::forward<argument_types>(args)...) {}
+            initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
 
         template<class class_type, class... argument_types>
         initialy_rescheduled_promise(class_type&&, executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
