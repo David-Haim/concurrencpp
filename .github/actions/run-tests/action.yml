@@ -8,6 +8,9 @@ inputs:
   test-dir:
     description: Path to test directory
     required: True
+  attempts:
+    description: Number of attempts to run per test
+    default: 3
   jobs:
     description: Number of jobs to use
     default: 1
@@ -18,10 +21,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: nick-fields/retry@v2
-      with:
-        shell: pwsh
-        retry_on: error
-        timeout_minutes: 20
-        command: |
-          & '${{ inputs.ctest }}' --test-dir '${{ inputs.test-dir }}' -C ${{ inputs.config }} -V -j${{ inputs.jobs }}
+    - shell: pwsh
+      run: |
+        & '${{ inputs.ctest }}' --test-dir '${{ inputs.test-dir }}' -C ${{ inputs.config }} -V -j${{ inputs.jobs }} --repeat until-pass:${{ inputs.attempts }}
