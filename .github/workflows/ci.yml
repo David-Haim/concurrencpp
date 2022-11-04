@@ -159,7 +159,7 @@ jobs:
 
       - name: Build Examples
         uses: ./.github/actions/cmake-build
-        continue-on-error: ${{ matrix.os == 'macos-11' || matrix.shared }}
+        continue-on-error: ${{ matrix.os == 'macos-11' }}
         env:
           CXX: ${{ steps.clang.outputs.clangxx }}
         with:
@@ -175,7 +175,7 @@ jobs:
       - name: Build Tests
         id: build_tests
         uses: ./.github/actions/cmake-build
-        continue-on-error: ${{ matrix.os == 'macos-11' || matrix.shared }}
+        continue-on-error: ${{ matrix.os == 'macos-11' }}
         env:
           CXX: ${{ steps.clang.outputs.clangxx }}
         with:
@@ -190,7 +190,7 @@ jobs:
             ${{ ( matrix.stdlib == 'libc++' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' ) || '' }}
 
       - uses: ./.github/actions/run-tests
-        continue-on-error: ${{ startsWith(matrix.os, 'macos') || matrix.shared }}
+        continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
         if: steps.build_tests.outcome == 'success'
         with:
           ctest: ${{ steps.cmake.outputs.ctest }}
