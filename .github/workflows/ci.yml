@@ -99,6 +99,7 @@ jobs:
   tests:
     needs: build-matrix
     strategy:
+      fail-fast: false
       matrix:
         include:
           ${{ fromJSON(needs.build-matrix.outputs.tests-matrix) }}
