@@ -8,7 +8,7 @@
 #include <chrono>
 
 namespace concurrencpp {
-    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public derivable_executor<manual_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public derivable_executor<manual_executor> {
 
        private:
         mutable std::mutex m_lock;

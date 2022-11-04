@@ -1,11 +1,13 @@
 #ifndef CONCURRENCPP_THREAD_H
 #define CONCURRENCPP_THREAD_H
 
+#include "concurrencpp/platform_defs.h"
+
 #include <string_view>
 #include <thread>
 
 namespace concurrencpp::details {
-    class thread {
+    class CRCPP_API thread {
 
        private:
         std::thread m_thread;

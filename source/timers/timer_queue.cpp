@@ -20,125 +20,127 @@ using time_point = timer_queue::time_point;
 using request_queue = timer_queue::request_queue;
 
 namespace concurrencpp::details {
-    struct deadline_comparator {
-        bool operator()(const timer_ptr& a, const timer_ptr& b) const noexcept {
-            return a->get_deadline() < b->get_deadline();
-        }
-    };
+    namespace {
+        struct deadline_comparator {
+            bool operator()(const timer_ptr& a, const timer_ptr& b) const noexcept {
+                return a->get_deadline() < b->get_deadline();
+            }
+        };
 
-    class timer_queue_internal {
-        using timer_set = std::multiset<timer_ptr, deadline_comparator>;
-        using timer_set_iterator = typename timer_set::iterator;
-        using iterator_map = std::unordered_map<timer_ptr, timer_set_iterator>;
+        class timer_queue_internal {
+            using timer_set = std::multiset<timer_ptr, deadline_comparator>;
+            using timer_set_iterator = typename timer_set::iterator;
+            using iterator_map = std::unordered_map<timer_ptr, timer_set_iterator>;
 
-       private:
-        timer_set m_timers;
-        iterator_map m_iterator_mapper;
+           private:
+            timer_set m_timers;
+            iterator_map m_iterator_mapper;
 
-        void add_timer_internal(timer_ptr new_timer) {
-            assert(m_iterator_mapper.find(new_timer) == m_iterator_mapper.end());
-            auto timer_it = m_timers.emplace(new_timer);
-            m_iterator_mapper.emplace(std::move(new_timer), timer_it);
-        }
-
-        void remove_timer_internal(timer_ptr existing_timer) {
-            auto timer_it = m_iterator_mapper.find(existing_timer);
-            if (timer_it == m_iterator_mapper.end()) {
-                assert(existing_timer->is_oneshot() || existing_timer->cancelled());  // the timer was already deleted by
-                                                                                      // the queue when it was fired.
-                return;
+            void add_timer_internal(timer_ptr new_timer) {
+                assert(m_iterator_mapper.find(new_timer) == m_iterator_mapper.end());
+                auto timer_it = m_timers.emplace(new_timer);
+                m_iterator_mapper.emplace(std::move(new_timer), timer_it);
             }
 
-            auto set_iterator = timer_it->second;
-            m_timers.erase(set_iterator);
-            m_iterator_mapper.erase(timer_it);
-        }
+            void remove_timer_internal(timer_ptr existing_timer) {
+                auto timer_it = m_iterator_mapper.find(existing_timer);
+                if (timer_it == m_iterator_mapper.end()) {
+                    assert(existing_timer->is_oneshot() || existing_timer->cancelled());  // the timer was already deleted by
+                                                                                          // the queue when it was fired.
+                    return;
+                }
 
-        void process_request_queue(request_queue& queue) {
-            for (auto& request : queue) {
-                auto& timer_ptr = request.first;
-                const auto opt = request.second;
+                auto set_iterator = timer_it->second;
+                m_timers.erase(set_iterator);
+                m_iterator_mapper.erase(timer_it);
+            }
 
-                if (opt == timer_request::add) {
-                    add_timer_internal(std::move(timer_ptr));
-                } else {
-                    remove_timer_internal(std::move(timer_ptr));
+            void process_request_queue(request_queue& queue) {
+                for (auto& request : queue) {
+                    auto& timer_ptr = request.first;
+                    const auto opt = request.second;
+
+                    if (opt == timer_request::add) {
+                        add_timer_internal(std::move(timer_ptr));
+                    } else {
+                        remove_timer_internal(std::move(timer_ptr));
+                    }
                 }
             }
-        }
 
-        void reset_containers_memory() noexcept {
-            assert(empty());
-            timer_set timers;
-            std::swap(m_timers, timers);
-            iterator_map iterator_mapper;
-            std::swap(m_iterator_mapper, iterator_mapper);
-        }
+            void reset_containers_memory() noexcept {
+                assert(empty());
+                timer_set timers;
+                std::swap(m_timers, timers);
+                iterator_map iterator_mapper;
+                std::swap(m_iterator_mapper, iterator_mapper);
+            }
 
-       public:
-        bool empty() const noexcept {
-            assert(m_iterator_mapper.size() == m_timers.size());
-            return m_timers.empty();
-        }
+           public:
+            bool empty() const noexcept {
+                assert(m_iterator_mapper.size() == m_timers.size());
+                return m_timers.empty();
+            }
 
-        ::time_point process_timers(request_queue& queue) {
-            process_request_queue(queue);
+            ::time_point process_timers(request_queue& queue) {
+                process_request_queue(queue);
 
-            const auto now = high_resolution_clock::now();
+                const auto now = high_resolution_clock::now();
 
-            while (true) {
+                while (true) {
+                    if (m_timers.empty()) {
+                        break;
+                    }
+
+                    timer_set temp_set;
+
+                    auto first_timer_it = m_timers.begin();  // closest deadline
+                    auto timer_ptr = *first_timer_it;
+                    const auto is_oneshot = timer_ptr->is_oneshot();
+
+                    if (!timer_ptr->expired(now)) {
+                        // if this timer is not expired, the next ones are guaranteed not to, as
+                        // the set is ordered by deadlines.
+                        break;
+                    }
+
+                    // we are going to modify the timer, so first we extract it
+                    auto timer_node = m_timers.extract(first_timer_it);
+
+                    // we cannot use the naked node_handle according to the standard. it must
+                    // be contained somewhere.
+                    auto temp_it = temp_set.insert(std::move(timer_node));
+
+                    // we fire it only if it's not cancelled
+                    const auto cancelled = timer_ptr->cancelled();
+                    if (!cancelled) {
+                        (*temp_it)->fire();
+                    }
+
+                    if (is_oneshot || cancelled) {
+                        m_iterator_mapper.erase(timer_ptr);
+                        continue;  // let the timer die inside temp_set
+                    }
+
+                    // regular timer, re-insert into the right position
+                    timer_node = temp_set.extract(temp_it);
+                    auto new_it = m_timers.insert(std::move(timer_node));
+                    // AppleClang doesn't have std::unordered_map::contains yet
+                    assert(m_iterator_mapper.find(timer_ptr) != m_iterator_mapper.end());
+                    m_iterator_mapper[timer_ptr] = new_it;  // update the iterator map, multiset::extract invalidates the
+                    // timer
+                }
+
                 if (m_timers.empty()) {
-                    break;
+                    reset_containers_memory();
+                    return now + std::chrono::hours(24);
                 }
 
-                timer_set temp_set;
-
-                auto first_timer_it = m_timers.begin();  // closest deadline
-                auto timer_ptr = *first_timer_it;
-                const auto is_oneshot = timer_ptr->is_oneshot();
-
-                if (!timer_ptr->expired(now)) {
-                    // if this timer is not expired, the next ones are guaranteed not to, as
-                    // the set is ordered by deadlines.
-                    break;
-                }
-
-                // we are going to modify the timer, so first we extract it
-                auto timer_node = m_timers.extract(first_timer_it);
-
-                // we cannot use the naked node_handle according to the standard. it must
-                // be contained somewhere.
-                auto temp_it = temp_set.insert(std::move(timer_node));
-
-                // we fire it only if it's not cancelled
-                const auto cancelled = timer_ptr->cancelled();
-                if (!cancelled) {
-                    (*temp_it)->fire();
-                }
-
-                if (is_oneshot || cancelled) {
-                    m_iterator_mapper.erase(timer_ptr);
-                    continue;  // let the timer die inside temp_set
-                }
-
-                // regular timer, re-insert into the right position
-                timer_node = temp_set.extract(temp_it);
-                auto new_it = m_timers.insert(std::move(timer_node));
-                // AppleClang doesn't have std::unordered_map::contains yet
-                assert(m_iterator_mapper.find(timer_ptr) != m_iterator_mapper.end());
-                m_iterator_mapper[timer_ptr] = new_it;  // update the iterator map, multiset::extract invalidates the
-                // timer
+                // get the closest deadline.
+                return (**m_timers.begin()).get_deadline();
             }
-
-            if (m_timers.empty()) {
-                reset_containers_memory();
-                return now + std::chrono::hours(24);
-            }
-
-            // get the closest deadline.
-            return (**m_timers.begin()).get_deadline();
-        }
-    };
+        };
+    }  // namespace
 }  // namespace concurrencpp::details
 
 timer_queue::timer_queue(milliseconds max_waiting_time) :

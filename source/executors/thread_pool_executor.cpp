@@ -7,22 +7,74 @@ using concurrencpp::details::idle_worker_set;
 using concurrencpp::details::thread_pool_worker;
 
 namespace concurrencpp::details {
-    struct thread_pool_per_thread_data {
-        thread_pool_worker* this_worker;
-        size_t this_thread_index;
-        const size_t this_thread_hashed_id;
+    namespace {
+        struct thread_pool_per_thread_data {
+            thread_pool_worker* this_worker;
+            size_t this_thread_index;
+            const size_t this_thread_hashed_id;
 
-        static size_t calculate_hashed_id() noexcept {
-            const auto this_thread_id = thread::get_current_virtual_id();
-            const std::hash<size_t> hash;
-            return hash(this_thread_id);
-        }
+            static size_t calculate_hashed_id() noexcept {
+                const auto this_thread_id = thread::get_current_virtual_id();
+                const std::hash<size_t> hash;
+                return hash(this_thread_id);
+            }
 
-        thread_pool_per_thread_data() noexcept :
-            this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
+            thread_pool_per_thread_data() noexcept :
+                this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
+        };
+
+        thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
+    }  // namespace
+
+    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_worker {
+
+       private:
+        std::deque<task> m_private_queue;
+        std::vector<size_t> m_idle_worker_list;
+        std::atomic_bool m_atomic_abort;
+        thread_pool_executor& m_parent_pool;
+        const size_t m_index;
+        const size_t m_pool_size;
+        const std::chrono::milliseconds m_max_idle_time;
+        const std::string m_worker_name;
+        alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
+        std::deque<task> m_public_queue;
+        binary_semaphore m_semaphore;
+        bool m_idle;
+        bool m_abort;
+        std::atomic_bool m_task_found_or_abort;
+        thread m_thread;
+
+        void balance_work();
+
+        bool wait_for_task(std::unique_lock<std::mutex>& lock);
+        bool drain_queue_impl();
+        bool drain_queue();
+
+        void work_loop();
+
+        void ensure_worker_active(bool first_enqueuer, std::unique_lock<std::mutex>& lock);
+
+       public:
+        thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::milliseconds max_idle_time);
+
+        thread_pool_worker(thread_pool_worker&& rhs) noexcept;
+        ~thread_pool_worker() noexcept;
+
+        void enqueue_foreign(concurrencpp::task& task);
+        void enqueue_foreign(std::span<concurrencpp::task> tasks);
+        void enqueue_foreign(std::deque<concurrencpp::task>::iterator begin, std::deque<concurrencpp::task>::iterator end);
+        void enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end);
+
+        void enqueue_local(concurrencpp::task& task);
+        void enqueue_local(std::span<concurrencpp::task> tasks);
+
+        void shutdown();
+
+        std::chrono::milliseconds max_worker_idle_time() const noexcept;
+
+        bool appears_empty() const noexcept;
     };
-
-    static thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
 }  // namespace concurrencpp::details
 
 idle_worker_set::idle_worker_set(size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {}
@@ -456,6 +508,8 @@ thread_pool_executor::thread_pool_executor(std::string_view pool_name, size_t po
         m_idle_workers.set_idle(i);
     }
 }
+
+thread_pool_executor::~thread_pool_executor() = default;
 
 void thread_pool_executor::find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept {
     m_idle_workers.find_idle_workers(caller_index, buffer, max_count);

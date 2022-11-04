@@ -2195,6 +2195,15 @@ $ cd build/test
 $ ctest . -V
 ```
 
+##### Linking to libc++
+
+If you are using Clang and your standard stdlib is too old and does not support coroutines,
+you may need to link with libc++ instead by specifying `CMAKE_TOOLCHAIN_FILE`.
+
+```cmake
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/libc++.cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/lib
+```
+
 ##### Via package managers on Windows and *nix platforms
 
 Alternatively to building and installing the library manually, developers may get stable releases of concurrencpp via the [vcpkg](https://vcpkg.io/) and [Conan](https://conan.io/) package managers:

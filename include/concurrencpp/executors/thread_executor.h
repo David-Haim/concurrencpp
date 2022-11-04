@@ -11,7 +11,7 @@
 #include <condition_variable>
 
 namespace concurrencpp {
-    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_executor final : public derivable_executor<thread_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_executor final : public derivable_executor<thread_executor> {
 
        private:
         std::mutex m_lock;

@@ -25,6 +25,20 @@
 #    define CRCPP_DEBUG_MODE
 #endif
 
+#if defined(CRCPP_WIN_OS)
+#    if defined(CRCPP_EXPORT_API)
+#        define CRCPP_API __declspec(dllexport)
+#    elif defined(CRCPP_IMPORT_API)
+#        define CRCPP_API __declspec(dllimport)
+#    endif
+#elif (defined(CRCPP_EXPORT_API) || defined(CRCPP_IMPORT_API)) && __has_cpp_attribute(gnu::visibility)
+#    define CRCPP_API __attribute__((visibility("default")))
+#endif
+
+#if !defined(CRCPP_API)
+#    define CRCPP_API
+#endif
+
 #include <exception>
 
 #if defined(_LIBCPP_VERSION)
