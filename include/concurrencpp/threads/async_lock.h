@@ -2,6 +2,7 @@
 #define CONCURRENCPP_ASYNC_LOCK_H
 
 #include "concurrencpp/platform_defs.h"
+#include "concurrencpp/executors/executor.h"
 #include "concurrencpp/results/lazy_result.h"
 #include "concurrencpp/forward_declarations.h"
 
