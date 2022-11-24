@@ -6,6 +6,84 @@ using concurrencpp::lazy_result;
 using concurrencpp::scoped_async_lock;
 using concurrencpp::async_condition_variable;
 
+/*
+    async_condition_variable::cv_awaitable
+*/
+
+async_condition_variable::cv_awaitable::cv_awaitable(async_condition_variable& parent,
+                                                     scoped_async_lock& lock,
+                                                     const std::shared_ptr<executor>& resume_executor) noexcept :
+    m_parent(parent),
+    m_lock(lock), m_resume_executor(resume_executor) {}
+
+void async_condition_variable::cv_awaitable::resume() noexcept {
+    assert(static_cast<bool>(m_caller_handle));
+    assert(!m_caller_handle.done());
+    m_resume_executor->post(details::await_via_functor {m_caller_handle, &m_interrupted});
+}
+
+void async_condition_variable::cv_awaitable::await_suspend(details::coroutine_handle<void> caller_handle) {
+    m_caller_handle = caller_handle;
+
+    std::unique_lock<std::mutex> lock(m_parent.m_lock);
+    m_lock.unlock();
+
+    m_parent.m_awaiters.push_back(this);
+}
+
+void async_condition_variable::cv_awaitable::await_resume() const {
+    if (m_interrupted) {
+        throw errors::broken_task(details::consts::k_broken_task_exception_error_msg);
+    }
+}
+
+/*
+    async_condition_variable::slist
+*/
+
+async_condition_variable::slist::slist(slist&& rhs) noexcept :
+    m_head(std::exchange(rhs.m_head, nullptr)), m_tail(std::exchange(rhs.m_tail, nullptr)) {}
+
+bool async_condition_variable::slist::empty() const noexcept {
+    return m_head == nullptr;
+}
+
+void async_condition_variable::slist::push_back(cv_awaitable* node) noexcept {
+    assert(node->next == nullptr);
+
+    if (m_head == nullptr) {
+        assert(m_tail == nullptr);
+        m_head = node;
+        m_tail = node;
+        return;
+    }
+
+    assert(m_tail != nullptr);
+    m_tail->next = node;
+    m_tail = node;
+}
+
+async_condition_variable::cv_awaitable* async_condition_variable::slist::pop_front() noexcept {
+    if (m_head == nullptr) {
+        assert(m_tail == nullptr);
+        return nullptr;
+    }
+
+    assert(m_tail != nullptr);
+    const auto node = m_head;
+    m_head = m_head->next;
+
+    if (m_head == nullptr) {
+        m_tail = nullptr;
+    }
+
+    return node;
+}
+
+/*
+    async_condition_variable
+*/
+
 async_condition_variable::~async_condition_variable() noexcept {
 #ifdef CRCPP_DEBUG_MODE
     std::unique_lock<std::mutex> lock(m_lock);
