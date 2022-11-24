@@ -12,7 +12,7 @@ namespace concurrencpp {
     class CRCPP_API async_condition_variable {
 
        private:
-        class CRCPP_API cv_awaitable : public std::suspend_always {
+        class CRCPP_API cv_awaitable {
            private:
             async_condition_variable& m_parent;
             scoped_async_lock& m_lock;
@@ -26,7 +26,11 @@ namespace concurrencpp {
             cv_awaitable(async_condition_variable& parent,
                          scoped_async_lock& lock,
                          const std::shared_ptr<executor>& resume_executor) noexcept;
-
+            
+            constexpr bool await_ready() const noexcept {
+                return false;
+            }
+            
             void await_suspend(details::coroutine_handle<void> caller_handle);
             void await_resume() const;
             void resume() noexcept;
