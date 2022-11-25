@@ -16,23 +16,21 @@ namespace concurrencpp {
            private:
             async_condition_variable& m_parent;
             scoped_async_lock& m_lock;
-            const std::shared_ptr<executor> m_resume_executor;
             details::coroutine_handle<void> m_caller_handle;
-            bool m_interrupted = false;
 
            public:
             cv_awaitable* next = nullptr;
 
             cv_awaitable(async_condition_variable& parent,
-                         scoped_async_lock& lock,
-                         const std::shared_ptr<executor>& resume_executor) noexcept;
+                         scoped_async_lock& lock) noexcept;
             
             constexpr bool await_ready() const noexcept {
                 return false;
             }
             
             void await_suspend(details::coroutine_handle<void> caller_handle);
-            void await_resume() const;
+            void await_resume() const noexcept {}
+
             void resume() noexcept;
         };
 
