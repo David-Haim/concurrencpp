@@ -7,29 +7,40 @@ using concurrencpp::lazy_result;
 using concurrencpp::scoped_async_lock;
 using concurrencpp::async_condition_variable;
 
-/*
-    async_condition_variable::cv_awaitable
-*/
+namespace concurrencpp::details {
+    class CRCPP_API cv_awaitable {
+       private:
+        async_condition_variable& m_parent;
+        scoped_async_lock& m_lock;
+        details::coroutine_handle<void> m_caller_handle;
 
-async_condition_variable::cv_awaitable::cv_awaitable(async_condition_variable& parent,
-                                                     scoped_async_lock& lock) noexcept :
-    m_parent(parent),
-    m_lock(lock){}
+       public:
+        cv_awaitable* next = nullptr;
 
-void async_condition_variable::cv_awaitable::resume() noexcept {
-    assert(static_cast<bool>(m_caller_handle));
-    assert(!m_caller_handle.done());
-    m_caller_handle();
-}
+        cv_awaitable(async_condition_variable& parent, scoped_async_lock& lock) noexcept : m_parent(parent), m_lock(lock) {}
 
-void async_condition_variable::cv_awaitable::await_suspend(details::coroutine_handle<void> caller_handle) {
-    m_caller_handle = caller_handle;
+        constexpr bool await_ready() const noexcept {
+            return false;
+        }
 
-    std::unique_lock<std::mutex> lock(m_parent.m_lock);
-    m_lock.unlock();
+        void await_suspend(details::coroutine_handle<void> caller_handle) {
+            m_caller_handle = caller_handle;
 
-    m_parent.m_awaiters.push_back(this);
-}
+            std::unique_lock<std::mutex> lock(m_parent.m_lock);
+            m_lock.unlock();
+
+            m_parent.m_awaiters.push_back(this);
+        }
+
+        void await_resume() const noexcept {}
+
+        void resume() noexcept {
+            assert(static_cast<bool>(m_caller_handle));
+            assert(!m_caller_handle.done());
+            m_caller_handle();
+        }
+    };
+}  // namespace concurrencpp::details
 
 /*
     async_condition_variable::slist
@@ -42,7 +53,7 @@ bool async_condition_variable::slist::empty() const noexcept {
     return m_head == nullptr;
 }
 
-void async_condition_variable::slist::push_back(cv_awaitable* node) noexcept {
+void async_condition_variable::slist::push_back(details::cv_awaitable* node) noexcept {
     assert(node->next == nullptr);
 
     if (m_head == nullptr) {
@@ -57,7 +68,7 @@ void async_condition_variable::slist::push_back(cv_awaitable* node) noexcept {
     m_tail = node;
 }
 
-async_condition_variable::cv_awaitable* async_condition_variable::slist::pop_front() noexcept {
+concurrencpp::details::cv_awaitable* async_condition_variable::slist::pop_front() noexcept {
     if (m_head == nullptr) {
         assert(m_tail == nullptr);
         return nullptr;
@@ -96,9 +107,9 @@ void async_condition_variable::verify_await_params(const std::shared_ptr<executo
 }
 
 lazy_result<void> async_condition_variable::await_impl(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock) {
-    co_await cv_awaitable(*this, lock);
+    co_await details::cv_awaitable(*this, lock);
     assert(!lock.owns_lock());
-    co_await resume_on(resume_executor); //TODO: optimize this when get_current_executor is available
+    co_await resume_on(resume_executor);  // TODO: optimize this when get_current_executor is available
     co_await lock.lock(resume_executor);
 }
 

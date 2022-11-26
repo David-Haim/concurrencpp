@@ -1,44 +1,25 @@
 #ifndef CONCURRENCPP_ASYNC_CONDITION_VARIABLE_H
 #define CONCURRENCPP_ASYNC_CONDITION_VARIABLE_H
 
-#include "async_lock.h"
-
+#include "concurrencpp/threads/async_lock.h"
 #include "concurrencpp/results/lazy_result.h"
 #include "concurrencpp/coroutines/coroutine.h"
 
-#include <mutex>
+namespace concurrencpp::details {
+    class CRCPP_API cv_awaitable;
+}
 
 namespace concurrencpp {
     class CRCPP_API async_condition_variable {
 
+        friend details::cv_awaitable;
+
        private:
-        class CRCPP_API cv_awaitable {
-           private:
-            async_condition_variable& m_parent;
-            scoped_async_lock& m_lock;
-            details::coroutine_handle<void> m_caller_handle;
-
-           public:
-            cv_awaitable* next = nullptr;
-
-            cv_awaitable(async_condition_variable& parent,
-                         scoped_async_lock& lock) noexcept;
-            
-            constexpr bool await_ready() const noexcept {
-                return false;
-            }
-            
-            void await_suspend(details::coroutine_handle<void> caller_handle);
-            void await_resume() const noexcept {}
-
-            void resume() noexcept;
-        };
-
         class CRCPP_API slist {
 
            private:
-            cv_awaitable* m_head = nullptr;
-            cv_awaitable* m_tail = nullptr;
+            details::cv_awaitable* m_head = nullptr;
+            details::cv_awaitable* m_tail = nullptr;
 
            public:
             slist() noexcept = default;
@@ -46,8 +27,8 @@ namespace concurrencpp {
 
             bool empty() const noexcept;
 
-            void push_back(cv_awaitable* node) noexcept;
-            cv_awaitable* pop_front() noexcept;
+            void push_back(details::cv_awaitable* node) noexcept;
+            details::cv_awaitable* pop_front() noexcept;
         };
 
         template<class predicate_type>
