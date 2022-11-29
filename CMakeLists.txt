@@ -80,7 +80,8 @@ set(concurrencpp_headers
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
-        include/concurrencpp/utils/bind.h)
+        include/concurrencpp/utils/bind.h
+        include/concurrencpp/utils/slist.h)
 
 add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)
