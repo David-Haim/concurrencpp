@@ -32,28 +32,28 @@ namespace concurrencpp {
 
        protected:
         template<class executor_type, class callable_type, class... argument_types>
-        static void do_post(executor_type& executor_ref, callable_type&& callable, argument_types&&... arguments) {
+        void do_post(callable_type&& callable, argument_types&&... arguments) {
             static_assert(std::is_invocable_v<callable_type, argument_types...>,
                           "concurrencpp::executor::post - <<callable_type>> is not invokable with <<argument_types...>>");
 
-            executor_ref.enqueue(
+            static_cast<executor_type*>(this)->enqueue(
                 details::bind_with_try_catch(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...));
         }
 
         template<class executor_type, class callable_type, class... argument_types>
-        static auto do_submit(executor_type& executor_ref, callable_type&& callable, argument_types&&... arguments) {
+        auto do_submit(callable_type&& callable, argument_types&&... arguments) {
             static_assert(std::is_invocable_v<callable_type, argument_types...>,
                           "concurrencpp::executor::submit - <<callable_type>> is not invokable with <<argument_types...>>");
 
             using return_type = typename std::invoke_result_t<callable_type, argument_types...>;
             return submit_bridge<return_type>({},
-                                              executor_ref,
+                                              *static_cast<executor_type*>(this),
                                               std::forward<callable_type>(callable),
                                               std::forward<argument_types>(arguments)...);
         }
 
         template<class executor_type, class callable_type>
-        static void do_bulk_post(executor_type& executor_ref, std::span<callable_type> callable_list) {
+        void do_bulk_post(std::span<callable_type> callable_list) {
             assert(!callable_list.empty());
 
             std::vector<task> tasks;
@@ -64,12 +64,11 @@ namespace concurrencpp {
             }
 
             std::span<task> span = tasks;
-            executor_ref.enqueue(span);
+            static_cast<executor_type*>(this)->enqueue(span);
         }
 
         template<class executor_type, class callable_type, class return_type = std::invoke_result_t<callable_type>>
-        static std::vector<concurrencpp::result<return_type>> do_bulk_submit(executor_type& executor_ref,
-                                                                             std::span<callable_type> callable_list) {
+        std::vector<concurrencpp::result<return_type>> do_bulk_submit(std::span<callable_type> callable_list) {
             std::vector<task> accumulator;
             accumulator.reserve(callable_list.size());
 
@@ -82,7 +81,7 @@ namespace concurrencpp {
 
             assert(!accumulator.empty());
             std::span<task> span = accumulator;
-            executor_ref.enqueue(span);
+            static_cast<executor_type*>(this)->enqueue(span);
             return results;
         }
 
@@ -103,22 +102,22 @@ namespace concurrencpp {
 
         template<class callable_type, class... argument_types>
         void post(callable_type&& callable, argument_types&&... arguments) {
-            return do_post(*this, std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
+            return do_post<executor>(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
         }
 
         template<class callable_type, class... argument_types>
         auto submit(callable_type&& callable, argument_types&&... arguments) {
-            return do_submit(*this, std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
+            return do_submit<executor>(std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
         }
 
         template<class callable_type>
         void bulk_post(std::span<callable_type> callable_list) {
-            return do_bulk_post(*this, callable_list);
+            return do_bulk_post<executor>(callable_list);
         }
 
         template<class callable_type, class return_type = std::invoke_result_t<callable_type>>
         std::vector<concurrencpp::result<return_type>> bulk_submit(std::span<callable_type> callable_list) {
-            return do_bulk_submit(*this, callable_list);
+            return do_bulk_submit<executor>(callable_list);
         }
     };
 }  // namespace concurrencpp
