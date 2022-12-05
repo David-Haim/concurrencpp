@@ -6,14 +6,8 @@
 
 namespace concurrencpp {
     template<class concrete_executor_type>
-    class CRCPP_API derivable_executor : public executor {
+    struct CRCPP_API derivable_executor : public executor {
 
-       private:
-        concrete_executor_type& self() noexcept {
-            return *static_cast<concrete_executor_type*>(this);
-        }
-
-       public:
         derivable_executor(std::string_view name) : executor(name) {}
 
         template<class callable_type, class... argument_types>
