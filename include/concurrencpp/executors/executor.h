@@ -15,7 +15,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class executor {
+    class CRCPP_API executor {
 
        private:
         template<class return_type, class executor_type, class callable_type, class... argument_types>

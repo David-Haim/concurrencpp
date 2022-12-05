@@ -6,7 +6,7 @@
 
 namespace concurrencpp {
     template<class concrete_executor_type>
-    class derivable_executor : public executor {
+    class CRCPP_API derivable_executor : public executor {
 
        private:
         concrete_executor_type& self() noexcept {
