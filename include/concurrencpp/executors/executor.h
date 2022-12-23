@@ -23,10 +23,32 @@ namespace concurrencpp {
             co_return callable(arguments...);
         }
 
+        struct accumulating_awaitable {
+            std::vector<concurrencpp::task>& accumulator;
+            bool m_interrupted = false;
+
+            accumulating_awaitable(std::vector<concurrencpp::task>& accumulator) noexcept : accumulator(accumulator) {}
+
+            constexpr bool await_ready() const noexcept {
+                return false;
+            }
+
+            void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
+                accumulator.emplace_back(details::await_via_functor(coro_handle, &m_interrupted));
+            }
+
+            void await_resume() const {
+                if (m_interrupted) {
+                    throw errors::broken_task("");
+                }
+            }
+        };
+
         template<class callable_type, class return_type = typename std::invoke_result_t<callable_type>>
-        static result<return_type> bulk_submit_bridge(details::executor_bulk_tag,
-                                                      std::vector<concurrencpp::task>& accumulator,
+        static result<return_type> bulk_submit_bridge(std::vector<concurrencpp::task>& accumulator,
                                                       callable_type callable) {
+            
+            co_await accumulating_awaitable(accumulator);
             co_return callable();
         }
 
@@ -77,7 +99,7 @@ namespace concurrencpp {
             results.reserve(callable_list.size());
 
             for (auto& callable : callable_list) {
-                results.emplace_back(bulk_submit_bridge<callable_type>({}, accumulator, std::move(callable)));
+                results.emplace_back(bulk_submit_bridge<callable_type>(accumulator, std::move(callable)));
             }
 
             assert(!accumulator.empty());
