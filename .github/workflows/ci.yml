@@ -23,6 +23,7 @@ jobs:
     outputs:
       tests-matrix: ${{ steps.script.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v2  
       - id: script
         shell: pwsh
         run: |
