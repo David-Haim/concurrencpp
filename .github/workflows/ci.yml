@@ -26,76 +26,8 @@ jobs:
       - id: script
         shell: pwsh
         run: |
-          $configs = @()
-
-          foreach ($os in @("macos-11", "macos-12")) {
-            $configs += @{
-              "os" = $os
-              "stdlib" = "libc++"
-              "tsan" = $False
-            }
-          }
-
-          foreach ($version in @(11, 12, 13)) {
-            $configs += @{
-              "clang-version" = $version
-              "os" = "ubuntu-20.04"
-              "stdlib" = "libc++"
-              "tsan" = $False
-            }
-          }
-
-          foreach ($version in @(2019, 2022)) {
-            $configs += @{
-              "msvc-version" = $version
-              "os" = "windows-${version}"
-              "stdlib" = "msvc-stl"
-              "tsan" = $False
-            }
-          }
-
-          foreach ($version in @(14, 15)) {
-            foreach ($os in @("windows-2022", "ubuntu-22.04")) {
-              $stdlibs = if ($os -eq "windows-2022") {
-                @("msvc-stl")
-              } else {
-                @("libc++", "libstdc++")
-              }
-              foreach ($stdlib in $stdlibs) {
-                if ($stdlib -eq "libstdc++") {
-                  foreach ($libstdcxxVersion in $(11, 12)) {
-                    $configs += @{
-                      "clang-version" = $version
-                      "libstdcxx-version" = $libstdcxxVersion
-                      "os" = $os
-                      "stdlib" = $stdlib
-                      "tsan" = $os -eq "ubuntu-22.04" -and $version -eq 15 -and $libstdcxxVersion -eq 12
-                    }
-                  }
-                } else {
-                  $configs += @{
-                    "clang-version" = $version
-                    "os" = $os
-                    "stdlib" = $stdlib
-                    "tsan" = $os -eq "ubuntu-22.04" -and $version -eq 15
-                  }
-                }
-              }
-            }
-          }
-
-          $newConfigs = @()
-          foreach ($config in $configs) {
-            foreach ($shared in @($False, $True)) {
-              $newConfig = $config.PsObject.Copy()
-              $newConfig.shared = $shared
-              $newConfigs += $newConfig
-            }
-          }
-          $configs = $newConfigs
-
-          Add-Content "${env:GITHUB_OUTPUT}" "matrix=$(ConvertTo-Json $configs -Compress)"
-
+          $json = Get-Content -Raw .github/workflows/test_matrix.json | ConvertFrom-Json
+          Add-Content "${env:GITHUB_OUTPUT}" "matrix=$(ConvertTo-Json $json -Compress)"
   tests:
     needs: build-matrix
     strategy:
