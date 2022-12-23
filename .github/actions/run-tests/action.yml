@@ -1,0 +1,26 @@
+name: Run Tests
+description: Run Tests
+
+inputs:
+  ctest:
+    description: Path to CTest executable
+    required: True
+  test-dir:
+    description: Path to test directory
+    required: True
+  attempts:
+    description: Number of attempts to run per test
+    default: 3
+  jobs:
+    description: Number of jobs to use
+    default: 1
+  config:
+    description: CTest configuration to test
+    default: RelWithDebInfo
+
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        & '${{ inputs.ctest }}' --test-dir '${{ inputs.test-dir }}' -C ${{ inputs.config }} -V -j${{ inputs.jobs }} --repeat until-pass:${{ inputs.attempts }}

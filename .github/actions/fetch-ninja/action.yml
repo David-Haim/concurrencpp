@@ -1,0 +1,35 @@
+name: Fetch Ninja
+description: Puts ninja's path into the output
+
+inputs:
+  version:
+    description: Version of Ninja to fetch
+    default: 1.11.1
+  base-directory:
+    description: Directory in which to install Ninja
+outputs:
+  ninja:
+    description: Path of ninja executable
+    value: ${{ steps.script.outputs.ninja }}
+
+runs:
+  using: composite
+  steps:
+    - id: script
+      shell: pwsh
+      working-directory: ${{ inputs.base-directory }}
+      run: |
+        $version = '${{ inputs.version }}'
+        if ($IsMacOs) {
+          $os = 'mac'
+        } elseif ($IsLinux) {
+          $os = 'linux'
+        } elseif ($IsWindows) {
+          $os = 'win'
+        }
+        $uri = "https://github.com/ninja-build/ninja/releases/download/v${version}/ninja-${os}.zip"
+        $tmp = New-TemporaryFile
+        Invoke-WebRequest -Uri $uri -OutFile $tmp
+        cmake -E tar xf $tmp
+        $tmp | Remove-Item
+        Add-Content "${env:GITHUB_OUTPUT}" "ninja=$(Join-Path (Get-Location) ninja)"
