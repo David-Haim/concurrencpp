@@ -35,18 +35,7 @@ jobs:
       matrix:
         include:
           ${{ fromJSON(needs.build-matrix.outputs.tests-matrix) }}
-    name: >
-      ${{ (matrix.clang-version && format('clang {0}', matrix.clang-version))
-       || (matrix.msvc-version && format('msvc {0}', matrix.msvc-version))
-       || 'apple-clang' }}
-      ${{ ((matrix.clang-version || startsWith(matrix.os, 'macos')) && format('on {0}', matrix.os)) || '' }}
-      ${{ (
-        matrix.clang-version && startsWith(matrix.os, 'ubuntu')
-        && (
-          (matrix.libstdcxx-version && format('with {0}-{1}', matrix.stdlib, matrix.libstdcxx-version))
-          || format('with {0}', matrix.stdlib)
-        )) || '' }}
-      and shared=${{ matrix.shared }}
+    name: matrix.name
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
