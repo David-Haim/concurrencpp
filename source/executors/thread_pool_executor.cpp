@@ -1,5 +1,6 @@
 #include "concurrencpp/executors/thread_pool_executor.h"
 
+#include <semaphore>
 #include <algorithm>
 
 using concurrencpp::thread_pool_executor;
@@ -39,7 +40,7 @@ namespace concurrencpp::details {
         const std::string m_worker_name;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
         std::deque<task> m_public_queue;
-        binary_semaphore m_semaphore;
+        std::binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
         std::atomic_bool m_task_found_or_abort;

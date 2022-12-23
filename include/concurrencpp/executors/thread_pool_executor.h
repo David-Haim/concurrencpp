@@ -3,7 +3,6 @@
 
 #include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>

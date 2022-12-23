@@ -29,7 +29,6 @@ set(concurrencpp_sources
         source/results/promises.cpp
         source/runtime/runtime.cpp
         source/threads/async_lock.cpp
-        source/threads/binary_semaphore.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
         source/timers/timer_queue.cpp)
@@ -72,7 +71,6 @@ set(concurrencpp_headers
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/async_lock.h
-        include/concurrencpp/threads/binary_semaphore.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/threads/cache_line.h
         include/concurrencpp/timers/constants.h
