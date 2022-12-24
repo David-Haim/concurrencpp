@@ -442,12 +442,12 @@ void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
 
         const auto c = invocation_counter.fetch_add(1, std::memory_order_relaxed) + 1;
         if (c == max_invocation_count) {
-            wc.acquire();
+            wc.release();
         }
     });
 
     // will be released after the first beat.
-    wc.release();
+    wc.acquire();
     timer.cancel();
 
     std::this_thread::sleep_for(2s);
