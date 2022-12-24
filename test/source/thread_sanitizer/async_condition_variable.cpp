@@ -29,7 +29,6 @@ int main() {
     test_async_cv_notify_all();
     std::cout << "================================" << std::endl;
 
-
     std::cout << "done" << std::endl;
     std::cout << "================================" << std::endl;
 }
@@ -44,7 +43,7 @@ void test_async_cv_await() {
     async_condition_variable cv;
 
     constexpr size_t task_count = 512;
-    const auto deadline = system_clock::now() + seconds(10);
+    const auto deadline = system_clock::now() + seconds(5);
 
     std::vector<result<void>> results;
     results.reserve(task_count);
@@ -78,7 +77,7 @@ void test_async_cv_await_pred() {
     async_condition_variable cv;
 
     constexpr size_t task_count = 512;
-    const auto deadline = system_clock::now() + seconds(10);
+    const auto deadline = system_clock::now() + seconds(5);
 
     std::vector<result<void>> results;
     results.reserve(task_count);
@@ -124,7 +123,7 @@ void test_async_cv_notify_one() {
     async_condition_variable cv;
 
     constexpr size_t task_count = 512;
-    const auto deadline = system_clock::now() + seconds(10);
+    const auto deadline = system_clock::now() + seconds(5);
 
     std::vector<result<void>> results;
     results.reserve(task_count * 2);
@@ -163,7 +162,7 @@ void test_async_cv_notify_all() {
     async_condition_variable cv;
 
     constexpr size_t task_count = 512;
-    const auto deadline = system_clock::now() + seconds(10);
+    const auto deadline = system_clock::now() + seconds(5);
 
     std::vector<result<void>> results;
     results.reserve(task_count * 2);

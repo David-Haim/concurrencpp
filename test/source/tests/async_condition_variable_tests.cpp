@@ -148,7 +148,10 @@ void tests::test_async_condition_variable_await_pred() {
 
     task0().get();
 
-    assert_equal(res.status(), result_status::idle);
+    for (size_t i = 0; i < 5; i++) {
+        assert_equal(res.status(), result_status::idle);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
     cv.notify_one();
 
@@ -167,41 +170,27 @@ void tests::test_async_condition_variable_notify_one() {
         co_await cv.await(executor, sal);
     };
 
-    result<void> results[5];
-    for (auto& result : results) {
-        result = task();
+    std::vector<result<void>> results;
+    results.reserve(64);
+
+    for (size_t i = 0; i < 64; i++) {
+        results.emplace_back(task());
     }
 
     for (auto& result : results) {
         assert_equal(result.status(), result_status::idle);
     }
 
-    cv.notify_one();
-    assert_equal(results[0].status(), result_status::value);
-    for (size_t i = 1; i < std::size(results); i++) {
-        assert_equal(results[i].status(), result_status::idle);
-    }
+    while (!results.empty()) {
+        cv.notify_one();
+        assert_equal(results[0].status(), result_status::value);
 
-    cv.notify_one();
-    assert_equal(results[1].status(), result_status::value);
-    for (size_t i = 2; i < std::size(results); i++) {
-        assert_equal(results[i].status(), result_status::idle);
-    }
+        results.erase(results.begin());
 
-    cv.notify_one();
-    assert_equal(results[2].status(), result_status::value);
-    for (size_t i = 3; i < std::size(results); i++) {
-        assert_equal(results[i].status(), result_status::idle);
+        for (const auto& result : results) {
+            assert_equal(result.status(), result_status::idle);
+        }
     }
-
-    cv.notify_one();
-    assert_equal(results[3].status(), result_status::value);
-    for (size_t i = 4; i < std::size(results); i++) {
-        assert_equal(results[i].status(), result_status::idle);
-    }
-
-    cv.notify_one();
-    assert_equal(results[4].status(), result_status::value);
 }
 
 void tests::test_async_condition_variable_notify_all() {
@@ -215,9 +204,11 @@ void tests::test_async_condition_variable_notify_all() {
         co_await cv.await(executor, sal);
     };
 
-    result<void> results[5];
-    for (auto& result : results) {
-        result = task();
+    std::vector<result<void>> results;
+    results.reserve(64);
+
+    for (size_t i = 0; i < 64; i++) {
+        results.emplace_back(task());
     }
 
     for (auto& result : results) {
@@ -225,6 +216,7 @@ void tests::test_async_condition_variable_notify_all() {
     }
 
     cv.notify_all();
+
     for (auto& result : results) {
         assert_equal(result.status(), result_status::value);
     }
