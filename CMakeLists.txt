@@ -29,6 +29,7 @@ set(concurrencpp_sources
         source/results/promises.cpp
         source/runtime/runtime.cpp
         source/threads/async_lock.cpp
+        source/threads/async_condition_variable.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
         source/timers/timer_queue.cpp)
@@ -71,12 +72,14 @@ set(concurrencpp_headers
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/async_lock.h
+        include/concurrencpp/threads/async_condition_variable.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/threads/cache_line.h
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
-        include/concurrencpp/utils/bind.h)
+        include/concurrencpp/utils/bind.h
+        include/concurrencpp/utils/slist.h)
 
 add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)

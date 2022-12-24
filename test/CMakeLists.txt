@@ -133,6 +133,7 @@ add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.
 
 add_test(NAME async_lock_tests PATH source/tests/async_lock_tests.cpp)
 add_test(NAME scoped_async_lock_tests PATH source/tests/scoped_async_lock_tests.cpp)
+add_test(NAME async_condition_variable_tests PATH source/tests/async_condition_variable_tests.cpp)
 
 add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
 add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)
@@ -151,3 +152,4 @@ add_test(NAME tsan_lazy_fibonacci PATH source/thread_sanitizer/lazy_fibonacci.cp
 add_test(NAME tsan_quick_sort PATH source/thread_sanitizer/quick_sort.cpp)
 add_test(NAME tsan_matrix_multiplication PATH source/thread_sanitizer/matrix_multiplication.cpp)
 add_test(NAME tsan_async_lock PATH source/thread_sanitizer/async_lock.cpp)
+add_test(NAME tsan_async_condition_variable PATH source/thread_sanitizer/async_condition_variable.cpp)
