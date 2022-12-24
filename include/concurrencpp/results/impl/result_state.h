@@ -87,7 +87,7 @@ namespace concurrencpp::details {
                 return m_producer.status();
             }
 
-            const auto wait_ctx = std::make_shared<wait_context>();
+            const auto wait_ctx = std::make_shared<std::binary_semaphore>(0);
             m_consumer.set_wait_for_context(wait_ctx);
 
             auto expected_idle_state = pc_state::idle;
@@ -101,8 +101,7 @@ namespace concurrencpp::details {
                 return m_producer.status();
             }
 
-            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-            if (wait_ctx->wait_for(static_cast<size_t>(ms + 1))) {
+            if (wait_ctx->try_acquire_for(duration + std::chrono::milliseconds(1))) {
                 assert_done();
                 return m_producer.status();
             }
