@@ -67,25 +67,17 @@
 		"os": "ubuntu-22.04",
 		"clang-version": 15,
 		"stdlib": "libc++",
-		"tsan": true,
-		"shared": false,
-		"name" : "ubuntu-22.04, clang-15, libc++, shared=false, tsan=true"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"clang-version": 15,
-		"stdlib": "libc++",
-		"tsan": true,
-		"shared": true,
-		"name" : "ubuntu-22.04, clang-15, libc++, shared=true, tsan=true"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"clang-version": 15,
-		"stdlib": "libc++",
 		"tsan": false,
 		"shared": false,
 		"name" : "ubuntu-22.04, clang-15, libc++, shared=false, tsan=false"
+	},
+	{
+		"os": "ubuntu-22.04",
+		"clang-version": 15,
+		"stdlib": "libc++",
+		"tsan": true,
+		"shared": false,
+		"name" : "ubuntu-22.04, clang-15, libc++, shared=false, tsan=true"
 	},
 	{
 		"os": "ubuntu-22.04",
@@ -163,27 +155,18 @@
 		"clang-version": 15,
 		"stdlib": "libstdc++",
 		"libstdcxx-version": 12,
-		"tsan": true,
-		"shared": false,
-		"name" : "ubuntu-22.04, clang-15, libstdc++12, shared=false, tsan=true"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"clang-version": 15,
-		"stdlib": "libstdc++",
-		"libstdcxx-version": 12,
-		"tsan": true,
-		"shared": true,
-		"name" : "ubuntu-22.04, clang-15, libstdc++12, shared=true, tsan=true"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"clang-version": 15,
-		"stdlib": "libstdc++",
-		"libstdcxx-version": 12,
 		"tsan": false,
 		"shared": false,
 		"name" : "ubuntu-22.04, clang-15, libstdcxx-12, shared=false, tsan=false"
+	},
+	{
+		"os": "ubuntu-22.04",
+		"clang-version": 15,
+		"stdlib": "libstdc++",
+		"libstdcxx-version": 12,
+		"tsan": true,
+		"shared": false,
+		"name" : "ubuntu-22.04, clang-15, libstdc++12, shared=false, tsan=true"
 	},
 	{
 		"os": "ubuntu-22.04",
