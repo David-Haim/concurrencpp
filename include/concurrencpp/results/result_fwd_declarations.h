@@ -47,8 +47,6 @@ namespace concurrencpp::details {
     template<class type>
     class lazy_result_state;
 
-    struct executor_bulk_tag {};
-
     class when_result_helper;
     struct shared_result_helper;
 }  // namespace concurrencpp::details

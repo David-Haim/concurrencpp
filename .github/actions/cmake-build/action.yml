@@ -1,0 +1,45 @@
+name: CMake Build
+description: Build CMake Project
+
+inputs:
+  cmake:
+    description: Path to CMake executable
+    required: True
+  ninja:
+    description: Path to ninja executable
+    required: True
+  source:
+    description: Path to source directory
+    required: True
+  build:
+    description: Path to build directory
+    required: True
+  jobs:
+    description: Number of jobs to use
+    default: 1
+  config:
+    description: CMake configuration to build
+    default: RelWithDebInfo
+  args:
+    description: Extra arguments to pass CMake
+
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        function Invoke-NativeCommand {
+          $command = $args[0]
+          $arguments = $args[1..($args.Length)]
+          & $command @arguments
+          if ($LastExitCode -ne 0) {
+            Write-Error "Exit code $LastExitCode while running $command $arguments"
+          }
+        }
+        if ($IsWindows) {
+          $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -Property InstallationPath
+          Import-Module (Get-ChildItem $vsPath -Recurse -File -Filter Microsoft.VisualStudio.DevShell.dll).FullName
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64'
+        }
+        Invoke-NativeCommand '${{ inputs.cmake }}' '-S${{ inputs.source }}' '-B${{ inputs.build }}' '-GNinja Multi-Config' '-DCMAKE_MAKE_PROGRAM=${{ inputs.ninja }}' '-DCMAKE_INSTALL_PREFIX=${{ inputs.build }}/prefix' ${{ inputs.args }}
+        Invoke-NativeCommand '${{ inputs.cmake }}' --build '${{ inputs.build }}' --config '${{ inputs.config }}' -j${{ inputs.jobs }} '--' -k0
