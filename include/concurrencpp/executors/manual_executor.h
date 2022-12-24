@@ -5,7 +5,9 @@
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
+#include <mutex>
 #include <chrono>
+#include <condition_variable>
 
 namespace concurrencpp {
     class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public derivable_executor<manual_executor> {
