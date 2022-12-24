@@ -52,16 +52,6 @@ namespace concurrencpp::details {
             std::shared_ptr<std::binary_semaphore> wait_for_ctx;
             std::shared_ptr<when_any_context> when_any_ctx;
 
-            template<class type, class... argument_type>
-            static void build(type& o, argument_type&&... arguments) noexcept {
-                new (std::addressof(o)) type(std::forward<argument_type>(arguments)...);
-            }
-
-            template<class type>
-            static void destroy(type& o) noexcept {
-                o.~type();
-            }
-
             storage() noexcept {}
             ~storage() noexcept {}
         };

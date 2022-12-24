@@ -7,6 +7,20 @@ using concurrencpp::details::consumer_context;
 using concurrencpp::details::await_via_functor;
 using concurrencpp::details::result_state_base;
 
+namespace concurrencpp::details {
+    namespace {
+        template<class type, class... argument_type>
+        void build(type& o, argument_type&&... arguments) noexcept {
+            new (std::addressof(o)) type(std::forward<argument_type>(arguments)...);
+        }
+
+        template<class type>
+        void destroy(type& o) noexcept {
+            o.~type();
+        }
+    }
+}
+
 /*
  * await_via_functor
  */
@@ -143,15 +157,15 @@ void consumer_context::destroy() noexcept {
         }
 
         case consumer_status::await: {
-            return storage::destroy(m_storage.caller_handle);
+            return details::destroy(m_storage.caller_handle);
         }
 
         case consumer_status::wait_for: {
-            return storage::destroy(m_storage.wait_for_ctx);
+            return details::destroy(m_storage.wait_for_ctx);
         }
 
         case consumer_status::when_any: {
-            return storage::destroy(m_storage.when_any_ctx);
+            return details::destroy(m_storage.when_any_ctx);
         }
     }
 
@@ -166,19 +180,19 @@ void consumer_context::clear() noexcept {
 void consumer_context::set_await_handle(coroutine_handle<void> caller_handle) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::await;
-    storage::build(m_storage.caller_handle, caller_handle);
+    details::build(m_storage.caller_handle, caller_handle);
 }
 
 void consumer_context::set_wait_for_context(const std::shared_ptr<std::binary_semaphore>& wait_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::wait_for;
-    storage::build(m_storage.wait_for_ctx, wait_ctx);
+    details::build(m_storage.wait_for_ctx, wait_ctx);
 }
 
 void consumer_context::set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
-    storage::build(m_storage.when_any_ctx, when_any_ctx);
+    details::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
 void consumer_context::resume_consumer(result_state_base& self) const {

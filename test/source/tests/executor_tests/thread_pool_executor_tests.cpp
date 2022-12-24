@@ -406,7 +406,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
     {
         object_observer observer;
         const size_t worker_count = 6;
-        auto wc = std::make_shared<std::binary_semaphore>(0);
+        auto wc = std::make_shared<std::counting_semaphore<>>(0);
         auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
 
@@ -417,7 +417,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
             });
         }
 
-        wc->release();
+        wc->release(worker_count);
 
         observer.wait_execution_count(worker_count, std::chrono::seconds(6));
 
@@ -463,7 +463,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
         const size_t task_count = 4'024;
         const size_t worker_count = 4;
         object_observer observer;
-        auto wc = std::make_shared<std::binary_semaphore>(0);
+        auto wc = std::make_shared<std::counting_semaphore<>>(0);
         auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
 
@@ -478,7 +478,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
             executor->post(observer.get_testing_stub());
         }
 
-        wc->release();
+        wc->release(worker_count);
 
         observer.wait_execution_count(task_count, std::chrono::minutes(1));
         observer.wait_destruction_count(task_count, std::chrono::minutes(1));
