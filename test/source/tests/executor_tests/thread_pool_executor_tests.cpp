@@ -406,18 +406,18 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
     {
         object_observer observer;
         const size_t worker_count = 6;
-        auto wc = std::make_shared<concurrencpp::details::wait_context>();
+        auto wc = std::make_shared<std::counting_semaphore<>>(0);
         auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
 
         for (size_t i = 0; i < worker_count; i++) {
             executor->post([wc, stub = observer.get_testing_stub()]() mutable {
-                wc->wait();  // make sure this thread is not idle by imitating endless work
+                wc->acquire();  // make sure this thread is not idle by imitating endless work
                 stub();
             });
         }
 
-        wc->notify();
+        wc->release(worker_count);
 
         observer.wait_execution_count(worker_count, std::chrono::seconds(6));
 
@@ -434,12 +434,12 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
     // self
     {
         object_observer observer;
-        auto wc = std::make_shared<concurrencpp::details::wait_context>();
+        auto wc = std::make_shared<std::binary_semaphore>(0);
         auto executor = std::make_shared<thread_pool_executor>("threadpool", 2, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
 
         executor->post([wc]() {
-            wc->wait();
+            wc->acquire();
         });
 
         constexpr size_t task_count = 1'024;
@@ -455,7 +455,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
 
         assert_equal(observer.get_execution_map().size(), static_cast<size_t>(1));
 
-        wc->notify();
+        wc->release();
     }
 
     // case 3 : if (2) is false, choose a worker using round robin
@@ -463,13 +463,13 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
         const size_t task_count = 4'024;
         const size_t worker_count = 4;
         object_observer observer;
-        auto wc = std::make_shared<concurrencpp::details::wait_context>();
+        auto wc = std::make_shared<std::counting_semaphore<>>(0);
         auto executor = std::make_shared<thread_pool_executor>("threadpool", worker_count, std::chrono::seconds(10));
         executor_shutdowner shutdown(executor);
 
         for (size_t i = 0; i < worker_count; i++) {
             executor->post([wc]() {
-                wc->wait();
+                wc->acquire();
             });
         }
 
@@ -478,7 +478,7 @@ void concurrencpp::tests::test_thread_pool_executor_enqueue_algorithm() {
             executor->post(observer.get_testing_stub());
         }
 
-        wc->notify();
+        wc->release(worker_count);
 
         observer.wait_execution_count(task_count, std::chrono::minutes(1));
         observer.wait_destruction_count(task_count, std::chrono::minutes(1));

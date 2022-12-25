@@ -4,8 +4,8 @@
 #include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/results/result_fwd_declarations.h"
 
-#include <mutex>
-#include <condition_variable>
+#include <atomic>
+#include <semaphore>
 
 namespace concurrencpp::details {
     class CRCPP_API await_via_functor {
@@ -20,20 +20,6 @@ namespace concurrencpp::details {
         ~await_via_functor() noexcept;
 
         void operator()() noexcept;
-    };
-
-    class CRCPP_API wait_context {
-
-       private:
-        std::mutex m_lock;
-        std::condition_variable m_condition;
-        bool m_ready = false;
-
-       public:
-        void wait();
-        bool wait_for(size_t milliseconds);
-
-        void notify();
     };
 
     class CRCPP_API when_any_context {
@@ -63,18 +49,8 @@ namespace concurrencpp::details {
 
         union storage {
             coroutine_handle<void> caller_handle;
-            std::shared_ptr<wait_context> wait_for_ctx;
+            std::shared_ptr<std::binary_semaphore> wait_for_ctx;
             std::shared_ptr<when_any_context> when_any_ctx;
-
-            template<class type, class... argument_type>
-            static void build(type& o, argument_type&&... arguments) noexcept {
-                new (std::addressof(o)) type(std::forward<argument_type>(arguments)...);
-            }
-
-            template<class type>
-            static void destroy(type& o) noexcept {
-                o.~type();
-            }
 
             storage() noexcept {}
             ~storage() noexcept {}
@@ -93,7 +69,7 @@ namespace concurrencpp::details {
         void resume_consumer(result_state_base& self) const;
 
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
-        void set_wait_for_context(const std::shared_ptr<wait_context>& wait_ctx) noexcept;
+        void set_wait_for_context(const std::shared_ptr<std::binary_semaphore>& wait_ctx) noexcept;
         void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
