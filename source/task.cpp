@@ -138,7 +138,7 @@ void task::clear() noexcept {
     }
 
     auto destroy_fn = vtable->destroy_fn;
-    if (vtable::trivially_destructable(destroy_fn)) {
+    if (vtable::trivially_destructible(destroy_fn)) {
         return;
     }
 

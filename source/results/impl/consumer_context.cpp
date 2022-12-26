@@ -18,8 +18,8 @@ namespace concurrencpp::details {
         void destroy(type& o) noexcept {
             o.~type();
         }
-    }
-}
+    }  // namespace
+}  // namespace concurrencpp::details
 
 /*
  * await_via_functor

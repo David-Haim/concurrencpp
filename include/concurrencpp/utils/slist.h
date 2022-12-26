@@ -44,7 +44,7 @@ namespace concurrencpp::details {
             m_tail->next = &node;
             m_tail = &node;
         }
-      
+
         node_type* pop_front() noexcept {
             assert_state();
             const auto node = m_head;

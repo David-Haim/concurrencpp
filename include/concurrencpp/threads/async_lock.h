@@ -17,7 +17,7 @@ namespace concurrencpp::details {
         std::unique_lock<std::mutex> m_lock;
         coroutine_handle<void> m_resume_handle;
 
-        public:
+       public:
         async_lock_awaiter* next = nullptr;
 
        public:

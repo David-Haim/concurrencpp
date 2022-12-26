@@ -34,7 +34,7 @@ namespace concurrencpp::details {
             return move_fn == nullptr;
         }
 
-        static constexpr bool trivially_destructable(decltype(destroy_fn) destroy_fn) noexcept {
+        static constexpr bool trivially_destructible(decltype(destroy_fn) destroy_fn) noexcept {
             return destroy_fn == nullptr;
         }
     };

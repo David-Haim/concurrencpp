@@ -65,9 +65,9 @@ namespace concurrencpp {
         lazy_result<void> await(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock);
 
         template<class predicate_type>
-        lazy_result<void> await(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock, predicate_type pred) {            
+        lazy_result<void> await(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock, predicate_type pred) {
             static_assert(
-                std::is_invocable_r_v<bool,predicate_type>,
+                std::is_invocable_r_v<bool, predicate_type>,
                 "concurrencpp::async_condition_variable::await - given predicate isn't invocable with no arguments, or does not return a type which is or convertible to bool.");
 
             verify_await_params(resume_executor, lock);

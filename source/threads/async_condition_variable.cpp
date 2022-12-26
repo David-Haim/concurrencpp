@@ -13,8 +13,7 @@ using concurrencpp::details::cv_awaiter;
     cv_awaiter
 */
 
-cv_awaiter::cv_awaiter(async_condition_variable& parent, scoped_async_lock& lock) noexcept :
-    m_parent(parent), m_lock(lock) {}
+cv_awaiter::cv_awaiter(async_condition_variable& parent, scoped_async_lock& lock) noexcept : m_parent(parent), m_lock(lock) {}
 
 void cv_awaiter::await_suspend(details::coroutine_handle<void> caller_handle) {
     m_caller_handle = caller_handle;
