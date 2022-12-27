@@ -20,12 +20,15 @@ namespace concurrencpp {
         std::list<details::thread> m_last_retired;
         bool m_abort;
         std::atomic_bool m_atomic_abort;
+        std::function<void(const char* thread_name)> m_thread_started_callback;
+        std::function<void(const char* thread_name)> m_thread_terminated_callback;
 
         void enqueue_impl(std::unique_lock<std::mutex>& lock, task& task);
         void retire_worker(std::list<details::thread>::iterator it);
 
        public:
-        thread_executor();
+        thread_executor(const std::function<void(const char* thread_name)>& thread_started_callback = nullptr,
+                        const std::function<void(const char* thread_name)>& thread_terminated_callback = nullptr);
         ~thread_executor() noexcept;
 
         void enqueue(task task) override;

@@ -143,8 +143,12 @@ namespace concurrencpp::details {
     }  // namespace
 }  // namespace concurrencpp::details
 
-timer_queue::timer_queue(milliseconds max_waiting_time) :
-    m_atomic_abort(false), m_abort(false), m_idle(true), m_max_waiting_time(max_waiting_time) {}
+timer_queue::timer_queue(milliseconds max_waiting_time,
+                         const std::function<void(const char* thread_name)>& thread_started_callback,
+                         const std::function<void(const char* thread_name)>& thread_terminated_callback) :
+    m_thread_started_callback(thread_started_callback),
+    m_thread_terminated_callback(thread_terminated_callback), m_atomic_abort(false), m_abort(false), m_idle(true),
+    m_max_waiting_time(max_waiting_time) {}
 
 timer_queue::~timer_queue() noexcept {
     shutdown();
@@ -253,9 +257,13 @@ concurrencpp::details::thread timer_queue::ensure_worker_thread(std::unique_lock
 
     auto old_worker = std::move(m_worker);
 
-    m_worker = details::thread("concurrencpp::timer_queue worker", [this] {
-        work_loop();
-    });
+    m_worker = details::thread(
+        "concurrencpp::timer_queue worker",
+        [this] {
+            work_loop();
+        },
+        m_thread_started_callback,
+        m_thread_terminated_callback);
 
     m_idle = false;
     return old_worker;

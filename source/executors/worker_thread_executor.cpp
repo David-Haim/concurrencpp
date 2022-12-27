@@ -7,12 +7,17 @@ namespace concurrencpp::details {
 
 using concurrencpp::worker_thread_executor;
 
-worker_thread_executor::worker_thread_executor() :
+worker_thread_executor::worker_thread_executor(const std::function<void(const char* thread_name)>& thread_started_callback,
+                                               const std::function<void(const char* thread_name)>& thread_terminated_callback) :
     derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
     m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false), m_abort(false) {
-    m_thread = details::thread(details::make_executor_worker_name(name), [this] {
-        work_loop();
-    });
+    m_thread = details::thread(
+        details::make_executor_worker_name(name),
+        [this] {
+            work_loop();
+        },
+        thread_started_callback,
+        thread_terminated_callback);
 }
 
 bool worker_thread_executor::drain_queue_impl() {
