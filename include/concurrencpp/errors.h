@@ -28,15 +28,19 @@ namespace concurrencpp::errors {
         using empty_object::empty_object;
     };
 
-    struct broken_task : public std::runtime_error {
+    struct interrupted_task : public std::runtime_error {
         using runtime_error::runtime_error;
+    };
+
+    struct broken_task : public interrupted_task {
+        using interrupted_task::interrupted_task;
+    };
+
+    struct runtime_shutdown : public interrupted_task {
+        using interrupted_task::interrupted_task;
     };
 
     struct result_already_retrieved : public std::runtime_error {
-        using runtime_error::runtime_error;
-    };
-
-    struct runtime_shutdown : public std::runtime_error {
         using runtime_error::runtime_error;
     };
 }  // namespace concurrencpp::errors
