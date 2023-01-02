@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_ASSERTIONS_H
 #define CONCURRENCPP_ASSERTIONS_H
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
