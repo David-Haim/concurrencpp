@@ -1,0 +1,60 @@
+name: Fetch CMake
+description: Puts CMake's path into the output
+
+inputs:
+  version:
+    description: Version of CMake to fetch
+    default: 3.24.2
+  base-directory:
+    description: Directory in which to install CMake
+outputs:
+  cmake:
+    description: Path of CMake executable
+    value: ${{ steps.script.outputs.cmake }}
+  ctest:
+    description: Path of CTest executable
+    value: ${{ steps.script.outputs.ctest }}
+
+runs:
+  using: composite
+  steps:
+    - id: script
+      shell: pwsh
+      working-directory: ${{ inputs.base-directory }}
+      run: |
+        $version = '${{ inputs.version }}'
+        $oldVersion = [System.Version]$version -lt [System.Version]'3.20.0'
+        $arch = 'x86_64'
+        $ext = 'tar.gz'
+        $binDir = 'bin'
+        if ($IsMacOs) {
+          if ($oldVersion) {
+            $os = 'Darwin'
+          } else {
+            $os = 'macos'
+            $arch = 'universal'
+          }
+          $binDir = 'CMake.app/Contents/bin'
+        } elseif ($IsLinux) {
+          if ($oldVersion) {
+            $os = 'Linux'
+          } else {
+            $os = 'linux'
+          }
+        } elseif ($IsWindows) {
+          if ($oldVersion) {
+            $os = 'win64'
+            $arch = 'x64'
+          } else {
+            $os = 'windows'
+          }
+          $ext = 'zip'
+        }
+        $base = "cmake-${version}-${os}-${arch}"
+        $uri = "https://github.com/Kitware/CMake/releases/download/v${version}/${base}.${ext}"
+        $tmp = New-TemporaryFile
+        Invoke-WebRequest -Uri $uri -OutFile $tmp
+        cmake -E tar xf $tmp
+        $tmp | Remove-Item
+        Add-Content "${env:GITHUB_OUTPUT}" "cmake=$(Join-Path (Get-Location) $base $binDir cmake)"
+        Add-Content "${env:GITHUB_OUTPUT}" "ctest=$(Join-Path (Get-Location) $base $binDir ctest)"

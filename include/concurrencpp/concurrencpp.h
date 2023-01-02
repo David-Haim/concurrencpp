@@ -18,5 +18,6 @@
 #include "concurrencpp/results/generator.h"
 #include "concurrencpp/executors/executor_all.h"
 #include "concurrencpp/threads/async_lock.h"
+#include "concurrencpp/threads/async_condition_variable.h"
 
 #endif

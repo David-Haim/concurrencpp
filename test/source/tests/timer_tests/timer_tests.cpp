@@ -409,17 +409,17 @@ void concurrencpp::tests::test_timer_cancel_before_due_time() {
 
 void concurrencpp::tests::test_timer_cancel_after_due_time_before_beat() {
     object_observer observer;
-    concurrencpp::details::wait_context wc;
+    std::binary_semaphore wc(0);
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>(120s);
     auto ex = std::make_shared<concurrencpp::inline_executor>();
 
     auto timer = timer_queue->make_timer(100ms, 200ms, ex, [&wc, stub = observer.get_testing_stub()]() mutable {
         stub();
-        wc.notify();
+        wc.release();
     });
 
     // will be released after the first beat.
-    wc.wait();
+    wc.acquire();
     timer.cancel();
 
     std::this_thread::sleep_for(2s);
@@ -431,7 +431,7 @@ void concurrencpp::tests::test_timer_cancel_after_due_time_before_beat() {
 
 void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
     object_observer observer;
-    concurrencpp::details::wait_context wc;
+    std::binary_semaphore wc(0);
     auto timer_queue = std::make_shared<concurrencpp::timer_queue>(120s);
     auto ex = std::make_shared<concurrencpp::inline_executor>();
     constexpr size_t max_invocation_count = 4;
@@ -442,12 +442,12 @@ void concurrencpp::tests::test_timer_cancel_after_due_time_after_beat() {
 
         const auto c = invocation_counter.fetch_add(1, std::memory_order_relaxed) + 1;
         if (c == max_invocation_count) {
-            wc.notify();
+            wc.release();
         }
     });
 
     // will be released after the first beat.
-    wc.wait();
+    wc.acquire();
     timer.cancel();
 
     std::this_thread::sleep_for(2s);

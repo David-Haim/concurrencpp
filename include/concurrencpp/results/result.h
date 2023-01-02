@@ -103,33 +103,37 @@ namespace concurrencpp {
                       "concurrencpp::result_promise<type> - <<type>> should be now-throw-move constructable or void.");
 
        private:
-        details::producer_result_state_ptr<type> m_state;
-        bool m_result_retrieved;
+        details::producer_result_state_ptr<type> m_producer_state;
+        details::consumer_result_state_ptr<type> m_consumer_state;
 
         void throw_if_empty(const char* message) const {
-            if (!static_cast<bool>(m_state)) {
+            if (!static_cast<bool>(m_producer_state)) {
                 throw errors::empty_result_promise(message);
             }
         }
 
         void break_task_if_needed() noexcept {
-            if (!static_cast<bool>(m_state)) {
+            if (!static_cast<bool>(m_producer_state)) {
                 return;
             }
 
-            if (!m_result_retrieved) {  // no result to break.
+            if (static_cast<bool>(m_consumer_state)) {  // no result to break.
                 return;
             }
 
             auto exception_ptr = std::make_exception_ptr(errors::broken_task(details::consts::k_broken_task_exception_error_msg));
-            m_state->set_exception(exception_ptr);
-            m_state.reset();
+            m_producer_state->set_exception(exception_ptr);
+            m_producer_state.reset();
         }
 
        public:
-        result_promise() : m_state(new details::result_state<type>()), m_result_retrieved(false) {}
+        result_promise() {
+            m_producer_state.reset(new details::result_state<type>());
+            m_consumer_state.reset(m_producer_state.get());
+        }
 
-        result_promise(result_promise&& rhs) noexcept : m_state(std::move(rhs.m_state)), m_result_retrieved(rhs.m_result_retrieved) {}
+        result_promise(result_promise&& rhs) noexcept :
+            m_producer_state(std::move(rhs.m_producer_state)), m_consumer_state(std::move(rhs.m_consumer_state)) {}
 
         ~result_promise() noexcept {
             break_task_if_needed();
@@ -138,8 +142,8 @@ namespace concurrencpp {
         result_promise& operator=(result_promise&& rhs) noexcept {
             if (this != &rhs) {
                 break_task_if_needed();
-                m_state = std::move(rhs.m_state);
-                m_result_retrieved = rhs.m_result_retrieved;
+                m_producer_state = std::move(rhs.m_producer_state);
+                m_consumer_state = std::move(rhs.m_consumer_state);
             }
 
             return *this;
@@ -149,7 +153,7 @@ namespace concurrencpp {
         result_promise& operator=(const result_promise&) = delete;
 
         explicit operator bool() const noexcept {
-            return static_cast<bool>(m_state);
+            return static_cast<bool>(m_producer_state);
         }
 
         template<class... argument_types>
@@ -159,8 +163,8 @@ namespace concurrencpp {
 
             throw_if_empty(details::consts::k_result_promise_set_result_error_msg);
 
-            m_state->set_result(std::forward<argument_types>(arguments)...);
-            m_state.reset();  // publishes the result
+            m_producer_state->set_result(std::forward<argument_types>(arguments)...);
+            m_producer_state.reset();  // publishes the result
         }
 
         void set_exception(std::exception_ptr exception_ptr) {
@@ -170,8 +174,8 @@ namespace concurrencpp {
                 throw std::invalid_argument(details::consts::k_result_promise_set_exception_null_exception_error_msg);
             }
 
-            m_state->set_exception(exception_ptr);
-            m_state.reset();  // publishes the result
+            m_producer_state->set_exception(exception_ptr);
+            m_producer_state.reset();  // publishes the result
         }
 
         template<class callable_type, class... argument_types>
@@ -183,19 +187,19 @@ namespace concurrencpp {
                 "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
 
             throw_if_empty(details::consts::k_result_promise_set_from_function_error_msg);
-            m_state->from_callable(details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));
-            m_state.reset();  // publishes the result
+            m_producer_state->from_callable(
+                details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));
+            m_producer_state.reset();  // publishes the result
         }
 
         result<type> get_result() {
             throw_if_empty(details::consts::k_result_get_error_msg);
 
-            if (m_result_retrieved) {
+            if (!static_cast<bool>(m_consumer_state)) {
                 throw errors::result_already_retrieved(details::consts::k_result_promise_get_result_already_retrieved_error_msg);
             }
 
-            m_result_retrieved = true;
-            return result<type>(m_state.get());
+            return result<type>(std::move(m_consumer_state));
         }
     };
 }  // namespace concurrencpp
