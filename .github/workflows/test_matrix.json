@@ -178,6 +178,30 @@
 		"name" : "ubuntu-22.04, clang-15, libstdcxx-12, shared=true, tsan=false"
 	},
 	{
+		"os": "ubuntu-22.04",
+		"gcc-version": 13,
+		"stdlib": "libc++",
+		"tsan": false,
+		"shared": false,
+		"name" : "ubuntu-22.04, gcc-13, libc++, shared=false, tsan=false"
+	},
+	{
+		"os": "ubuntu-22.04",
+		"gcc-version": 13,
+		"stdlib": "libc++",
+		"tsan": false,
+		"shared": true,
+		"name" : "ubuntu-22.04, gcc-13, libc++, shared=true, tsan=false"
+	},
+	{
+		"os": "ubuntu-22.04",
+		"gcc-version": 13,
+		"stdlib": "libc++",
+		"tsan": true,
+		"shared": false,
+		"name" : "ubuntu-22.04, gcc-13, libc++, shared=false, tsan=true"
+	},
+	{
 		"os": "windows-2019",
 		"msvc-version": 2019,
 		"stdlib": "msvc-stl",

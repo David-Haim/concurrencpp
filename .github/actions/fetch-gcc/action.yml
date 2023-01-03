@@ -1,0 +1,63 @@
+name: Fetch GCC
+description: Puts gcc's path into the output
+
+inputs:
+  version:
+    description: Version of GCC to fetch
+    required: true
+  base-directory:
+    description: Directory in which to install gcc
+outputs:
+  gcc:
+    description: Path of gcc executable
+    value: ${{ steps.script.outputs.gcc }}
+  gplusplus:
+    description: Path of g++ executable
+    value: ${{ steps.script.outputs.gplusplus }}
+
+runs:
+  using: composite
+  steps:
+    - id: script
+      shell: pwsh
+      working-directory: ${{ inputs.base-directory }}
+      run: |
+        $version = ${{ inputs.version }}
+        function Invoke-NativeCommand {
+          $command = $args[0]
+          $arguments = $args[1..($args.Length)]
+          & $command @arguments
+          if ($LastExitCode -ne 0) {
+            Write-Error "Exit code $LastExitCode while running $command $arguments"
+          }
+        }
+        if ($IsMacOs) {
+        } elseif ($IsLinux) {
+          # TODO $tmp = New-TemporaryFile
+          # TODO Invoke-WebRequest -Uri 'https://apt.llvm.org/llvm-snapshot.gpg.key' -OutFile $tmp
+          # TODO Invoke-NativeCommand sudo apt-key add $tmp
+          # TODO $tmp | Remove-Item
+          # TODO Invoke-NativeCommand sudo add-apt-repository -y "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${version} main"
+          # TODO Invoke-NativeCommand sudo apt-get update
+          # TODO $pkgs = @("gcc-${version}", "libc++-${version}-dev", "libc++abi-${version}-dev")
+          # TODO if (${version} -eq 12) {
+          # TODO   $pkgs += "libunwind-${version}-dev"
+          # TODO }
+          # TODO Invoke-NativeCommand sudo apt-get install -y $pkgs
+          Add-Content "${env:GITHUB_OUTPUT}" "gcc=$((Get-Command gcc-${version}).Source)"
+          Add-Content "${env:GITHUB_OUTPUT}" "gplusplus=$((Get-Command g++-${version}).Source)"
+        } elseif ($IsWindows) {
+          # TODO $release = Invoke-WebRequest -Uri 'https://api.github.com/repos/llvm/llvm-project/releases' -UseBasicParsing |
+          # TODO   ConvertFrom-Json |
+          # TODO   Select-Object -Property @{Name = 'version'; Expression = {[System.Management.Automation.SemanticVersion]$_.tag_name.Substring('llvmorg-'.Length)}},assets |
+          # TODO   Where-Object {$_.version.Major -eq $version -and ($_.assets | Where-Object {$_.name -like "LLVM-*-win64.exe"})} |
+          # TODO   Sort-Object |
+          # TODO   Select-Object -First 1
+          # TODO $uri = ($release.assets | Where-Object {$_.name -eq "LLVM-$($release.version)-win64.exe"}).browser_download_url
+          # TODO $tmp = New-TemporaryFile | Rename-Item -NewName { $_ -replace 'tmp$', 'exe' } –PassThru
+          # TODO Invoke-WebRequest -Uri $uri -OutFile $tmp
+          # TODO Start-Process "$tmp" -Wait -NoNewWindow -ArgumentList /S,"/D=$(Join-Path (Get-Location) LLVM)"
+          # TODO $tmp | Remove-Item
+          Add-Content "${env:GITHUB_OUTPUT}" "gcc=$(Join-Path (Get-Location) LLVM bin gcc)"
+          Add-Content "${env:GITHUB_OUTPUT}" "gplusplus=$(Join-Path (Get-Location) LLVM bin g++)"
+        }

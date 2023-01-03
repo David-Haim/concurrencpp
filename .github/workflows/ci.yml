@@ -80,6 +80,13 @@ jobs:
           base-directory: build/tools
         if: ${{ matrix.clang-version }}
 
+      - uses: ./.github/actions/fetch-gcc
+        id: gcc
+        with:
+          version: ${{ matrix.gcc-version }}
+          base-directory: build/tools
+        if: ${{ matrix.gcc-version }}
+
       - name: Build Examples
         uses: ./.github/actions/cmake-build
         continue-on-error: ${{ matrix.os == 'macos-11' }}
