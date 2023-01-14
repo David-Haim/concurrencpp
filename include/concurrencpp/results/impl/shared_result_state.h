@@ -24,10 +24,8 @@ namespace concurrencpp::details {
     class CRCPP_API shared_result_state_base {
 
        protected:
-        static constexpr std::ptrdiff_t k_max_waiters = std::numeric_limits<std::ptrdiff_t>::max();
-
         std::atomic<shared_await_context*> m_awaiters {nullptr};
-        std::counting_semaphore<k_max_waiters> m_semaphore {0};
+        std::counting_semaphore<> m_semaphore {0};
 
         static shared_await_context* result_ready_constant() noexcept;
         bool result_ready() const noexcept;

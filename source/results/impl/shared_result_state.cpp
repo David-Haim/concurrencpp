@@ -6,7 +6,7 @@ concurrencpp::details::shared_await_context* shared_result_state_base::result_re
     return reinterpret_cast<shared_await_context*>(-1);
 }
 
-bool concurrencpp::details::shared_result_state_base::result_ready() const noexcept {
+bool shared_result_state_base::result_ready() const noexcept {
     return m_awaiters.load(std::memory_order_acquire) == result_ready_constant();
 }
 
@@ -51,5 +51,5 @@ void shared_result_state_base::on_result_finished() noexcept {
        that we'll have more than max(ptrdiff_t) / 2 waiters.
        on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
     */
-    m_semaphore.release(k_max_waiters / 2);
+    m_semaphore.release(m_semaphore.max() / 2);
 }
