@@ -24,12 +24,12 @@ namespace concurrencpp::details {
     class CRCPP_API shared_result_state_base {
 
        protected:
-        static constexpr shared_await_context* k_result_ready = reinterpret_cast<shared_await_context*>(-1);
         static constexpr std::ptrdiff_t k_max_waiters = std::numeric_limits<std::ptrdiff_t>::max();
 
         std::atomic<shared_await_context*> m_awaiters {nullptr};
         std::counting_semaphore<k_max_waiters> m_semaphore {0};
 
+        static shared_await_context* result_ready_constant() noexcept;
         bool result_ready() const noexcept;
 
        public:
@@ -81,7 +81,8 @@ namespace concurrencpp::details {
                 m_semaphore.try_acquire_until(timeout_time);
             }
 
-            return status();
+            assert(static_cast<bool>(m_result_state));
+            return m_result_state->status();
         }
 
         std::add_lvalue_reference_t<type> get() {

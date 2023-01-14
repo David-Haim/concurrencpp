@@ -2,14 +2,18 @@
 
 using concurrencpp::details::shared_result_state_base;
 
+concurrencpp::details::shared_await_context* shared_result_state_base::result_ready_constant() noexcept {
+    return reinterpret_cast<shared_await_context*>(-1);
+}
+
 bool concurrencpp::details::shared_result_state_base::result_ready() const noexcept {
-    return m_awaiters.load(std::memory_order_acquire) == k_result_ready;
+    return m_awaiters.load(std::memory_order_acquire) == result_ready_constant();
 }
 
 bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
     while (true) {
         auto awaiter_before = m_awaiters.load(std::memory_order_acquire);
-        if (awaiter_before == k_result_ready) {
+        if (awaiter_before == result_ready_constant()) {
             return false;
         }
 
@@ -22,6 +26,7 @@ bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
 }
 
 void shared_result_state_base::on_result_finished() noexcept {
+    auto k_result_ready = result_ready_constant();
     auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
 
     shared_await_context* current = awaiters;
