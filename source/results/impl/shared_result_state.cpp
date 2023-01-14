@@ -2,90 +2,42 @@
 
 using concurrencpp::details::shared_result_state_base;
 
-void shared_result_state_base::await_impl(std::unique_lock<std::mutex>& lock, shared_await_context& awaiter) noexcept {
-    assert(lock.owns_lock());
-
-    if (m_awaiters == nullptr) {
-        m_awaiters = &awaiter;
-        return;
-    }
-
-    awaiter.next = m_awaiters;
-    m_awaiters = &awaiter;
-}
-
-void shared_result_state_base::wait_impl(std::unique_lock<std::mutex>& lock) {
-    assert(lock.owns_lock());
-
-    if (!m_condition.has_value()) {
-        m_condition.emplace();
-    }
-
-    m_condition.value().wait(lock, [this] {
-        return m_ready.load(std::memory_order_relaxed);
-    });
-}
-
-bool shared_result_state_base::wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms) {
-    assert(lock.owns_lock());
-
-    if (!m_condition.has_value()) {
-        m_condition.emplace();
-    }
-
-    return m_condition.value().wait_for(lock, ms, [this] {
-        return m_ready.load(std::memory_order_relaxed);
-    });
-}
-
-void shared_result_state_base::complete_producer() {
-    shared_await_context* awaiters;
-
-    {
-        std::unique_lock<std::mutex> lock(m_lock);
-        awaiters = std::exchange(m_awaiters, nullptr);
-        m_ready.store(true, std::memory_order_release);
-
-        if (m_condition.has_value()) {
-            m_condition.value().notify_all();
-        }
-    }
-
-    while (awaiters != nullptr) {
-        const auto next = awaiters->next;
-        awaiters->caller_handle();
-        awaiters = next;
-    }
-}
-
-bool shared_result_state_base::await(shared_await_context& awaiter) {
-    if (m_ready.load(std::memory_order_acquire)) {
-        return false;
-    }
-
-    {
-        std::unique_lock<std::mutex> lock(m_lock);
-        if (m_ready.load(std::memory_order_acquire)) {
+bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
+    while (true) {
+        auto awaiter_before = m_awaiters.load(std::memory_order_acquire);
+        if (awaiter_before == k_result_ready) {
             return false;
         }
 
-        await_impl(lock, awaiter);
+        awaiter.next = awaiter_before;
+        const auto swapped = m_awaiters.compare_exchange_weak(awaiter_before, &awaiter, std::memory_order_acq_rel);
+        if (swapped) {
+            return true;
+        }
     }
-
-    return true;
 }
 
-void shared_result_state_base::wait() {
-    if (m_ready.load(std::memory_order_acquire)) {
-        return;
+void shared_result_state_base::on_result_finished() noexcept {
+    auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
+
+    shared_await_context* current = awaiters;
+    shared_await_context *prev = nullptr, *next = nullptr;
+
+    while (current != nullptr) {
+        next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
     }
 
-    {
-        std::unique_lock<std::mutex> lock(m_lock);
-        if (m_ready.load(std::memory_order_acquire)) {
-            return;
-        }
+    awaiters = prev;
 
-        wait_impl(lock);
+    while (awaiters != nullptr) {
+        assert(static_cast<bool>(awaiters->caller_handle));
+        awaiters->caller_handle();
+        awaiters = awaiters->next;
     }
+
+    // theoretically buggish, practically there's no way that we'll have more than (2^32)/2 waiters..
+    m_semaphore.release(k_max_waiters / 2);
 }
