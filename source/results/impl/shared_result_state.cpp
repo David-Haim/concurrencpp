@@ -2,6 +2,10 @@
 
 using concurrencpp::details::shared_result_state_base;
 
+bool concurrencpp::details::shared_result_state_base::result_ready() const noexcept {
+    return m_awaiters.load(std::memory_order_acquire) == k_result_ready;
+}
+
 bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
     while (true) {
         auto awaiter_before = m_awaiters.load(std::memory_order_acquire);
@@ -38,6 +42,9 @@ void shared_result_state_base::on_result_finished() noexcept {
         awaiters = awaiters->next;
     }
 
-    // theoretically buggish, practically there's no way that we'll have more than (2^32)/2 waiters..
+    /* theoretically buggish, practically there's no way 
+       that we'll have more than max(ptrdiff_t) / 2 waiters.
+       on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
+    */
     m_semaphore.release(k_max_waiters / 2);
 }

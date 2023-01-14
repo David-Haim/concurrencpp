@@ -30,6 +30,8 @@ namespace concurrencpp::details {
         std::atomic<shared_await_context*> m_awaiters {nullptr};
         std::counting_semaphore<k_max_waiters> m_semaphore {0};
 
+        bool result_ready() const noexcept;
+
        public:
         bool await(shared_await_context& awaiter) noexcept;
 
@@ -49,11 +51,11 @@ namespace concurrencpp::details {
         }
 
         ~shared_result_state() noexcept {
-            m_result_state->try_rewind_consumer();
+            m_result_state->complete_consumer();
         }
 
         result_status status() const noexcept {
-            if (m_awaiters.load(std::memory_order_acquire) != k_result_ready) {
+            if (!result_ready()) {
                 return result_status::idle;
             }
 
@@ -62,7 +64,7 @@ namespace concurrencpp::details {
         }
 
         void wait() noexcept {
-            if (status() == result_status::idle) {
+            if (!result_ready()) {
                 m_semaphore.acquire();
             }
         }
@@ -75,7 +77,7 @@ namespace concurrencpp::details {
 
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            while (status() == result_status::idle && clock::now() < timeout_time) {
+            while (!result_ready() && clock::now() < timeout_time) {
                 m_semaphore.try_acquire_until(timeout_time);
             }
 
