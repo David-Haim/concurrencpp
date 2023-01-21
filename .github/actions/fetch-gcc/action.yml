@@ -22,7 +22,7 @@ runs:
       shell: pwsh
       working-directory: ${{ inputs.base-directory }}
       run: |
-        $version = ${{ inputs.version }}
+        $version = "${{ inputs.version }}"
         function Invoke-NativeCommand {
           $command = $args[0]
           $arguments = $args[1..($args.Length)]
