@@ -71,7 +71,7 @@ jobs:
         id: libstdcxx
         with:
           version: ${{ matrix.libstdcxx-version }}
-        if: ${{ matrix.stdlib == 'libstdc++' }}
+        if: ${{ matrix.stdlib == 'libstdc++' && matrix.libstdcxx-version != 'HEAD' }}
 
       - uses: ./.github/actions/fetch-clang
         id: clang
