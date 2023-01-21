@@ -179,27 +179,27 @@
 	},
 	{
 		"os": "ubuntu-22.04",
-		"gcc-version": 13,
-		"stdlib": "libc++",
+		"gcc-version": "HEAD",
+		"stdlib": "libstdc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "ubuntu-22.04, gcc-13, libc++, shared=false, tsan=false"
+		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=false, tsan=false"
 	},
 	{
 		"os": "ubuntu-22.04",
-		"gcc-version": 13,
-		"stdlib": "libc++",
+		"gcc-version": "HEAD",
+		"stdlib": "libstdc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "ubuntu-22.04, gcc-13, libc++, shared=true, tsan=false"
+		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=true, tsan=false"
 	},
 	{
 		"os": "ubuntu-22.04",
-		"gcc-version": 13,
-		"stdlib": "libc++",
+		"gcc-version": "HEAD",
+		"stdlib": "libstdc++",
 		"tsan": true,
 		"shared": false,
-		"name" : "ubuntu-22.04, gcc-13, libc++, shared=false, tsan=true"
+		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=false, tsan=true"
 	},
 	{
 		"os": "windows-2019",
