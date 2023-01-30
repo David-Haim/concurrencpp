@@ -24,16 +24,20 @@ namespace concurrencpp::details {
     class CRCPP_API shared_result_state_base {
 
        protected:
+        std::atomic<result_status> m_status {result_status::idle};
         std::atomic<shared_await_context*> m_awaiters {nullptr};
         std::counting_semaphore<> m_semaphore {0};
 
         static shared_await_context* result_ready_constant() noexcept;
-        bool result_ready() const noexcept;
 
        public:
+        virtual ~shared_result_state_base() noexcept = default;
+
+        result_status status() const noexcept;
+
         bool await(shared_await_context& awaiter) noexcept;
 
-        void on_result_finished() noexcept;
+        virtual void on_result_finished() noexcept = 0;
     };
 
     template<class type>
@@ -49,20 +53,12 @@ namespace concurrencpp::details {
         }
 
         ~shared_result_state() noexcept {
-            m_result_state->complete_consumer();
-        }
-
-        result_status status() const noexcept {
-            if (!result_ready()) {
-                return result_status::idle;
-            }
-
             assert(static_cast<bool>(m_result_state));
-            return m_result_state->status();
+            m_result_state->try_rewind_consumer();
         }
 
         void wait() noexcept {
-            if (!result_ready()) {
+            if (status() == result_status::idle) {
                 m_semaphore.acquire();
             }
         }
@@ -75,17 +71,48 @@ namespace concurrencpp::details {
 
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            while (!result_ready() && clock::now() < timeout_time) {
+            while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
                 m_semaphore.try_acquire_until(timeout_time);
             }
 
-            assert(static_cast<bool>(m_result_state));
-            return m_result_state->status();
+            return status();
         }
 
         std::add_lvalue_reference_t<type> get() {
             assert(static_cast<bool>(m_result_state));
             return m_result_state->get_ref();
+        }
+
+        void on_result_finished() noexcept override {
+            m_status.store(m_result_state->status(), std::memory_order_relaxed);
+
+            auto k_result_ready = result_ready_constant();
+            auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
+
+            shared_await_context* current = awaiters;
+            shared_await_context *prev = nullptr, *next = nullptr;
+
+            while (current != nullptr) {
+                next = current->next;
+                current->next = prev;
+                prev = current;
+                current = next;
+            }
+
+            awaiters = prev;
+
+            while (awaiters != nullptr) {
+                assert(static_cast<bool>(awaiters->caller_handle));
+                awaiters->caller_handle();
+                awaiters = awaiters->next;
+            }
+
+            /* theoretically buggish, practically there's no way
+               that we'll have more than max(ptrdiff_t) / 2 waiters.
+               on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
+               memory will run out before enough tasks could be created to wait this synchronously
+            */
+            m_semaphore.release(m_semaphore.max() / 2);
         }
     };
 }  // namespace concurrencpp::details
