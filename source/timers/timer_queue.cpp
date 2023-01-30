@@ -2,6 +2,8 @@
 #include "concurrencpp/timers/timer_queue.h"
 
 #include "concurrencpp/coroutines/coroutine.h"
+#include "concurrencpp/executors/constants.h"
+#include "concurrencpp/executors/executor.h"
 
 #include <set>
 #include <unordered_map>
@@ -258,7 +260,7 @@ concurrencpp::details::thread timer_queue::ensure_worker_thread(std::unique_lock
     auto old_worker = std::move(m_worker);
 
     m_worker = details::thread(
-        "concurrencpp::timer_queue worker",
+        details::make_executor_worker_name(details::consts::k_timer_queue_name),
         [this] {
             work_loop();
         },

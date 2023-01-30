@@ -40,6 +40,17 @@ void concurrencpp::tests::test_runtime_constructor() {
     opts.max_background_threads = 7;
     opts.max_background_executor_waiting_time = std::chrono::milliseconds(54321);
 
+    size_t thread_started_callback_invocations_num = 0;
+    size_t thread_terminated_callback_invocations_num = 0;
+
+    opts.thread_started_callback = [&thread_started_callback_invocations_num](const char* thread_name) {
+        ++thread_started_callback_invocations_num;
+    };
+
+    opts.thread_terminated_callback = [&thread_terminated_callback_invocations_num](const char* thread_name) {
+        ++thread_terminated_callback_invocations_num;
+    };
+
     concurrencpp::runtime runtime(opts);
     auto dummy_ex = runtime.make_executor<dummy_executor>("dummy_executor", 1, 4.4f);
     assert_true(static_cast<bool>(runtime.inline_executor()));
@@ -58,6 +69,30 @@ void concurrencpp::tests::test_runtime_constructor() {
     assert_equal(runtime.thread_pool_executor()->max_worker_idle_time(), opts.max_thread_pool_executor_waiting_time);
     assert_equal(runtime.background_executor()->max_concurrency_level(), opts.max_background_threads);
     assert_equal(runtime.background_executor()->max_worker_idle_time(), opts.max_background_executor_waiting_time);
+
+    auto test_runtime_executor = [&thread_started_callback_invocations_num,
+                                  &thread_terminated_callback_invocations_num](std::shared_ptr<executor> executor) {
+        size_t start_thread_started_callback_invocations_num = thread_started_callback_invocations_num;
+        size_t start_thread_terminated_callback_invocations_num = thread_terminated_callback_invocations_num;
+
+        executor
+            ->submit([&thread_started_callback_invocations_num,
+                      &thread_terminated_callback_invocations_num,
+                      start_thread_started_callback_invocations_num,
+                      start_thread_terminated_callback_invocations_num]() {
+                assert_equal(thread_started_callback_invocations_num, start_thread_started_callback_invocations_num + 1);
+                assert_equal(thread_terminated_callback_invocations_num, start_thread_terminated_callback_invocations_num);
+            })
+            .get();
+
+        executor->shutdown();
+        assert_equal(thread_started_callback_invocations_num, start_thread_started_callback_invocations_num + 1);
+        assert_equal(thread_terminated_callback_invocations_num, start_thread_terminated_callback_invocations_num + 1);
+    };
+
+    test_runtime_executor(runtime.thread_executor());
+    test_runtime_executor(runtime.thread_pool_executor());
+    test_runtime_executor(runtime.background_executor());
 }
 
 void concurrencpp::tests::test_runtime_destructor() {

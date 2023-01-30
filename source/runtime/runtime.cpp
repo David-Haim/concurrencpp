@@ -70,7 +70,9 @@ runtime_options::runtime_options() noexcept :
 runtime::runtime() : runtime(runtime_options()) {}
 
 runtime::runtime(const runtime_options& options) {
-    m_timer_queue = std::make_shared<::concurrencpp::timer_queue>(options.max_timer_queue_waiting_time);
+    m_timer_queue = std::make_shared<::concurrencpp::timer_queue>(options.max_timer_queue_waiting_time,
+                                                                  options.thread_started_callback,
+                                                                  options.thread_terminated_callback);
 
     m_inline_executor = std::make_shared<::concurrencpp::inline_executor>();
     m_registered_executors.register_executor(m_inline_executor);

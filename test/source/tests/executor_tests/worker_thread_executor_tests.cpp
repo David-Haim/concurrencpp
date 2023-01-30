@@ -6,6 +6,7 @@
 #include "utils/test_generators.h"
 #include "utils/test_ready_result.h"
 #include "utils/executor_shutdowner.h"
+#include "utils/test_thread_callbacks.h"
 
 namespace concurrencpp::tests {
     void test_worker_thread_executor_name();
@@ -36,6 +37,8 @@ namespace concurrencpp::tests {
     void test_worker_thread_executor_bulk_submit_foreign();
     void test_worker_thread_executor_bulk_submit_inline();
     void test_worker_thread_executor_bulk_submit();
+
+    void test_worker_thread_executor_thread_callbacks();
 
     void assert_unique_execution_thread(const std::unordered_map<size_t, size_t>& execution_map) {
         assert_equal(execution_map.size(), 1);
@@ -363,6 +366,14 @@ void concurrencpp::tests::test_worker_thread_executor_bulk_submit() {
     test_worker_thread_executor_bulk_submit_inline();
 }
 
+void concurrencpp::tests::test_worker_thread_executor_thread_callbacks() {
+    test_thread_callbacks(
+        [](auto thread_started_callback, auto thread_terminated_callback) {
+            return std::make_shared<worker_thread_executor>(thread_started_callback, thread_terminated_callback);
+        },
+        concurrencpp::details::make_executor_worker_name(concurrencpp::details::consts::k_worker_thread_executor_name));
+}
+
 using namespace concurrencpp::tests;
 
 int main() {
@@ -375,6 +386,7 @@ int main() {
     tester.add_step("submit", test_worker_thread_executor_submit);
     tester.add_step("bulk_post", test_worker_thread_executor_bulk_post);
     tester.add_step("bulk_submit", test_worker_thread_executor_bulk_submit);
+    tester.add_step("thread_callbacks", test_worker_thread_executor_thread_callbacks);
 
     tester.launch_test();
     return 0;

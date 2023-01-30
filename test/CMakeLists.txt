@@ -55,7 +55,8 @@ set(test_headers
         include/utils/test_generators.h
         include/utils/throwing_executor.h
         include/utils/test_ready_result.h
-        include/utils/test_ready_lazy_result.h)
+        include/utils/test_ready_lazy_result.h
+        include/utils/test_thread_callbacks.h)
 
 add_library(concurrencpp_test_infra STATIC ${test_headers} ${test_sources})
 
