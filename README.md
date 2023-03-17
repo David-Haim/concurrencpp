@@ -1157,6 +1157,7 @@ int main() {
 ### Termination in concurrencpp
 When the runtime object gets out of scope of `main`, it iterates each stored executor and calls its `shutdown` method. Trying to access the timer-queue or any executor will throw an `errors::runtime_shutdown` exception. When an executor shuts down, it clears its inner task queues, destroying un-executed `task` objects. If a task object stores a concurrencpp-coroutine, that coroutine is resumed inline and an `errors::broken_task` exception is thrown inside it. 
 In any case where  a `runtime_shutdown` or a `broken_task` exception is thrown, applications should terminate their current code-flow gracefully as soon as possible. Those exceptions should not be ignored.
+Both `runtime_shutdown` and `broken_task` inherit from `errors::interrupted_task` base class, and this type can also be used in a `catch` clause to handle termination in a unified way.
 
 ### Resume executors
 Many concurrencpp asynchronous actions require an instance of an executor as their *resume executor*. When an asynchronous action (implemented as a coroutine) can finish synchronously, it resumes immediately in the calling thread of execution. If the asynchronous action can't finish synchronously, it will be resumed when it finishes, inside the given resume-executor. 
