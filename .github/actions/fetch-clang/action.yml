@@ -39,9 +39,12 @@ runs:
           $tmp | Remove-Item
           Invoke-NativeCommand sudo add-apt-repository -y "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${version} main"
           Invoke-NativeCommand sudo apt-get update
-          $pkgs = @("clang-${version}", "libc++-${version}-dev", "libc++abi-${version}-dev", "libclang-rt-${version}-dev")
+          $pkgs = @("clang-${version}", "libc++-${version}-dev", "libc++abi-${version}-dev")
           if (${version} -eq 12) {
             $pkgs += "libunwind-${version}-dev"
+          }
+          if (${version} -ge 14) {
+            $pkgs += "libclang-rt-${version}-dev"
           }
           Invoke-NativeCommand sudo apt-get install -y $pkgs
           Add-Content "${env:GITHUB_OUTPUT}" "clang=$((Get-Command clang-${version}).Source)"
