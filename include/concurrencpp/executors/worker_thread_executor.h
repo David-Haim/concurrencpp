@@ -3,14 +3,15 @@
 
 #include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/threads/binary_semaphore.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
 #include <deque>
 #include <mutex>
+#include <semaphore>
 
 namespace concurrencpp {
-    class alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final : public derivable_executor<worker_thread_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final :
+        public derivable_executor<worker_thread_executor> {
 
        private:
         std::deque<task> m_private_queue;
@@ -18,7 +19,7 @@ namespace concurrencpp {
         details::thread m_thread;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
         std::deque<task> m_public_queue;
-        details::binary_semaphore m_semaphore;
+        std::binary_semaphore m_semaphore;
         std::atomic_bool m_atomic_abort;
         bool m_abort;
 

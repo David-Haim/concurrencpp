@@ -12,9 +12,10 @@
         Both versions are identical in terms of functionality and the final outcome.
 */
 
+#include <cstring>
+#include <fstream>
 #include <iostream>
 #include <vector>
-#include <fstream>
 
 #include "concurrencpp/concurrencpp.h"
 

@@ -9,16 +9,18 @@
 using concurrencpp::details::thread;
 
 namespace concurrencpp::details {
-    std::uintptr_t generate_thread_id() noexcept {
-        static std::atomic_uintptr_t s_id_seed = 1;
-        return s_id_seed.fetch_add(1, std::memory_order_relaxed);
-    }
+    namespace {
+        std::uintptr_t generate_thread_id() noexcept {
+            static std::atomic_uintptr_t s_id_seed = 1;
+            return s_id_seed.fetch_add(1, std::memory_order_relaxed);
+        }
 
-    struct thread_per_thread_data {
-        const std::uintptr_t id = generate_thread_id();
-    };
+        struct thread_per_thread_data {
+            const std::uintptr_t id = generate_thread_id();
+        };
 
-    static thread_local thread_per_thread_data s_tl_thread_per_data;
+        thread_local thread_per_thread_data s_tl_thread_per_data;
+    }  // namespace
 }  // namespace concurrencpp::details
 
 std::thread::id thread::get_id() const noexcept {

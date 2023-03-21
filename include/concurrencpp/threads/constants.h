@@ -20,6 +20,12 @@ namespace concurrencpp::details::consts {
     inline const char* k_scoped_async_lock_unlock_invalid_lock_err_msg =
         "scoped_async_lock::unlock() - trying to unlock an unowned lock.";
 
+    inline const char* k_async_condition_variable_await_invalid_resume_executor_err_msg =
+        "async_condition_variable::await() - resume_executor is null.";
+
+    inline const char* k_async_condition_variable_await_lock_unlocked_err_msg =
+        "async_condition_variable::await() - lock is unlocked.";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

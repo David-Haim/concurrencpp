@@ -21,7 +21,7 @@ namespace concurrencpp::details {
 }
 
 namespace concurrencpp {
-    class timer_queue : public std::enable_shared_from_this<timer_queue> {
+    class CRCPP_API timer_queue : public std::enable_shared_from_this<timer_queue> {
 
        public:
         using timer_ptr = std::shared_ptr<details::timer_state_base>;

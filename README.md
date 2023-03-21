@@ -2,17 +2,19 @@
 
 ![Latest Release](https://img.shields.io/github/v/release/David-Haim/concurrencpp.svg) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-concurrencpp is a tasking library for C++ allowing developers to write highly concurrent applications easily and safely by using tasks, executors and coroutines.
+concurrencpp brings the power of concurrent tasks to the C++ world, allowing developers to write highly concurrent applications easily and safely by using tasks, executors and coroutines.
 By using concurrencpp applications can break down big procedures that need to be processed asynchronously into smaller tasks that run concurrently and work in a co-operative manner to achieve the wanted result.
 concurrencpp also allows applications to write parallel algorithms easily by using parallel coroutines.
 
 concurrencpp main advantages are:
-* Being able to write modern concurrency code without having to rely on low-level concurrency primitives like locks and condition variables.
-* Being able to write highly concurrent and parallel applications that scale automatically to use all hardware resources, as needed.
-* Being able to write non-blocking, synchronous-like code easily by using   C++20 coroutines and the `co_await` keyword.
+* Writing modern concurrency code using higher level tasks instead of low level primitives like `std::thread` and `std::mutex`.
+* Writing highly concurrent and parallel applications that scale automatically to use all hardware resources, as needed.
+* Achieving non-blocking, synchronous-like code easily by using C++20 coroutines and the `co_await` keyword.
 * Reducing the possibility of race conditions, data races and deadlocks by using high-level objects with built-in synchronization.
 * concurrencpp provides various types of commonly used executors with a complete coroutine integration.
 * Applications can extend the library by implementing their own provided executors.
+* concurrencpp is mature and well tested on various platforms and operating systems.
+
 ----
  ### Table of contents
 * [concurrencpp overview](#concurrencpp-overview)
@@ -33,7 +35,7 @@ concurrencpp main advantages are:
     * [Parallel Fibonacci example](#parallel-fibonacci-example)
 * [Result-promises](#result-promises)
     * [`result_promise` API](#result_promise-api)
-    * [`result_promise` example](#example-marshaling-asynchronous-result-using-result_promise)
+    * [`result_promise` example](#result_promise-example)
 * [Shared result objects](#shared-result-objects)
     * [`shared_result` API](#shared_result-api)
     * [`shared_result` example](#shared_result-example)
@@ -55,15 +57,20 @@ concurrencpp main advantages are:
     * [Delay object example](#delay-object-example)
 * [Generators](#generators)     
 	* [`generator` API](#generator-api)
+	* [`generator` example](#generator-example)
 * [Asynchronous locks](#asynchronous-locks)     
 	* [`async_lock` API](#async_lock-api)
 	* [`scoped_async_lock` API](#scoped_async_lock-api)
+	* [`async_lock` example](#async_lock-example)
+* [Asynchronous condition variable](#asynchronous-condition-variables)     
+	* [`async_condition_variable` API](#async_condition_variable-api)
+	* [`async_condition_variable` example](#async_condition_variable-example)
 * [The runtime object](#the-runtime-object)
     * [`runtime` API](#runtime-api)
     * [Creating user-defined executors](#creating-user-defined-executors)
     * [`task` objects](#task-objects)
     * [`task` API](#task-api)
-    * [Using a user-defined executor example](#example-using-a-user-defined-executor)
+    * [Writing a user-defined executor example](#example-writing-a-user-defined-executor)
 * [Supported platforms and tools](#supported-platforms-and-tools)
 * [Building, installing and testing](#building-installing-and-testing)
 
@@ -71,15 +78,15 @@ concurrencpp main advantages are:
 
 ###  concurrencpp overview
 
-concurrencpp is a task-centric library. A task is an asynchronous operation. Tasks offer a higher level of abstraction for concurrent code than traditional thread-centric approaches. Tasks can be chained together, meaning that tasks pass their asynchronous result from one to another, where the result of one task is used as if it were a parameter or an intermediate value of another ongoing task. Tasks allow applications to utilize available hardware resources better and scale much more than using raw threads, since tasks can be suspended, waiting for another task to produce a result, without blocking underlying OS-threads. Tasks bring much more productivity to developers by allowing them to focus more on business-logic and less on low-level concepts like thread management and inter-thread synchronization.
+concurrencpp is built around the concept of concurrent tasks. A task is an asynchronous operation. Tasks offer a higher level of abstraction for concurrent code than traditional thread-centric approaches. Tasks can be chained together, meaning that tasks pass their asynchronous result from one to another, where the result of one task is used as if it were a parameter or an intermediate value of another ongoing task. Tasks allow applications to utilize available hardware resources better and scale much more than using raw threads, since tasks can be suspended, awaiting another task to produce a result, without blocking underlying OS-threads. Tasks bring much more productivity to developers by allowing them to focus more on business-logic and less on low-level concepts like thread management and inter-thread synchronization.
 
-While tasks specify *what* actions have to be executed, *executors* are worker-objects that specify *where and how* to execute tasks. Executors spare applications the managing of thread pools and task queues themselves. Executors also decouple those concepts away from application code, by providing a unified API for creating and scheduling tasks.
+While tasks specify *what* actions have to be executed, *executors* are worker-objects that specify *where and how* to execute tasks. Executors spare applications the tedious management of thread pools and task queues. Executors also decouple those concepts away from application code, by providing a unified API for creating and scheduling tasks.
 
 Tasks communicate with each other using *result objects*. A result object is an asynchronous pipe that pass the asynchronous result of one task to another ongoing-task. Results can be awaited and resolved in a non-blocking manner.
 
-These three concepts - the task, the executor and the associated result are the building blocks of concurrencpp. Executors run tasks that communicate with each-other by sending results through result-objects. Tasks, executors and result objects work together symbiotically to produce concurrent code which is fast and clean.
+These three concepts - the task, the executor and the associated result are the building blocks of concurrencpp. Executors run tasks that communicate with each other by sending results through result-objects. Tasks, executors and result objects work together symbiotically to produce concurrent code which is fast and clean.
 
-concurrencpp is built around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user-defined executors. Executors are used to create and schedule tasks to run, and they might return a `result` object that can be used to marshal the asynchronous result to another task that acts as its consumer.
+concurrencpp is built around the RAII concept. In order to use tasks and executors, applications create a `runtime` instance in the beginning of the `main` function. The runtime is then used to acquire existing executors and register new user-defined executors. Executors are used to create and schedule tasks to run, and they might return a `result` object that can be used to pass the asynchronous result to another task that acts as its consumer.
 When the runtime is destroyed, it iterates over every stored executor and calls its `shutdown` method. Every executor then exits gracefully. Unscheduled tasks are destroyed, and attempts to create new tasks will throw an exception.
 
 #### *"Hello world" program using concurrencpp:*
@@ -99,7 +106,7 @@ int main() {
 }
 ```
 
-In this basic example, we created a runtime object, then we acquired the thread executor from the runtime. We used `submit` to pass a lambda as our given callable. This lambda returns `void`, hence, the executor returns a `result<void>` object that marshals the asynchronous result back to the caller.  `main` calls  `get` which blocks the main thread until the result becomes ready. If no exception was thrown, `get` returns `void`. If an exception was thrown, `get` re-throws it. Asynchronously, `thread_executor` launches a new thread of execution and runs the given lambda. It implicitly `co_return void` and the task is finished. `main` is then unblocked.
+In this basic example, we created a runtime object, then we acquired the thread executor from the runtime. We used `submit` to pass a lambda as our given callable. This lambda returns `void`, hence, the executor returns a `result<void>` object that passes the asynchronous result back to the caller.  `main` calls  `get` which blocks the main thread until the result becomes ready. If no exception was thrown, `get` returns `void`. If an exception was thrown, `get` re-throws it. Asynchronously, `thread_executor` launches a new thread of execution and runs the given lambda. It implicitly `co_return void` and the task is finished. `main` is then unblocked.
       
 #### *Concurrent even-number counting:*
 
@@ -182,12 +189,12 @@ concurrencpp allows applications to produce and consume coroutines as the main w
 
 Eager tasks start to run the moment they are invoked. This type of execution is recommended when applications need to fire an asynchronous action and consume its result later on (fire and consume later), or completely ignore the asynchronous result (fire and forget).
  
-Eager tasks can return  `result` or `null_result`. `result` return type tells the coroutine to marshal the returned value or the thrown exception (fire and consume later)  while `null_result` return type tells the coroutine to drop and ignore any of them (fire and forget).
+Eager tasks can return  `result` or `null_result`. `result` return type tells the coroutine to pass the returned value or the thrown exception (fire and consume later)  while `null_result` return type tells the coroutine to drop and ignore any of them (fire and forget).
 
 Eager coroutines can start to run synchronously, in the caller thread. This kind of coroutines is called "regular coroutines".
 Concurrencpp eager coroutines can also start to run in parallel, inside a given executor, this kind of coroutines is called "parallel coroutines".
-  
- Lazy tasks, on the other hand, start to run only when `co_await`ed. This type of tasks is recommended when the result of the task is meant to be consumed immediately after creating the task. Lazy tasks, being deferred, are a bit more optimized for the case of immediate-consumption, as they do not need special thread-synchronization in order  to marshal the asynchronous result back to its consumer. The compiler might also optimize away some memory allocations needed to form the underlying coroutine promise. It is not possible to fire a lazy task and execute something else meanwhile  - the firing of a lazy-callee coroutine necessarily means the suspension of the caller-coroutine. The caller coroutine will only be resumed when the lazy-callee coroutine completes. Lazy tasks can only return `lazy_result`.  
+
+Lazy tasks, on the other hand, start to run only when `co_await`ed. This type of tasks is recommended when the result of the task is meant to be consumed immediately after creating the task. Lazy tasks, being deferred, are a bit more optimized for the case of immediate-consumption, as they do not need special thread-synchronization in order  to pass the asynchronous result back to its consumer. The compiler might also optimize away some memory allocations needed to form the underlying coroutine promise. It is not possible to fire a lazy task and execute something else meanwhile  - the firing of a lazy-callee coroutine necessarily means the suspension of the caller-coroutine. The caller coroutine will only be resumed when the lazy-callee coroutine completes. Lazy tasks can only return `lazy_result`.  
 
 Lazy tasks can be converted to eager tasks by calling  `lazy_result::run`. This method runs the lazy task inline and returns a `result` object that monitors the newly started task. If developers are unsure which result type to use, they are encouraged to use lazy results, as they can be converted to regular (eager) results if needed.  
 
@@ -262,7 +269,7 @@ class executor {
     void post(callable_type&& callable, argument_types&& ... arguments);
     
     /*
-        Like post, but returns a result object that marshals the asynchronous result.
+        Like post, but returns a result object that passes the asynchronous result.
         Throws errors::runtime_shutdown exception if shutdown has been called before.
     */
     template<class callable_type, class ... argument_types>
@@ -277,7 +284,7 @@ class executor {
     void bulk_post(std::span<callable_type> callable_list);
 
     /*
-        Like bulk_post, but returns an array of result objects that marshal the asynchronous results.
+        Like bulk_post, but returns an array of result objects that passes the asynchronous results.
         Throws errors::runtime_shutdown exception if shutdown has been called before.
     */    
     template<class callable_type>
@@ -321,9 +328,9 @@ One overload receives a single task object as an argument, and another that rece
 The second overload is used to enqueue a batch of tasks. This allows better scheduling heuristics and decreased contention.
 
 Applications don't have to rely on `enqueue` alone, `concurrencpp::executor` provides an API for scheduling user callables by converting them to task objects behind the scenes.
-Applications can request executors to return a result object that marshals the asynchronous result of the provided callable. This is done by calling `executor::submit` and `executor::bulk_submit`.
+Applications can request executors to return a result object that passes the asynchronous result of the provided callable. This is done by calling `executor::submit` and `executor::bulk_submit`.
 `submit` gets a callable, and returns a result object. `executor::bulk_submit` gets a `span` of callables and returns a `vector`of result objects in a similar way `submit` works.
-In many cases, applications are not interested in the asynchronous value or exception. In this case, applications can use `executor:::post` and `executor::bulk_post` to schedule a callable or a `span` of callables to be executed, but also tells the task to drop any returned value or thrown exception. Not marshaling the asynchronous result is faster than marshaling, but then we have no way of knowing the status or the result of the ongoing task.
+In many cases, applications are not interested in the asynchronous value or exception. In this case, applications can use `executor:::post` and `executor::bulk_post` to schedule a callable or a `span` of callables to be executed, but also tells the task to drop any returned value or thrown exception. Not passing the asynchronous result is faster than passing , but then we have no way of knowing the status or the result of the ongoing task.
 
 `post`, `bulk_post`, `submit` and `bulk_submit` use `enqueue` behind the scenes for the underlying scheduling mechanism.
 
@@ -552,13 +559,13 @@ class manual_executor {
 
 Asynchronous values and exceptions can be consumed using concurrencpp result objects. The `result` type represents the asynchronous result of an eager task while `lazy_result` represents the deferred result of a lazy task. 
 
-When a task (eager or lazy) completes, it either returns a valid value or throws an exception. In either case, this asynchronous result is marshaled to the consumer of the result object.
+When a task (eager or lazy) completes, it either returns a valid value or throws an exception. In either case, this asynchronous result is passed to the consumer of the result object.
 
 `result` objects form asymmetric coroutines - the execution of a caller-coroutine is not effected by the execution of a callee-coroutine, both coroutines can run independently. Only when consuming the result of the callee-coroutine, the caller-coroutine might be suspended awaiting the callee to complete. Up until that point both coroutines run independently. The callee-coroutine runs whether its result is consumed or not. 
 
 `lazy_result` objects form symmetric coroutines - execution of a callee-coroutine happens only after the suspension of the caller-coroutine. When awaiting a lazy result, the current coroutine is suspended and the lazy task associated with the lazy result starts to run. After the callee-coroutine completes and yields a result, the caller-coroutine is resumed. If a lazy result is not consumed, its associated lazy task never starts to run. 
 
-All result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be empty and attempts to call any method other than `operator bool` and `operator = ` will throw.
+All result objects are a move-only type, and as such, they cannot be used after their content was moved to another result object. In this case, the result object is considered to be empty and attempts to call any method other than `operator bool` and `operator = ` will throw an exception.
 
 After the asynchronous result has been pulled out of the result object (for example, by calling `get` or `operator co_await`), the result object becomes empty. Emptiness can be tested with `operator bool`.
 
@@ -681,8 +688,8 @@ class result{
 
 A lazy result object represents the result of a deferred lazy task. 
 
-`lazy_result` has the responsibility of both starting the associated lazy task and marshaling its deferred result back to its consumer. 
-When awaited or resolved, the lazy result suspends the current coroutine and starts the associated lazy task. when the associated task completes, its asynchronous value is marshaled to the caller task, which is then resumed. 
+`lazy_result` has the responsibility of both starting the associated lazy task and passing its deferred result back to its consumer. 
+When awaited or resolved, the lazy result suspends the current coroutine and starts the associated lazy task. when the associated task completes, its asynchronous value is passed to the caller task, which is then resumed. 
 
 Sometimes, an API might return a lazy result, but applications need its associated task to run eagerly (without suspending the caller task). In this case, lazy tasks can be converted to eager tasks by calling  `run` on its associated lazy result. In this case, the associated task will start to run inline, without suspending the caller task. The original lazy result is emptied and a valid `result` object that monitors the newly started task will be returned instead.
 
@@ -761,7 +768,7 @@ class lazy_result {
 
 ###  Parallel coroutines
 
-Regular eager coroutines start to run synchronously in the calling thread of execution. Execution might shift to another thread of execution if the coroutine undergoes a rescheduling, for example by awaiting an unready result object inside it.
+Regular eager coroutines start to run synchronously in the calling thread of execution. Execution might shift to another thread of execution if a coroutine undergoes a rescheduling, for example by awaiting an unready result object inside it.
 concurrencpp also provides parallel coroutines, which start to run inside a given executor, not in the invoking thread of execution. This style of scheduling coroutines is especially helpful when writing parallel algorithms, recursive algorithms and concurrent algorithms that use the fork-join model.
 
 Every parallel coroutine must meet the following preconditions:
@@ -778,7 +785,13 @@ concurrencpp will start the coroutine suspended and immediately reschedule it to
 If the executor passed to the parallel coroutine is null, the coroutine will not start to run and an `std::invalid_argument` exception will be thrown synchronously. 
 If all preconditions are met, Applications can consume the result of the parallel coroutine by using the returned result object. 
 
-#### *Parallel Fibonacci example:*
+#### Parallel Fibonacci example:
+
+In this example, we calculate the 30-th member of the Fibonacci sequence in a parallel manner.
+We start launching each Fibonacci step in its own parallel coroutine. The first argument is a dummy `executor_tag` and the second argument is the threadpool executor.
+Every recursive step invokes a new parallel coroutine that runs in parallel. Each result is `co_return`ed to its parent task and acquired by using `co_await`.   
+When we deem the input to be small enough to be calculated synchronously (when `curr <= 10`), we stop executing each recursive step in its own task and just solve the algorithm synchronously.
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 #include <iostream>
@@ -815,11 +828,6 @@ int main() {
     return 0;
 }
 ```
-
-In this example, we calculate the 30-th member of the Fibonacci sequence in a parallel manner.
-We start launching each Fibonacci step in its own parallel coroutine. The first argument is a dummy `executor_tag` and the second argument is the threadpool executor.
-Every recursive step invokes a new parallel coroutine that runs in parallel. Each result is `co_return`ed to its parent task and acquired by using `co_await`.   
-When we deem the input to be small enough to be calculated synchronously (when `curr <= 10`), we stop executing each recursive step in its own task and just solve the algorithm synchronously.
 
 To compare, this is how the same code is written without using parallel coroutines, and relying on `executor::submit` alone.
 Since `fibonacci` returns a `result<int>`, submitting it recursively via `executor::submit` will result a `result<result<int>>`.
@@ -872,7 +880,7 @@ Just like result objects, result-promises are a move only type that becomes empt
 If a result-promise gets out of scope and no result/exception has been set, the result-promise destructor sets a `concurrencpp::errors::broken_task` exception using the `set_exception` method.
 Suspended and blocked tasks waiting for the associated result object are resumed/unblocked.
 
-Result promises can convert callback style of code into `async/await` style of code: whenever a component requires a callback to marshal the asynchronous result, we can pass a callback that calls `set_result` or `set_exception` (depending on the asynchronous result itself) on the passed result promise, and return the associated result.
+Result promises can convert callback style of code into `async/await` style of code: whenever a component requires a callback to pass the asynchronous result, we can pass a callback that calls `set_result` or `set_exception` (depending on the asynchronous result itself) on the passed result promise, and return the associated result.
 
 #### `result_promise` API
 
@@ -952,7 +960,10 @@ class result_promise {
 };
 ```
 
-#### *Example: Marshaling asynchronous result using* `result_promise`:
+#### `result_promise` example:
+
+In this example, `result_promise` is used to push data from one thread, and it can be pulled from its associated `result` object from another thread. 
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 
@@ -973,17 +984,18 @@ int main() {
     my_3_party_executor.join();
 }
 ```
+
 In this example, We use `std::thread` as a third-party executor. This represents a scenario when a non-concurrencpp executor is used as part of the application life-cycle. We extract the result object before we pass the promise and block the main thread until the result becomes ready. In `my_3_party_executor`, we set a result as if we `co_return`ed it.
 
 ### Shared result objects
 
 Shared results are a special kind of result objects that allow multiple consumers to access the asynchronous result, similar to `std::shared_future`.  Different consumers from different threads can call functions like `await`, `get` and `resolve` in a thread safe manner.
 
-Shared results are built from regular result objects and unlike regular result objects, they are both copyable and movable. As such, `shared_result` behaves like an `std::shared_ptr` object. If the shared result was moved to another instance, the shared result is empty, and trying to access it will throw an exception.
+Shared results are built from regular result objects and unlike regular result objects, they are both copyable and movable. As such, `shared_result` behaves like `std::shared_ptr` type. If a shared result instance is moved to another instance, the instance becomes empty, and trying to access it will throw an exception.
 
-In order to support multiple consumers, the shared-result object will return a *reference* to asynchronous value instead of moving it (like a regular result object). For example, a `shared_result<int>`will return an `int&` when `get`,`await` etc. are called. If the underlying type of the `shared_result` is `void` or a reference type (like `int&`), they are returned as usual. If the asynchronous result is a thrown-exception, it is re-thrown.
+In order to support multiple consumers, shared results return a *reference* to the asynchronous value instead of moving it (like a regular results). For example, a `shared_result<int>` returns an `int&` when `get`,`await` etc. are called. If the underlying type of the `shared_result` is `void` or a reference type (like `int&`), they are returned as usual. If the asynchronous result is a thrown-exception, it is re-thrown.
 
-Do note that while acquiring the asynchronous result using `shared_result` from multiple threads is thread-safe, the actual value might not be. For example, multiple threads can acquire an asynchronous integer by receiving its reference (`int&`). It *does not* make the integer itself thread safe. It is alright to mutate the asynchronous value if the asynchronous value is already thread safe. Alternatively, applications are encouraged to use `const` types to begin with (like `const int`), and acquire constant-references (like `const int&`) that prevent mutation.
+Do note that while acquiring the asynchronous result using `shared_result` from multiple threads is thread-safe, the actual value might not be thread safe. For example, multiple threads can acquire an asynchronous integer by receiving its reference (`int&`). It *does not* make the integer itself thread safe. It is alright to mutate the asynchronous value if the asynchronous value is already thread safe. Alternatively, applications are encouraged to use `const` types to begin with (like `const int`), and acquire constant-references (like `const int&`) that prevent mutation.
 
 #### `shared_result` API
 ```cpp
@@ -1097,7 +1109,10 @@ class share_result {
 };
 ```
 
-#### `shared_result` example
+#### `shared_result` example:
+
+In this example, a `result` object is converted to a `shared_result` object and a reference to an asynchronous `int` result is acquired by many tasks spawned with `thread_executor`.
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 
@@ -1140,13 +1155,13 @@ int main() {
 ```
 
 ### Termination in concurrencpp
-When the runtime object gets out of scope of `main`, the application terminates.
-The runtime iterates each stored executor and calls its `shutdown` method. Trying to access either the timer-queue or any executor throws `errors::runtime_shutdown` exception. When an executor shuts down, it clears its inner task queues, destroying un-executed `task` objects. If a task object stores a concurrencpp-coroutine, that coroutine is resumed inline and an `errors::broken_task` exception is thrown. 
+When the runtime object gets out of scope of `main`, it iterates each stored executor and calls its `shutdown` method. Trying to access the timer-queue or any executor will throw an `errors::runtime_shutdown` exception. When an executor shuts down, it clears its inner task queues, destroying un-executed `task` objects. If a task object stores a concurrencpp-coroutine, that coroutine is resumed inline and an `errors::broken_task` exception is thrown inside it. 
 In any case where  a `runtime_shutdown` or a `broken_task` exception is thrown, applications should terminate their current code-flow gracefully as soon as possible. Those exceptions should not be ignored.
+Both `runtime_shutdown` and `broken_task` inherit from `errors::interrupted_task` base class, and this type can also be used in a `catch` clause to handle termination in a unified way.
 
 ### Resume executors
-Many concurrencpp asynchronous actions will require an executor as their resume executor. When an asynchronous action (implemented as a coroutine) can finish synchronously, it resumes immediately in the calling thread of execution. If the asynchronous action can't finish synchronously, it will be resumed when it finishes, inside the given resume-executor. 
-For example, `when_any` utility function requires a resume-executor as its first argument. `when_any` returns a `lazy_result` which becomes ready when at least one given result becomes ready. If one of the results is already ready at the moment of calling `when_any`, the calling coroutine is resumed synchronously in the calling thread of execution. If not, the  calling coroutine will be resumed when at least of result is finished, inside the given resume-executor. 
+Many concurrencpp asynchronous actions require an instance of an executor as their *resume executor*. When an asynchronous action (implemented as a coroutine) can finish synchronously, it resumes immediately in the calling thread of execution. If the asynchronous action can't finish synchronously, it will be resumed when it finishes, inside the given resume-executor. 
+For example, `when_any` utility function requires an instance of a resume-executor as its first argument. `when_any` returns a `lazy_result` which becomes ready when at least one given result becomes ready. If one of the results is already ready at the moment of calling `when_any`, the calling coroutine is resumed synchronously in the calling thread of execution. If not, the calling coroutine will be resumed when at least of result is finished, inside the given resume-executor. 
 Resume executors are important because they mandate where coroutines are resumed in cases where it's not clear where a coroutine is supposed to be resumed (for example, in the case of `when_any` and `when_all`), or in cases where the asynchronous action is processed inside one of the concurrencpp workers, which are only used to process that specific action, and not application code.  
 
 ### Utility functions
@@ -1281,7 +1296,7 @@ lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_t
 
 #### `resume_on` function
 `resume_on` returns an awaitable that suspends the current coroutine and resumes it inside given `executor`. This is an important function that makes sure a coroutine is running in the right executor. For example, applications might schedule a background task using the `background_executor` and await the returned result object. In this case, the awaiting coroutine will be resumed inside the background executor. A call to `resume_on` with another cpu-bound executor makes sure that cpu-bound lines of code will not run on the background executor once the background task is completed. 
-If a coroutine was re-scheduled to run on another executor using `resume_on`, but that executor is shut down before it can resume it, that coroutine is resumed and an `erros::broken_task` exception is thrown. In this case, applications need to quite gracefully.  
+If a task is re-scheduled to run on another executor using `resume_on`, but that executor is shut down before it can resume the suspended task, that task is resumed immediately and an `erros::broken_task` exception is thrown. In this case, applications need to quite gracefully.  
 ```cpp
 /*
     Returns an awaitable that suspends the current coroutine and resumes it inside executor.
@@ -1301,8 +1316,8 @@ Regular timers have four properties that define them:
 
 1. Callable - a callable that will be scheduled to run as a task periodically.
 2. Executor - an executor that schedules the callable to run periodically.
-3. Due time - from the time of creation, the interval in milliseconds the timer will be scheduled to run for the first time.
-4. Frequency - from the time the timer was scheduled to run for the first time, the interval in milliseconds the callable will be scheduled to run periodically, until the timer is destructed or cancelled.
+3. Due time - from the time of creation, the interval in milliseconds in which the callable will be scheduled to run for the first time.
+4. Frequency - from the time the callable is scheduled to run for the first time, the interval in milliseconds the callable will be scheduled to run periodically, until the timer is destructed or cancelled.
 
 Like other objects in concurrencpp, timers are a move only type that can be empty.
 When a timer is destructed or `timer::cancel` is called, the timer cancels its scheduled but not yet executed tasks. Ongoing tasks are uneffected. The timer callable must be thread safe. It is recommended to set the due time and the frequency of timers to a granularity of 50 milliseconds. 
@@ -1455,7 +1470,10 @@ class timer {
 };
 ```
 
-#### *Regular timer example:*
+#### Regular timer example:
+
+In this example we create a regular timer by using the timer queue. The timer schedules its callable to run after 1.5 seconds, then fires its callable every 2 seconds. The given callable runs on the threadpool executor.
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 
@@ -1479,13 +1497,15 @@ int main() {
     return 0;
 }
 ```
-In this example we create a regular timer  by using the timer queue. The timer schedules its callable after 1.5 seconds, then fires its callable every 2 seconds. The given callable runs in the threadpool executor.
 
 #### Oneshot timers
 
 A oneshot timer is a one-time timer with only a due time - after it schedules its callable to run once it never reschedules it to run again.  
 
-#### *Oneshot timer example:*
+#### Oneshot timer example:
+
+In this example, we create a timer that runs only once - after 3 seconds from its creation, the timer will schedule its callable to run on a new thread of execution (using `thread_executor`).
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 
@@ -1506,13 +1526,15 @@ int main() {
     return 0;
 }
 ```
-In this example, we create a timer that runs only once - after 3 seconds from its creation, the timer will schedule to run its callable on a new thread of execution (using `concurrencpp::thread_executor`).
 
 #### Delay objects
 
-A delay object is a result object that becomes ready when its due time is reached. Applications can `co_await` this result object to delay the current coroutine in a non-blocking way.  The current coroutine is resumed by the executor that was passed to `make_delay_object`.
+A delay object is a lazy result object that becomes ready when it's `co_await`ed and its due time is reached. Applications can `co_await` this result object to delay the current coroutine in a non-blocking way.  The current coroutine is resumed by the executor that was passed to `make_delay_object`.
 
-#### *Delay object example:*
+#### Delay object example:
+
+In this example, we spawn a task (that does not return any result or thrown exception), which delays itself in a loop by calling `co_await` on a delay object.
+
 ```cpp
 #include "concurrencpp/concurrencpp.h"
 
@@ -1542,32 +1564,9 @@ int main() {
 }
 ```
 
-In this example, we created a coroutine (that does not marshal any result or thrown exception), which delays itself in a loop by calling `co_await` on a delay object.
-
 ### Generators 
 A generator is a lazy, synchronous coroutine that is able to produce a stream of values to consume. Generators use the `co_yield` keyword to yield values back to their consumers.
- 
-##### Example: 
-A generator that yields the n-th member of the Sequence `S(n) = 1 + 2 + 3 + ... + n`  where `n <= 100`:
 
-```cpp
-concurrencpp::generator<int> sequence() {
-    int i = 1;
-    int sum = 0;
-    while (i <= 100) {
-        sum += i;
-        ++i;
-        co_yield sum;
-    }
-}
-
-int main() {
-    for (auto value : sequence()) {
-        std::cout << value << std::end;
-    }
-    return 0;
-} 
-```
 Generators are meant to be used synchronously - they can only use the `co_yield` keyword and **must not** use the `co_await` keyword. A generator will continue  to produce values as long as the `co_yield` keyword is called. 
 If the `co_return` keyword is called (explicitly or implicitly), then the generator will stop producing values.  Similarly, if an exception is thrown then the generator will stop producing values and the thrown exception will be re-thrown to the consumer of the generator.
 
@@ -1575,7 +1574,7 @@ Generators are meant to be used in a `range-for` loop: Generators implicitly pro
 
 When a generator is created, it starts as a lazy task. When its `begin` method is called, the generator is resumed for the first time and an iterator is returned. The lazy task is resumed repeatedly by calling `operator++` on the returned iterator. The returned iterator will be equal to `end` iterator when the generator finishes execution either by exiting gracefully or throwing an exception.  As mentioned earlier, this happens behind the scenes by the inner mechanism of the loop and the generator, and should not be called directly.
 
-Like other objects in concurrencpp, Generators are a move-only type. After a generator was moved, it is considered empty and trying to access its inner methods (other than `operator bool`) will throw an exception. The emptiness of a generator should not generally occur - it is advised to consume generators upon their creation in a `for` loop and not to try to call its methods individually. 
+Like other objects in concurrencpp, Generators are a move-only type. After a generator was moved, it is considered empty and trying to access its inner methods (other than `operator bool`) will throw an exception. The emptiness of a generator should not generally occur - it is advised to consume generators upon their creation in a `for` loop and not to try to call their methods individually. 
 
 #### `generator` API
 ```cpp
@@ -1652,80 +1651,49 @@ class generator_iterator {
     friend bool operator!=(generator_end_iterator end_it, const generator_iterator& it) noexcept;
 };
 ```    
+#### `generator` example: 
+
+In this example, we will write a generator that yields the n-th member of the Sequence `S(n) = 1 + 2 + 3 + ... + n`  where `n <= 100`:
+
+```cpp
+concurrencpp::generator<int> sequence() {
+    int i = 1;
+    int sum = 0;
+    while (i <= 100) {
+        sum += i;
+        ++i;
+        co_yield sum;
+    }
+}
+
+int main() {
+    for (auto value : sequence()) {
+        std::cout << value << std::end;
+    }
+    return 0;
+} 
+```
 
 ### Asynchronous locks
-Regular synchronous locks cannot be used safely inside coroutines for a number of reasons:
+Regular synchronous locks cannot be used safely inside tasks for a number of reasons:
 
  - Synchronous locks, such as `std::mutex`, are expected to be locked and unlocked in the same thread of execution. Unlocking a synchronous lock in a thread which had not locked it is undefined behavior. Since tasks can be suspended and resumed in any thread of execution, synchronous locks will break when used inside tasks.
  - Synchronous locks were created to work with *threads* and not with *coroutines*. If a synchronous lock is already locked by one thread, then when another thread tries to lock it, the entire thread of execution will be blocked and will be unblocked when the lock is released. This mechanism works well for traditional multi-threading paradigms but not for coroutines: with coroutines, we want *tasks* to be *suspended and resumed* without blocking or interfering with the execution of underlying threads and executors.    
 
   `concurrencpp::async_lock` solves those issues by providing a similar API to `std::mutex`, with the main difference that calls to `concurrencpp::async_lock` will return a lazy-result that can be `co_awaited` safely inside tasks.  If one task tries to lock an async-lock and fails, the task will be suspended, and will be resumed when the lock is unlocked and acquired by the suspended task. This allows executors to process a huge amount of tasks waiting to acquire a lock without expensive context-switching and expensive kernel calls. 
 
-Similar to how `std::mutex` works, only one task can acquire `async_lock` at any given time, and a *read barrier* is place at the moment of acquiring. Releasing an async lock places a *write barrier* and allows the next task to acquire it, creating a chain of one-modifier at a time who sees the changes other modifiers had done and posts its modifications for the next modifiers to see.    
+Similar to how `std::mutex` works, only one task can acquire `async_lock` at any given time, and a *read barrier* is place at the moment of acquiring. Releasing an async lock places a *write barrier* and allows the next task to acquire it, creating a chain of one-modifier at a time which sees the changes other modifiers had done and posts its modifications for the next modifiers to see.    
 
 Like `std::mutex`, `concurrencpp::async_lock` ***is not recursive***. Extra attention must be given when acquiring such lock - A lock must not be acquired again in a task that has been spawned by another task which had already acquired the lock. In such case, an unavoidable dead-lock will occur.  Unlike other objects in concurrencpp, `async_lock` is neither copiable nor movable. 
 
 Like standard locks, `concurrencpp::async_lock` is meant to be used with scoped wrappers which leverage C++ RAII idiom to ensure locks are always unlocked upon  function return or thrown exception. `async_lock::lock` returns a lazy-result of a scoped wrapper that calls `async_lock::unlock` on destruction. Raw uses of `async_lock::unlock` are discouraged. `concurrencpp::scoped_async_lock` acts as the scoped wrapper and provides an API which is almost identical to `std::unique_lock`. `concurrencpp::scoped_async_lock` is movable, but not copiable.
 
-`async_lock::lock` and `scoped_async_lock::lock` require a resume-executor as their parameter. Upon calling those methods, if the lock is available for locking, then it is locked and the current task is resumed immediately. If not, then the current task is suspended, and will be resumed inside the given resume-executor when the lock is finally acquired by it. 
+`async_lock::lock` and `scoped_async_lock::lock` require a resume-executor as their parameter. Upon calling those methods, if the lock is available for locking, then it is locked and the current task is resumed immediately. If not, then the current task is suspended, and will be resumed inside the given resume-executor when the lock is finally acquired. 
 
 `concurrencpp::scoped_async_lock` wraps an `async_lock` and ensure it's properly unlocked. like `std::unique_lock`, there are cases it does not wrap any lock, and in this case it's considered to be empty.  An empty  `scoped_async_lock` can happen when it's defaultly constructed, moved, or `scoped_async_lock::release` method is called. An empty scoped-async-lock will not unlock any lock on destruction. 
 
 Even if the scoped-async-lock is not empty, it does not mean that it owns the underlying async-lock and it will unlock it on destruction. Non-empty and non-owning scoped-async locks can happen if `scoped_async_lock::unlock` was called or the scoped-async-lock was constructed using `scoped_async_lock(async_lock&, std::defer_lock_t)` constructor.
 
-#### `async_lock` *example:*
-
-```cpp
-#include "concurrencpp/concurrencpp.h"
-
-#include <vector>
-#include <iostream>
-
-std::vector<size_t> numbers;
-concurrencpp::async_lock lock;
-
-concurrencpp::result<void> add_numbers(concurrencpp::executor_tag,
-                                       std::shared_ptr<concurrencpp::executor> executor,
-                                       size_t begin,
-                                       size_t end) {
-    for (auto i = begin; i < end; i++) {
-        concurrencpp::scoped_async_lock raii_wrapper = co_await lock.lock(executor);
-        numbers.push_back(i);
-    }
-}
-
-int main() {
-    concurrencpp::runtime runtime;
-    constexpr size_t range = 10'000'000;
-    constexpr size_t sections = 4;
-    concurrencpp::result<void> results[sections];
-
-    for (size_t i = 0; i < 4; i++) {
-        const auto range_start = i * range / sections;
-        const auto range_end = (i + 1) * range / sections;
-
-        results[i] = add_numbers({}, runtime.thread_pool_executor(), range_start, range_end);
-    }
-
-    for (auto& result : results) {
-        result.get();
-    }
-
-    std::cout << "vector size is " << numbers.size() << std::endl;
-
-    // make sure the vector state has not been corrupted by unprotected concurrent accesses
-    std::sort(numbers.begin(), numbers.end());
-    for (size_t i = 0; i < range; i++) {
-        if (numbers[i] != i) {
-            std::cerr << "vector state is corrupted." << std::endl;
-            return -1;
-        }
-    }
-
-    std::cout << "succeeded pushing range [0 - 10,000,000] concurrently to the vector!" << std::endl;
-    return 0;
-}
-```
 #### `async_lock` API
 ```cpp
 class async_lock {
@@ -1854,15 +1822,242 @@ class scoped_async_lock {
     */
     async_lock* mutex() const noexcept;
 };
-
 ```
+#### `async_lock` example:
+
+In this example we push 10,000,000 integers to an `std::vector` object from different tasks concurrently, while using `async_lock` to make sure no data race occurs and the correctness of the internal state of that vector object is preserved.   
+
+```cpp
+#include "concurrencpp/concurrencpp.h"
+
+#include <vector>
+#include <iostream>
+
+std::vector<size_t> numbers;
+concurrencpp::async_lock lock;
+
+concurrencpp::result<void> add_numbers(concurrencpp::executor_tag,
+                                       std::shared_ptr<concurrencpp::executor> executor,
+                                       size_t begin,
+                                       size_t end) {
+    for (auto i = begin; i < end; i++) {
+        concurrencpp::scoped_async_lock raii_wrapper = co_await lock.lock(executor);
+        numbers.push_back(i);
+    }
+}
+
+int main() {
+    concurrencpp::runtime runtime;
+    constexpr size_t range = 10'000'000;
+    constexpr size_t sections = 4;
+    concurrencpp::result<void> results[sections];
+
+    for (size_t i = 0; i < 4; i++) {
+        const auto range_start = i * range / sections;
+        const auto range_end = (i + 1) * range / sections;
+
+        results[i] = add_numbers({}, runtime.thread_pool_executor(), range_start, range_end);
+    }
+
+    for (auto& result : results) {
+        result.get();
+    }
+
+    std::cout << "vector size is " << numbers.size() << std::endl;
+
+    // make sure the vector state has not been corrupted by unprotected concurrent accesses
+    std::sort(numbers.begin(), numbers.end());
+    for (size_t i = 0; i < range; i++) {
+        if (numbers[i] != i) {
+            std::cerr << "vector state is corrupted." << std::endl;
+            return -1;
+        }
+    }
+
+    std::cout << "succeeded pushing range [0 - 10,000,000] concurrently to the vector!" << std::endl;
+    return 0;
+}
+```
+
+### Asynchronous condition variables
+
+`async_condition_variable` imitates the standard `condition_variable` and can be used safely with tasks alongside `async_lock`. `async_condition_variable` works with `async_lock` to suspend a task until some shared memory (protected by the lock) has changed. Tasks that want to monitor shared memory changes will lock an instance of `async_lock`, and call `async_condition_variable::await`.  This will atomically unlock the lock and suspend the current task until some modifier task notifies the condition variable. A modifier task acquires the lock, modifies the shared memory, unlocks the lock and call either `notify_one` or `notify_all`.
+When a suspended task is resumed (using the resume executor that was given to `await`), it locks the lock again, allowing the task to continue from the point of suspension seamlessly.
+Like `async_lock`, `async_condition_variable` is neither movable or copiable - it is meant to be created in one place and accessed by multiple tasks.
+
+`async_condition_variable::await` overloads require a resume-executor, which will be used to resume the task, and a locked `scoped_async_lock`. `async_condition_variable::await` comes with two overloads - one that accepts a predicate and one that doesn't. The overload which does not accept a predicate will suspend the calling task immediately upon invocation until it's resumed by a call to `notify_*`. The overload which does accept a predicate works by letting the predicate inspect the shared memory and suspend the task repeatedly until the shared memory has reached its wanted state. schematically it works like calling 
+
+```cpp
+while (!pred()) { // pred() inspects the shared memory and returns true or false
+	co_await await(resume_executor, lock); // suspend the current task until another task calls `notify_xxx`
+}
+```
+Just like the standard condition variable, applications are encouraged to use the predicate-overload, as it allows more fine-grained control over suspensions and resumptions.
+`async_condition_variable` can be used to write concurrent collections and data-structures like concurrent queues and channels.
+
+Internally, `async_condition_variable` holds a suspension-queue, in which tasks enqueue themselves when they await the condition variable to be notified. When any of `notify_*` methods are called, the notifying task dequeues either one task or all of the tasks, depending on the invoked method. Tasks are dequeued from the suspension-queue in a fifo manner. 
+For example, if Task A calls `await` and then Task B calls `await`, then Task C calls `notify_one`, then internally task A will be dequeued and and resumed. Task B will remain suspended until another call to `notify_one` or `notify_all` is called. If task A and task B are suspended and task C calls `notify_all`, then both tasks will be dequeued and resumed. 
+
+#### `async_condition_variable` API
+```cpp
+class async_condition_variable {
+	/*
+		Constructor.
+	*/
+	async_condition_variable() noexcept;
+
+	/*
+		Atomically releases lock and suspends the current task by adding it to *this suspension-queue.
+		Throws std::invalid_argument if resume_executor is null.
+		Throws std::invalid_argument if lock is not locked at the moment of calling this method.
+		Might throw std::system_error if the underlying std::mutex throws. 
+	*/
+	lazy_result<void> await(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock);
+
+	/*
+		Equivalent to:		
+		while (!pred()) {
+            co_await await(resume_executor, lock);
+        }
+		
+		Might throw any exception that await(resume_executor, lock) might throw.
+		Might throw any exception that pred might throw.
+	*/
+	template<class predicate_type>
+	lazy_result<void> await(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock, predicate_type pred);
+	
+	/*
+		Dequeues one task from *this suspension-queue and resumes it, if any available at the moment of calling this method.
+		The suspended task is resumed by scheduling it to run on the executor given when await was called.
+		Might throw std::system_error if the underlying std::mutex throws. 
+	*/
+	void notify_one();
+	
+	/*
+		Dequeues all tasks from *this suspension-queue and resumes them, if any available at the moment of calling this method.
+		The suspended tasks are resumed by scheduling them to run on the executors given when await was called.
+		Might throw std::system_error if the underlying std::mutex throws. 
+	*/
+	void notify_all();
+};
+```
+
+#### `async_condition_variable` example:
+
+In this example, `async_lock` and `async_condition_variable` work together to implement a concurrent queue that can be used to send data (in this example, integers) between tasks. Note that some methods return a `result` while another return `lazy_result`, showing how both eager and lazy tasks can work together.
+
+```cpp
+#include "concurrencpp/concurrencpp.h"
+
+#include <queue>
+#include <iostream>
+
+using namespace concurrencpp;
+
+class concurrent_queue {
+
+   private:
+    async_lock _lock;
+    async_condition_variable _cv;
+    std::queue<int> _queue;
+    bool _abort = false;
+
+   public:
+    concurrent_queue() = default;
+
+    result<void> shutdown(std::shared_ptr<executor> resume_executor) {
+        {
+            auto guard = co_await _lock.lock(resume_executor);
+            _abort = true;
+        }
+
+        _cv.notify_all();
+    }
+
+    lazy_result<void> push(std::shared_ptr<executor> resume_executor, int i) {
+        {
+            auto guard = co_await _lock.lock(resume_executor);
+            _queue.push(i);
+        }
+
+        _cv.notify_one();
+    }
+
+    lazy_result<int> pop(std::shared_ptr<executor> resume_executor) {
+        auto guard = co_await _lock.lock(resume_executor); 
+        co_await _cv.await(resume_executor, guard, [this] {
+            return _abort || !_queue.empty();
+        });
+
+        if (!_queue.empty()) {
+            auto result = _queue.front();
+            _queue.pop();
+
+            co_return result;        
+        }
+
+        assert(_abort);
+        throw std::runtime_error("queue has been shut down.");
+    }
+};
+
+result<void> producer_loop(executor_tag,
+                           std::shared_ptr<thread_pool_executor> tpe,
+                           concurrent_queue& queue,
+                           int range_start,
+                           int range_end) {
+    for (; range_start < range_end; ++range_start) {
+        co_await queue.push(tpe, range_start);
+    }
+}
+
+result<void> consumer_loop(executor_tag, std::shared_ptr<thread_pool_executor> tpe, concurrent_queue& queue) {
+    try {
+        while (true) {
+            std::cout << co_await queue.pop(tpe) << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+}
+
+int main() {
+    runtime runtime;
+    const auto thread_pool_executor = runtime.thread_pool_executor();
+    concurrent_queue queue;
+
+    result<void> producers[4];
+    result<void> consumers[4];
+
+    for (int i = 0; i < 4; i++) {
+        producers[i] = producer_loop({}, thread_pool_executor, queue, i * 5, (i + 1) * 5);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        consumers[i] = consumer_loop({}, thread_pool_executor, queue);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        producers[i].get();
+    }
+
+    queue.shutdown(thread_pool_executor).get();
+
+    for (int i = 0; i < 4; i++) {
+        consumers[i].get();
+    }
+
+    return 0;
+}
+```
+
 
 ### The runtime object
  
 The concurrencpp runtime object is the agent used to acquire, store and create new executors.  
 The runtime must be created as a value type as soon as the main function starts to run.
 When the concurrencpp runtime gets out of scope, it iterates over its stored executors and shuts them down one by one by calling `executor::shutdown`. Executors then exit their inner work loop and any subsequent attempt to schedule a new task will throw a `concurrencpp::runtime_shutdown` exception. The runtime also contains the global timer queue used to create timers and delay objects.
-Upon destruction, stored executors will destroy unexecuted tasks, and wait for ongoing tasks to finish. If an ongoing task tries to use an executor to spawn new tasks or schedule its own task continuation - an exception will be thrown. In this case, ongoing tasks need to quit as soon as possible, allowing their underlying executors to quit. The timer queue will also be shut down, cancelling all running timers.  With this RAII style of code, no tasks can be processed before the creation of the runtime object, and while/after the runtime gets out of scope.
+Upon destruction, stored executors destroy unexecuted tasks, and wait for ongoing tasks to finish. If an ongoing task tries to use an executor to spawn new tasks or schedule its own task continuation - an exception will be thrown. In this case, ongoing tasks need to quit as soon as possible, allowing their underlying executors to quit. The timer queue will also be shut down, cancelling all running timers.  With this RAII style of code, no tasks can be processed before the creation of the runtime object, and while/after the runtime gets out of scope.
 This frees concurrent applications from needing to communicate termination messages explicitly. Tasks are free use executors as long as the runtime object is alive.
 
 #### `runtime` API
@@ -1941,20 +2136,20 @@ class runtime {
 
 #### Creating user-defined executors
 
-As mentioned before, Applications can create their own custom executor type by inheriting the `derivable_executor` class.
+Applications can create their own custom executor type by inheriting the `derivable_executor` class.
 There are a few points to consider when implementing user defined executors:
 The most important thing is to remember that executors are used from multiple threads, so implemented methods must be thread-safe.
 
-New executors can be created using `runtime::make_executor`. Applications must not create new executors with plain instantiation (such as `std::make_shared` or plain `new`), only by using  `runtime::make_executor`. Also, applications must not try to re-instantiate the built-in concurrencpp executors, like the `thread_pool_executor` or the `thread_executor`, those executors must only be accessed through their existing instance in the runtime object.
+New executors can be created using `runtime::make_executor`. Applications must not create new executors with plain instantiation (such as `std::make_shared` or plain `new`), only by using  `runtime::make_executor`. Also, applications must not try to re-instantiate the built-in concurrencpp executors, like the `thread_pool_executor` or the `thread_executor`, those executors must only be accessed through their existing instances in the runtime object.
 
 Another important point is to handle shutdown correctly: `shutdown`, `shutdown_requested` and `enqueue` should all monitor the executor state and behave accordingly when invoked:
 * `shutdown` should tell underlying threads to quit and then join them.
- * `shutdown` might be called multiple times, and the method must handle this scenario by ignoring any subsequent call to `shutdown` after the first invocation.
+* `shutdown` might be called multiple times, and the method must handle this scenario by ignoring any subsequent calls to `shutdown` after the first invocation.
 * `enqueue` must throw a `concurrencpp::errors::runtime_shutdown` exception if `shutdown` had been called before.
 
 #### `task` objects
  
-Implementing executors is one of the rare cases applications need to work with `concurrencpp::task` class directly. `concurrencpp::task` is a `std::function` like object, but with a few differences.
+Implementing executors is one of the rare cases where applications need to work with `concurrencpp::task` class directly. `concurrencpp::task` is an `std::function` like object, but with a few differences.
 Like `std::function`, the task object stores a callable that acts as the asynchronous operation.
 Unlike `std::function`, `task` is a move only type. On invocation, task objects receive no parameters and return `void`. Moreover, every task object can be invoked only once. After the first invocation, the task object becomes empty.
 Invoking an empty task object is equivalent to invoking an empty lambda (`[]{}`), and will not throw any exception.
@@ -2025,9 +2220,11 @@ Task objects try to use different methods to optimize the usage of the stored ty
 
 };
 ```
-When implementing user-defined executors, it is up to the implementation to store tasks (when `enqueue` is called), and execute them according to the executor inner-mechanism.
+When implementing user-defined executors, it is up to the implementation to store `task` objects (when `enqueue` is called), and execute them according to the executor inner-mechanism.
 
-#### *Example: using a user-defined executor:*
+#### Example: writing a user-defined executor:
+
+In this example, we create an executor which logs actions like enqueuing tasks or executing them. We implement the `executor` interface, and we request the runtime to create and store an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors.
 
 ```cpp
 #include "concurrencpp/concurrencpp.h"
@@ -2144,12 +2341,10 @@ int main() {
 }
 ```
 
-In this example, we created an executor which logs actions like enqueuing a task or executing it. We implement the `executor` interface, and we request the runtime to create and store an instance of it by calling `runtime::make_executor`. The rest of the application behaves exactly the same as if we were to use non user-defined executors.
-
 ### Supported platforms and tools
 
 * **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
-* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang (Clang-11 and above)
+* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang 14+, Clang 11-13 with libc++
 * **Tools:** CMake (3.16 and above) 
 
 ### Building, installing and testing
@@ -2194,8 +2389,14 @@ $ cmake --build build/test
 $ cd build/test
 $ ctest . -V
 ```
+##### Important note regarding Linux and libc++
+When compiling on Linux, the library tries to use `libstdc++` by default. If you intend to use `libc++` as your standard library implementation, `CMAKE_TOOLCHAIN_FILE` flag should be specified as below: 
 
-##### Via package managers on Windows and *nix platforms
+```cmake
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/libc++.cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/lib
+```
+
+##### Installing concurrencpp with vcpkg or Conan
 
 Alternatively to building and installing the library manually, developers may get stable releases of concurrencpp via the [vcpkg](https://vcpkg.io/) and [Conan](https://conan.io/) package managers:
 

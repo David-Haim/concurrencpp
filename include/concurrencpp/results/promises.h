@@ -1,11 +1,12 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
-#include "concurrencpp/task.h"
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/results/impl/result_state.h"
+#include "concurrencpp/executors/executor_all.h"
 #include "concurrencpp/results/impl/lazy_result_state.h"
+#include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/impl/return_value_struct.h"
+#include "concurrencpp/task.h"
 
 #include <vector>
 
@@ -13,52 +14,39 @@
 #include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
-    struct coroutine_per_thread_data {
-        std::vector<task>* accumulator = nullptr;
-
-        static thread_local coroutine_per_thread_data s_tl_per_thread_data;
-    };
-
-    class initial_accumulating_awaiter : public suspend_always {
-       private:
-        bool m_interrupted = false;
-
-       public:
-        void await_suspend(coroutine_handle<void> handle) noexcept;
-        void await_resume() const;
-    };
-
     template<class executor_type>
     class initialy_rescheduled_promise {
 
-       protected:
-        static thread_local executor_type* s_tl_initial_executor;
+        executor_type& m_initial_executor;
 
         static_assert(
             std::is_base_of_v<concurrencpp::executor, executor_type>,
             "concurrencpp::initialy_rescheduled_promise<<executor_type>> - <<executor_type>> isn't driven from concurrencpp::executor.");
 
-       public:
-        template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) {
+        static executor_type& to_ref(executor_type* executor_ptr) {
             if (executor_ptr == nullptr) {
                 throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
             }
 
-            s_tl_initial_executor = executor_ptr;
+            return *executor_ptr;
         }
+
+       public:
+        template<class... argument_types>
+        initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) :
+            m_initial_executor(to_ref(executor_ptr)) {}
+
+        template<class... argument_types>
+        initialy_rescheduled_promise(executor_tag, executor_type& executor_ptr, argument_types&&...) :
+            m_initial_executor(executor_ptr) {}
 
         template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
             initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
 
-        template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type& executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, std::addressof(executor), std::forward<argument_types>(args)...) {}
-
         template<class class_type, class... argument_types>
         initialy_rescheduled_promise(class_type&&, executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
+            initialy_rescheduled_promise(executor_tag {}, *executor, std::forward<argument_types>(args)...) {}
 
         class initial_scheduling_awaiter : public suspend_always {
 
@@ -66,9 +54,9 @@ namespace concurrencpp::details {
             bool m_interrupted = false;
 
            public:
-            void await_suspend(coroutine_handle<void> handle) {
-                auto executor = std::exchange(s_tl_initial_executor, nullptr);
-                executor->post(await_via_functor {handle, &m_interrupted});
+            template<class promise_type>
+            void await_suspend(coroutine_handle<promise_type> handle) {
+                handle.promise().m_initial_executor.post(await_via_functor {handle, &m_interrupted});
             }
 
             void await_resume() const {
@@ -83,23 +71,8 @@ namespace concurrencpp::details {
         }
     };
 
-    template<class executor_type>
-    thread_local executor_type* initialy_rescheduled_promise<executor_type>::s_tl_initial_executor = nullptr;
-
     struct initialy_resumed_promise {
         suspend_never initial_suspend() const noexcept {
-            return {};
-        }
-    };
-
-    struct bulk_promise {
-        template<class... argument_types>
-        bulk_promise(executor_bulk_tag, std::vector<concurrencpp::task>& accumulator, argument_types&&...) {
-            assert(coroutine_per_thread_data::s_tl_per_thread_data.accumulator == nullptr);
-            coroutine_per_thread_data::s_tl_per_thread_data.accumulator = &accumulator;
-        }
-
-        initial_accumulating_awaiter initial_suspend() const noexcept {
             return {};
         }
     };
@@ -172,15 +145,6 @@ namespace concurrencpp::details {
         public result_coro_promise<return_type> {
         using initialy_rescheduled_promise<executor_type>::initialy_rescheduled_promise;
     };
-
-    struct bulk_null_result_promise : public bulk_promise, public null_result_promise {
-        using bulk_promise::bulk_promise;
-    };
-
-    template<class return_type>
-    struct bulk_result_promise : public bulk_promise, public result_coro_promise<return_type> {
-        using bulk_promise::bulk_promise;
-    };
 }  // namespace concurrencpp::details
 
 namespace CRCPP_COROUTINE_NAMESPACE {
@@ -226,24 +190,6 @@ namespace CRCPP_COROUTINE_NAMESPACE {
     template<class type, class executor_type, class... arguments>
     struct coroutine_traits<::concurrencpp::result<type>, concurrencpp::executor_tag, executor_type&, arguments...> {
         using promise_type = concurrencpp::details::initialy_rescheduled_result_promise<type, executor_type>;
-    };
-
-    // Bulk + no result
-    template<class... arguments>
-    struct coroutine_traits<::concurrencpp::null_result,
-                            concurrencpp::details::executor_bulk_tag,
-                            std::vector<concurrencpp::task>&,
-                            arguments...> {
-        using promise_type = concurrencpp::details::bulk_null_result_promise;
-    };
-
-    // Bulk + result
-    template<class type, class... arguments>
-    struct coroutine_traits<::concurrencpp::result<type>,
-                            concurrencpp::details::executor_bulk_tag,
-                            std::vector<concurrencpp::task>&,
-                            arguments...> {
-        using promise_type = concurrencpp::details::bulk_result_promise<type>;
     };
 
     // Lazy

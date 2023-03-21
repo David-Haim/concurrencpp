@@ -32,6 +32,7 @@ namespace concurrencpp {
     class generator;
 
     class async_lock;
+    class async_condition_variable;
 }  // namespace concurrencpp
 
 #endif  // FORWARD_DECLARATIONS_H

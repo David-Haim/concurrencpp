@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.1.5
+        VERSION 0.1.6
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -15,7 +15,6 @@ if(concurrencpp_INCLUDE_WITHOUT_SYSTEM)
 endif()
 
 # ---- Declare library ----
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 set(concurrencpp_sources
         source/task.cpp
@@ -30,7 +29,7 @@ set(concurrencpp_sources
         source/results/promises.cpp
         source/runtime/runtime.cpp
         source/threads/async_lock.cpp
-        source/threads/binary_semaphore.cpp
+        source/threads/async_condition_variable.cpp
         source/threads/thread.cpp
         source/timers/timer.cpp
         source/timers/timer_queue.cpp)
@@ -73,13 +72,14 @@ set(concurrencpp_headers
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
         include/concurrencpp/threads/async_lock.h
-        include/concurrencpp/threads/binary_semaphore.h
+        include/concurrencpp/threads/async_condition_variable.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/threads/cache_line.h
         include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
-        include/concurrencpp/utils/bind.h)
+        include/concurrencpp/utils/bind.h
+        include/concurrencpp/utils/slist.h)
 
 add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)
@@ -91,7 +91,19 @@ target_include_directories(concurrencpp
 
 target_compile_features(concurrencpp PUBLIC cxx_std_20)
 
+set_target_properties(concurrencpp PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}"
+)
+
 target_coroutine_options(concurrencpp)
+
+target_compile_definitions(concurrencpp
+        PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_EXPORT_API>
+        INTERFACE $<$<STREQUAL:$<TARGET_PROPERTY:concurrencpp,TYPE>,SHARED_LIBRARY>:CRCPP_IMPORT_API>
+)
 
 find_package(Threads REQUIRED)
 target_link_libraries(concurrencpp PUBLIC Threads::Threads)
@@ -107,11 +119,18 @@ include(GNUInstallDirs)
 set(concurrencpp_directory "concurrencpp-${PROJECT_VERSION}")
 set(concurrencpp_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${concurrencpp_directory}")
 
-install(TARGETS concurrencpp
-        EXPORT concurrencppTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT concurrencpp_Development
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Development
-        INCLUDES DESTINATION "${concurrencpp_include_directory}")
+install(
+  TARGETS concurrencpp
+  EXPORT concurrencppTargets
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          COMPONENT concurrencpp_Development
+  INCLUDES
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+          COMPONENT concurrencpp_Runtime
+          NAMELINK_COMPONENT concurrencpp_Development
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT concurrencpp_Runtime)
 
 set(concurrencpp_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${concurrencpp_directory}")
@@ -122,14 +141,19 @@ write_basic_package_version_file(
         COMPATIBILITY SameMinorVersion
         ARCH_INDEPENDENT)
 
-install(EXPORT concurrencppTargets
-        NAMESPACE concurrencpp::
-        DESTINATION "${concurrencpp_install_cmakedir}")
+install(
+  EXPORT concurrencppTargets
+  NAMESPACE concurrencpp::
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(FILES
-        "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
+install(
+  FILES "${PROJECT_SOURCE_DIR}/cmake/concurrencppConfig.cmake"
         "${PROJECT_BINARY_DIR}/concurrencppConfigVersion.cmake"
-        DESTINATION "${concurrencpp_install_cmakedir}")
+  DESTINATION "${concurrencpp_install_cmakedir}"
+  COMPONENT concurrencpp_Development)
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
-        DESTINATION "${concurrencpp_include_directory}")
+install(
+  DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+  DESTINATION "${concurrencpp_include_directory}"
+  COMPONENT concurrencpp_Development)

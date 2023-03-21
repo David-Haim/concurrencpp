@@ -14,97 +14,108 @@ on:
   workflow_dispatch: ~
 
 env:
-  CMAKE_VERSION: 3.18.4
-  NINJA_VERSION: 1.10.1
   CTEST_OUTPUT_ON_FAILURE: 1
   NINJA_STATUS: '[%f/%t %o/sec] '
 
 jobs:
-  tests:
-    strategy:
-      matrix:
-        conf:
-          - name: Ubuntu (Clang 12 - TSAN)
-            os: ubuntu-20.04
-            cc: clang-12
-            cxx: clang++-12
-            tsan: YES
-
-          - name: Ubuntu (Clang 12 - no TSAN)
-            os: ubuntu-20.04
-            cc: clang-12
-            cxx: clang++-12
-            tsan: NO
-
-          - name: macOS (Clang 11 - no TSAN)
-            os: macos-latest
-            cc: clang
-            cxx: clang++
-            tsan: NO
-
-          - name: Windows (Visual Studio Enterprise 2022)
-            os: windows-2022
-            cc: cl
-            cxx: cl
-            tsan: NO
-
-    name: ${{ matrix.conf.name }}
-
-    runs-on: ${{ matrix.conf.os }}
-
-    env:
-      CC: ${{ matrix.conf.cc }}
-      CXX: ${{ matrix.conf.cxx }}
-
+  build-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      tests-matrix: ${{ steps.script.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2  
+      - id: script
+        shell: pwsh
+        run: |
+          $json = Get-Content -Raw .github/workflows/test_matrix.json | ConvertFrom-Json
+          Add-Content "${env:GITHUB_OUTPUT}" "matrix=$(ConvertTo-Json $json -Compress)"
+  tests:
+    needs: build-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          ${{ fromJSON(needs.build-matrix.outputs.tests-matrix) }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
 
       - uses: friendlyanon/fetch-core-count@v1
         id: cores
 
-      - run: cmake -E make_directory build/tools
+      - shell: pwsh
+        run: New-Item build/tools -ItemType Directory -ErrorAction SilentlyContinue
 
-      - name: Install CMake and Ninja
-        id: tools
-        working-directory: build/tools
-        run: cmake -D RUNNER_OS=${{ runner.os }}
-          -P ../../cmake/ciToolsUpdate.cmake
-
-      - name: Combine CI variables
-        id: args
-        shell: cmake -P {0}
-        run: >
-          message([==[::set-output name=args::${{ matrix.conf.os }}
-          "${{ steps.tools.outputs.cmake }}"
-          "${{ steps.tools.outputs.ninja }}"
-          ${{ steps.cores.outputs.plus_one }}]==])
-
-      - name: Install clang 12
-        working-directory: ${{ env.HOME }}
+      - shell: sudo pwsh -File {0}
         run: |
-            sudo apt-get update
-            sudo apt-get install clang-12 libc++-12-dev libc++abi-12-dev
-        if: ${{ startsWith(matrix.conf.os, 'ubuntu') }}
+          Add-Content -Value 'Acquire::Retries "100";' -Path /etc/apt/apt.conf.d/99-custom
+          Add-Content -Value 'Acquire::https::Timeout "240";' -Path /etc/apt/apt.conf.d/99-custom
+          Add-Content -Value 'Acquire::http::Timeout "240";' -Path /etc/apt/apt.conf.d/99-custom
+          Add-Content -Value 'APT::Get::Assume-Yes "true";' -Path /etc/apt/apt.conf.d/99-custom
+          Add-Content -Value 'APT::Install-Recommends "false";' -Path /etc/apt/apt.conf.d/99-custom
+          Add-Content -Value 'APT::Install-Suggests "false";' -Path /etc/apt/apt.conf.d/99-custom
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
 
-      - name: Build examples
-        run: cmake -P cmake/ciBuild.cmake -- example build/example
-          ${{ steps.args.outputs.args }}
-        continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
+      - uses: ./.github/actions/fetch-cmake
+        id: cmake
+        with:
+          base-directory: build/tools
 
-      - name: Build tests
+      - uses: ./.github/actions/fetch-ninja
+        id: ninja
+        with:
+          base-directory: build/tools
+
+      - uses: ./.github/actions/fetch-libstdc++
+        id: libstdcxx
+        with:
+          version: ${{ matrix.libstdcxx-version }}
+        if: ${{ matrix.stdlib == 'libstdc++' }}
+
+      - uses: ./.github/actions/fetch-clang
+        id: clang
+        with:
+          version: ${{ matrix.clang-version }}
+          base-directory: build/tools
+        if: ${{ matrix.clang-version }}
+
+      - name: Build Examples
+        uses: ./.github/actions/cmake-build
+        continue-on-error: ${{ matrix.os == 'macos-11' }}
+        env:
+          CXX: ${{ steps.clang.outputs.clangxx }}
+        with:
+          cmake: ${{ steps.cmake.outputs.cmake }}
+          ninja: ${{ steps.ninja.outputs.ninja }}
+          jobs: ${{ steps.cores.outputs.plus_one }}
+          source: example
+          build: build/example
+          args: >
+            -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+            ${{ ( matrix.stdlib == 'libc++' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' ) || '' }}
+
+      - name: Build Tests
         id: build_tests
-        continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
-        run: cmake -P cmake/ciBuild.cmake -- test build/test
-          ${{ steps.args.outputs.args }}
-          -D ENABLE_THREAD_SANITIZER:BOOL=${{ matrix.conf.tsan }}
+        uses: ./.github/actions/cmake-build
+        continue-on-error: ${{ matrix.os == 'macos-11' }}
+        env:
+          CXX: ${{ steps.clang.outputs.clangxx }}
+        with:
+          cmake: ${{ steps.cmake.outputs.cmake }}
+          ninja: ${{ steps.ninja.outputs.ninja }}
+          jobs: ${{ steps.cores.outputs.plus_one }}
+          source: test
+          build: build/test
+          args: >
+            -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+            -DENABLE_THREAD_SANITIZER=${{ matrix.tsan }}
+            ${{ ( matrix.stdlib == 'libc++' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' ) || '' }}
 
-      - name: Run tests
-        continue-on-error: ${{ startsWith(matrix.conf.os, 'macos') }}
+      - uses: ./.github/actions/run-tests
+        continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
         if: steps.build_tests.outcome == 'success'
-        working-directory: build/test
-        shell: cmake -P {0}
-        run: >
-          include(../../cmake/exec.cmake)
-
-          exec("${{ steps.tools.outputs.ctest }}" -C Release -V
-          -j ${{ steps.cores.outputs.plus_one }})
+        with:
+          ctest: ${{ steps.cmake.outputs.ctest }}
+          jobs: ${{ steps.cores.outputs.plus_one }}
+          test-dir: build/test
