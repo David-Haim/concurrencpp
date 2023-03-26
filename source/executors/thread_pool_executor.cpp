@@ -358,7 +358,12 @@ void thread_pool_worker::work_loop() {
     s_tl_thread_pool_data.this_thread_index = m_index;
 
     while (true) {
-        if (!drain_queue()) {
+        try {
+            if (!drain_queue()) {
+                return;
+            }
+        } catch (const errors::runtime_shutdown&) {
+            m_idle = true;
             return;
         }
     }
