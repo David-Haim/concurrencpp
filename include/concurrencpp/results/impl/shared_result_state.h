@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_SHARED_RESULT_STATE_H
 #define CONCURRENCPP_SHARED_RESULT_STATE_H
 
+#include "concurrencpp/platform_defs.h"
 #include "concurrencpp/results/impl/result_state.h"
 
 #include <atomic>
