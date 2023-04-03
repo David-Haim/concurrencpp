@@ -89,7 +89,7 @@ namespace concurrencpp::details {
         }
 
         void on_result_finished() noexcept override {
-            m_status.store(m_result_state->status(), std::memory_order_relaxed);
+            m_status.store(m_result_state->status(), std::memory_order_release);
 
             auto k_result_ready = result_ready_constant();
             auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);

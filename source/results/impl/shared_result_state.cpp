@@ -7,7 +7,7 @@ concurrencpp::details::shared_await_context* shared_result_state_base::result_re
 }
 
 concurrencpp::result_status concurrencpp::details::shared_result_state_base::status() const noexcept {
-    return m_status.load(std::memory_order_relaxed);
+    return m_status.load(std::memory_order_acquire);
 }
 
 bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
