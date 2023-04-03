@@ -108,8 +108,9 @@ namespace concurrencpp::details {
 
             while (awaiters != nullptr) {
                 assert(static_cast<bool>(awaiters->caller_handle));
-                awaiters->caller_handle();
+                auto caller_handle = awaiters->caller_handle;
                 awaiters = awaiters->next;
+                caller_handle();
             }
 
             /* theoretically buggish, practically there's no way
