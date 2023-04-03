@@ -32,6 +32,7 @@ namespace concurrencpp {
             }
 
             m_state = std::make_shared<details::shared_result_state<type>>(details::shared_result_helper::get_state(rhs));
+            m_state->share(std::static_pointer_cast<details::shared_result_state_base>(m_state));
         }
 
         shared_result(const shared_result& rhs) noexcept = default;
