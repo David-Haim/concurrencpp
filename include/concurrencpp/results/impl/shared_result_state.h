@@ -78,7 +78,8 @@ namespace concurrencpp::details {
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
             while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
-                m_semaphore.try_acquire_until(timeout_time);
+                const auto res = m_semaphore.try_acquire_until(timeout_time);
+                (void)res;
             }
 
             return status();
