@@ -77,10 +77,10 @@ result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<wh
     return state;
 }
 
-void concurrencpp::details::result_state_base::share(shared_result_state_base& shared_result_state) noexcept {
+void concurrencpp::details::result_state_base::share(std::shared_ptr<shared_result_state_base> shared_result_state) noexcept {
     const auto state = m_pc_state.load(std::memory_order_acquire);
     if (state == pc_state::producer_done) {
-        return shared_result_state.on_result_finished();
+        return shared_result_state->on_result_finished();
     }
 
     m_consumer.set_shared_context(shared_result_state);
@@ -96,7 +96,7 @@ void concurrencpp::details::result_state_base::share(shared_result_state_base& s
     }
 
     assert_done();
-    shared_result_state.on_result_finished();
+    shared_result_state->on_result_finished();
 }
 
 void result_state_base::try_rewind_consumer() noexcept {

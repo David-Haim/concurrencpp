@@ -49,12 +49,17 @@ namespace concurrencpp::details {
        public:
         shared_result_state(consumer_result_state_ptr<type> result_state) noexcept : m_result_state(std::move(result_state)) {
             assert(static_cast<bool>(m_result_state));
-            m_result_state->share(*this);
         }
 
         ~shared_result_state() noexcept {
             assert(static_cast<bool>(m_result_state));
             m_result_state->try_rewind_consumer();
+            m_result_state.reset();
+        }
+
+        void share(const std::shared_ptr<result_state_base>& self) noexcept {
+            assert(static_cast<bool>(m_result_state));
+            m_result_state->share(self);
         }
 
         void wait() noexcept {

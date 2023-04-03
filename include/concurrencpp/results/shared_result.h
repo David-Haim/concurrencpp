@@ -22,7 +22,9 @@ namespace concurrencpp {
         shared_result() noexcept = default;
         ~shared_result() noexcept = default;
 
-        shared_result(std::shared_ptr<details::shared_result_state<type>> state) noexcept : m_state(std::move(state)) {}
+        shared_result(std::shared_ptr<details::shared_result_state<type>> state) noexcept : m_state(std::move(state)) {
+            m_state->share(std::static_pointer_cast<details::shared_result_state_base>(m_state));
+        }
 
         shared_result(result<type> rhs) {
             if (!static_cast<bool>(rhs)) {
