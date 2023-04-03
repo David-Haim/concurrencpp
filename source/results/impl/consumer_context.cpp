@@ -200,7 +200,7 @@ void consumer_context::set_when_any_context(const std::shared_ptr<when_any_conte
     details::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
-void concurrencpp::details::consumer_context::set_shared_context(std::shared_ptr<shared_result_state_base> shared_ctx) noexcept {
+void concurrencpp::details::consumer_context::set_shared_context(const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::shared;
     details::build(m_storage.shared_ctx, shared_ctx);

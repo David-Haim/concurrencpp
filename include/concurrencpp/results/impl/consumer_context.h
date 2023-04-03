@@ -72,7 +72,7 @@ namespace concurrencpp::details {
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_for_context(const std::shared_ptr<std::binary_semaphore>& wait_ctx) noexcept;
         void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
-        void set_shared_context(std::shared_ptr<shared_result_state_base> shared_ctx) noexcept;
+        void set_shared_context(const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
 
