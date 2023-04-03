@@ -5,7 +5,7 @@
 
 namespace concurrencpp::details {
     template<class type>
-    class shared_awaitable_base : public suspend_always {
+    class CRCPP_API shared_awaitable_base : public suspend_always {
        protected:
         std::shared_ptr<shared_result_state<type>> m_state;
 
@@ -19,7 +19,7 @@ namespace concurrencpp::details {
 
 namespace concurrencpp {
     template<class type>
-    class shared_awaitable : public details::shared_awaitable_base<type> {
+    class CRCPP_API shared_awaitable : public details::shared_awaitable_base<type> {
 
        private:
         details::shared_await_context m_await_ctx;
@@ -40,7 +40,7 @@ namespace concurrencpp {
     };
 
     template<class type>
-    class shared_resolve_awaitable : public details::shared_awaitable_base<type> {
+    class CRCPP_API shared_resolve_awaitable : public details::shared_awaitable_base<type> {
 
        private:
         details::shared_await_context m_await_ctx;
