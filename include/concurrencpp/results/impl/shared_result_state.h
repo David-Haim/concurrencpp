@@ -57,7 +57,7 @@ namespace concurrencpp::details {
             m_result_state.reset();
         }
 
-        void share(const std::shared_ptr<result_state_base>& self) noexcept {
+        void share(const std::shared_ptr<shared_result_state_base>& self) noexcept {
             assert(static_cast<bool>(m_result_state));
             m_result_state->share(self);
         }
