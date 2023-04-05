@@ -88,6 +88,14 @@ namespace concurrencpp::details {
 
         void on_result_finished() noexcept override {
             m_status.store(m_result_state->status(), std::memory_order_release);
+            m_status.notify_all();
+
+            /* theoretically buggish, practically there's no way
+               that we'll have more than max(ptrdiff_t) / 2 waiters.
+               on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
+               memory will run out before enough tasks could be created to wait this synchronously
+            */
+            m_semaphore.release(m_semaphore.max() / 2);
 
             auto k_result_ready = result_ready_constant();
             auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
@@ -110,13 +118,6 @@ namespace concurrencpp::details {
                 awaiters = awaiters->next;
                 caller_handle();
             }
-
-            /* theoretically buggish, practically there's no way
-               that we'll have more than max(ptrdiff_t) / 2 waiters.
-               on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
-               memory will run out before enough tasks could be created to wait this synchronously
-            */
-            m_semaphore.release(m_semaphore.max() / 2);
         }
     };
 }  // namespace concurrencpp::details
