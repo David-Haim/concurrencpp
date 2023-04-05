@@ -24,3 +24,9 @@ bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
         }
     }
 }
+
+void concurrencpp::details::shared_result_state_base::wait() noexcept {
+    if (status() == result_status::idle) {
+        m_semaphore.acquire();
+    }
+}

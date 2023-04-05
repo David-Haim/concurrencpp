@@ -7,7 +7,7 @@
 
 namespace concurrencpp {
     template<class type>
-    class CRCPP_API shared_result {
+    class shared_result {
 
        private:
         std::shared_ptr<details::shared_result_state<type>> m_state;

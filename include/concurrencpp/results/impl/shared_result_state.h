@@ -34,15 +34,33 @@ namespace concurrencpp::details {
        public:
         virtual ~shared_result_state_base() noexcept = default;
 
+        virtual void on_result_finished() noexcept = 0;
+
         result_status status() const noexcept;
+
+        void wait() noexcept;
 
         bool await(shared_await_context& awaiter) noexcept;
 
-        virtual void on_result_finished() noexcept = 0;
+        template<class duration_unit, class ratio>
+        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
+            const auto time_point = std::chrono::system_clock::now() + duration;
+            return wait_until(time_point);
+        }
+
+        template<class clock, class duration>
+        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
+            while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
+                const auto res = m_semaphore.try_acquire_until(timeout_time);
+                (void)res;
+            }
+
+            return status();
+        }
     };
 
     template<class type>
-    class CRCPP_API shared_result_state final : public shared_result_state_base {
+    class shared_result_state final : public shared_result_state_base {
 
        private:
         consumer_result_state_ptr<type> m_result_state;
@@ -61,28 +79,6 @@ namespace concurrencpp::details {
         void share(const std::shared_ptr<shared_result_state_base>& self) noexcept {
             assert(static_cast<bool>(m_result_state));
             m_result_state->share(self);
-        }
-
-        void wait() noexcept {
-            if (status() == result_status::idle) {
-                m_semaphore.acquire();
-            }
-        }
-
-        template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
-            const auto time_point = std::chrono::system_clock::now() + duration;
-            return wait_until(time_point);
-        }
-
-        template<class clock, class duration>
-        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
-                const auto res = m_semaphore.try_acquire_until(timeout_time);
-                (void)res;
-            }
-
-            return status();
         }
 
         std::add_lvalue_reference_t<type> get() {
