@@ -46,35 +46,6 @@ namespace concurrencpp::details {
             }
         }
 
-        producer_context& operator=(producer_context&& rhs) noexcept {
-            assert(m_status == result_status::idle);
-            m_status = std::exchange(rhs.m_status, result_status::idle);
-
-            switch (m_status) {
-                case result_status::value: {
-                    new (std::addressof(m_storage.object)) type(std::move(rhs.m_storage.object));
-                    rhs.m_storage.object.~type();
-                    break;
-                }
-
-                case result_status::exception: {
-                    new (std::addressof(m_storage.exception)) std::exception_ptr(rhs.m_storage.exception);
-                    rhs.m_storage.exception.~exception_ptr();
-                    break;
-                }
-
-                case result_status::idle: {
-                    break;
-                }
-
-                default: {
-                    assert(false);
-                }
-            }
-
-            return *this;
-        }
-
         template<class... argument_types>
         void build_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
             assert(m_status == result_status::idle);
