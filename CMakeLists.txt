@@ -70,6 +70,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/generator.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
+        include/concurrencpp/threads/constants.h
         include/concurrencpp/threads/async_lock.h
         include/concurrencpp/threads/async_condition_variable.h
         include/concurrencpp/threads/thread.h
