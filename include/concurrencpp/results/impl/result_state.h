@@ -104,6 +104,9 @@ namespace concurrencpp::details {
             }
 
             if (wait_ctx->try_acquire_for(duration + std::chrono::milliseconds(1))) {
+                // counting_semaphore isn't required to synchronize non atomic data, 
+                // we'll synchronize it manually using m_pc_state::load(memory_order_acquire)
+                m_pc_state.load(std::memory_order_acquire);
                 assert_done();
                 return m_producer.status();
             }
