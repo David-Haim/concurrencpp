@@ -13,20 +13,16 @@ namespace concurrencpp::details {
     class when_result_helper {
 
        private:
-        template<class type>
-        static void throw_if_empty_single(const char* error_message, const result<type>& result) {
-            if (!static_cast<bool>(result)) {
-                throw errors::empty_result(error_message);
-            }
-        }
-
         static void throw_if_empty_impl(const char* error_message) noexcept {
             (void)error_message;
         }
 
         template<class type, class... result_types>
         static void throw_if_empty_impl(const char* error_message, const result<type>& result, result_types&&... results) {
-            throw_if_empty_single(error_message, result);
+            if (!static_cast<bool>(result)) {
+                throw errors::empty_result(error_message);
+            }
+
             throw_if_empty_impl(error_message, std::forward<result_types>(results)...);
         }
 
@@ -50,6 +46,22 @@ namespace concurrencpp::details {
             return at_impl(seq, tuple, n);
         }
 
+        template<typename type>
+        static result_state_base& at(std::vector<result<type>>& vector, size_t n) noexcept {
+            assert(n < vector.size());
+            return get_state_base(vector[n]);
+        }
+
+        template<class... types>
+        static size_t size(std::tuple<types...>& tuple) noexcept {
+            return std::tuple_size_v<std::tuple<types...>>;
+        }
+
+        template<class type>
+        static size_t size(const std::vector<type>& vector) noexcept {
+            return vector.size();
+        }
+
         template<class... result_types>
         static void throw_if_empty_tuple(const char* error_message, result_types&&... results) {
             throw_if_empty_impl(error_message, std::forward<result_types>(results)...);
@@ -58,7 +70,9 @@ namespace concurrencpp::details {
         template<class iterator_type>
         static void throw_if_empty_range(const char* error_message, iterator_type begin, iterator_type end) {
             for (; begin != end; ++begin) {
-                throw_if_empty_single(error_message, *begin);
+                if (!static_cast<bool>((*begin))) {
+                    throw errors::empty_result(error_message);
+                }
             }
         }
 
@@ -88,26 +102,6 @@ namespace concurrencpp::details {
             std::shared_ptr<when_any_context> m_promise;
             result_types& m_results;
 
-            template<class type>
-            static result_state_base& get_at(std::vector<type>& vector, size_t i) noexcept {
-                return get_state_base(vector[i]);
-            }
-
-            template<class type>
-            static size_t size(const std::vector<type>& vector) noexcept {
-                return vector.size();
-            }
-
-            template<class... types>
-            static result_state_base& get_at(std::tuple<types...>& tuple, size_t i) noexcept {
-                return at(tuple, i);
-            }
-
-            template<class... types>
-            static size_t size(std::tuple<types...>& tuple) noexcept {
-                return std::tuple_size_v<std::tuple<types...>>;
-            }
-
            public:
             when_any_awaitable(result_types& results) noexcept : m_results(results) {}
 
@@ -118,13 +112,13 @@ namespace concurrencpp::details {
             bool await_suspend(coroutine_handle<void> coro_handle) {
                 m_promise = std::make_shared<when_any_context>(coro_handle);
 
-                const auto range_length = size(m_results);
+                const auto range_length = when_result_helper::size(m_results);
                 for (size_t i = 0; i < range_length; i++) {
                     if (m_promise->any_result_finished()) {
                         return false;
                     }
 
-                    auto& state_ref = get_at(m_results, i);
+                    auto& state_ref = when_result_helper::at(m_results, i);
                     const auto status = state_ref.when_any(m_promise);
                     if (status == result_state_base::pc_state::producer_done) {
                         return m_promise->resume_inline(state_ref);
@@ -138,9 +132,9 @@ namespace concurrencpp::details {
                 const auto completed_result_state = m_promise->completed_result();
                 auto completed_result_index = std::numeric_limits<size_t>::max();
 
-                const auto range_length = size(m_results);
+                const auto range_length = when_result_helper::size(m_results);
                 for (size_t i = 0; i < range_length; i++) {
-                    auto& state_ref = get_at(m_results, i);
+                    auto& state_ref = when_result_helper::at(m_results, i);
                     state_ref.try_rewind_consumer();
                     if (completed_result_state == &state_ref) {
                         completed_result_index = i;
@@ -172,30 +166,15 @@ namespace concurrencpp {
 }  // namespace concurrencpp
 
 namespace concurrencpp::details {
-    template<class executor_type>
-    lazy_result<std::tuple<>> when_all_impl(std::shared_ptr<executor_type> resume_executor) {
-        co_return std::tuple<>();
-    }
-
-    template<class executor_type, class tuple_type>
-    lazy_result<tuple_type> when_all_impl(std::shared_ptr<executor_type> resume_executor, tuple_type tuple) {
-        for (size_t i = 0; i < std::tuple_size_v<tuple_type>; i++) {
-            auto& state_ref = when_result_helper::at(tuple, i);
+    template<class executor_type, class collection_type>
+    lazy_result<collection_type> when_all_impl(std::shared_ptr<executor_type> resume_executor, collection_type collection) {
+        for (size_t i = 0; i < when_result_helper::size(collection); i++) {
+            auto& state_ref = when_result_helper::at(collection, i);
             co_await when_result_helper::when_all_awaitable {state_ref};
         }
 
         co_await resume_on(resume_executor);
-        co_return std::move(tuple);
-    }
-
-    template<class executor_type, class type>
-    lazy_result<std::vector<type>> when_all_impl(std::shared_ptr<executor_type> resume_executor, std::vector<type> vector) {
-        for (auto& result : vector) {
-            result = co_await result.resolve();
-        }
-
-        co_await resume_on(resume_executor);
-        co_return std::move(vector);
+        co_return std::move(collection);
     }
 }  // namespace concurrencpp::details
 
@@ -206,7 +185,11 @@ namespace concurrencpp {
             throw std::invalid_argument(details::consts::k_when_all_null_resume_executor_error_msg);
         }
 
-        return details::when_all_impl(resume_executor);
+        auto make_lazy_result = []() -> lazy_result<std::tuple<>> {
+            co_return std::tuple<>{};
+        };
+
+        return make_lazy_result();
     }
 
     template<class executor_type, class... result_types>
