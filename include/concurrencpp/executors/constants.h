@@ -4,6 +4,11 @@
 #include <numeric>
 
 namespace concurrencpp::details::consts {
+    inline const char* k_executor_exception_error_msg =
+        "concurrencpp::concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
+
+    inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - associated task was interrupted abnormally";
+
     inline const char* k_inline_executor_name = "concurrencpp::inline_executor";
     constexpr int k_inline_executor_max_concurrency_level = 0;
 

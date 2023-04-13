@@ -2,6 +2,7 @@
 #define CONCURRENCPP_EXECUTOR_H
 
 #include "concurrencpp/errors.h"
+#include "concurrencpp/executors/constants.h"
 #include "concurrencpp/coroutines/coroutine.h"
 
 #include <string>
@@ -48,7 +49,7 @@ namespace concurrencpp {
 
         void throw_if_interrupted() const {
             if (m_interrupted) {
-                throw errors::broken_task("");
+                throw errors::broken_task(details::consts::k_broken_task_exception_error_msg);
             }
         }
     };

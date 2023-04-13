@@ -38,11 +38,6 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_result_resolve_error_msg = "concurrencpp::result::resolve() - result is empty.";
 
-    inline const char* k_executor_exception_error_msg =
-        "concurrencpp::concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
-
-    inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - associated task was interrupted abnormally";
-
     /*
      * when_xxx
      */

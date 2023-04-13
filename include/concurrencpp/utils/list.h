@@ -1,5 +1,6 @@
 #ifndef CONCURRENCPP_LIST_H
 #define CONCURRENCPP_LIST_H
+
 #include <utility>
 
 #include <cassert>

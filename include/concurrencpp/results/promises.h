@@ -57,9 +57,7 @@ namespace concurrencpp::details {
             }
 
             void await_resume() const {
-                if (m_task.interrupted()) {
-                    throw errors::broken_task(consts::k_broken_task_exception_error_msg);
-                }
+                m_task.throw_if_interrupted();
             }
         };
 
