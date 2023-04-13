@@ -5,6 +5,7 @@
 #include "utils/object_observer.h"
 #include "utils/test_generators.h"
 
+#include <span>
 #include <unordered_set>
 
 namespace concurrencpp::tests {
@@ -48,7 +49,7 @@ void concurrencpp::tests::test_resume_on_shutdown_executor() {
     auto ex = std::make_shared<inline_executor>();
     ex->shutdown();
 
-    assert_throws<errors::broken_task>([ex] {
+    assert_throws<errors::runtime_shutdown>([ex] {
         resume_on_1_executor(ex).get();
     });
 }

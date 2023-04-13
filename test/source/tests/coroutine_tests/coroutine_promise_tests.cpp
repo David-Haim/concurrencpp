@@ -5,6 +5,8 @@
 #include "utils/object_observer.h"
 #include "utils/test_ready_result.h"
 
+#include <span>
+
 namespace concurrencpp::tests {
     void test_initialy_resumed_null_result_promise_value();
     void test_initialy_resumed_null_result_promise_exception();

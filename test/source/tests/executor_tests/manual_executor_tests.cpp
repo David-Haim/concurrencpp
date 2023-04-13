@@ -26,16 +26,6 @@ namespace concurrencpp::tests {
     void test_manual_executor_submit_inline();
     void test_manual_executor_submit();
 
-    void test_manual_executor_bulk_post_exception();
-    void test_manual_executor_bulk_post_foreign();
-    void test_manual_executor_bulk_post_inline();
-    void test_manual_executor_bulk_post();
-
-    void test_manual_executor_bulk_submit_exception();
-    void test_manual_executor_bulk_submit_foreign();
-    void test_manual_executor_bulk_submit_inline();
-    void test_manual_executor_bulk_submit();
-
     void test_manual_executor_loop_once();
     void test_manual_executor_loop_once_for();
     void test_manual_executor_loop_once_until();
@@ -75,13 +65,8 @@ void concurrencpp::tests::test_manual_executor_shutdown_method_access() {
     assert_true(executor->shutdown_requested());
 
     assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        executor->enqueue(concurrencpp::task {});
-    });
-
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        concurrencpp::task array[4];
-        std::span<concurrencpp::task> span = array;
-        executor->enqueue(span);
+        concurrencpp::task t; 
+        executor->enqueue(t);
     });
 
     assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
@@ -351,218 +336,6 @@ void concurrencpp::tests::test_manual_executor_submit() {
     test_manual_executor_submit_exception();
     test_manual_executor_submit_foreign();
     test_manual_executor_submit_inline();
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_post_exception() {
-    auto executor = std::make_shared<manual_executor>();
-    executor_shutdowner shutdown(executor);
-
-    auto thrower = [] {
-        throw std::runtime_error("");
-    };
-
-    std::vector<decltype(thrower)> tasks;
-    tasks.resize(4);
-
-    executor->bulk_post<decltype(thrower)>(tasks);
-    assert_equal(executor->loop(4), 4);
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_post_foreign() {
-    object_observer observer;
-    const size_t task_count = 1'024;
-    auto executor = std::make_shared<manual_executor>();
-
-    std::vector<testing_stub> stubs;
-    stubs.reserve(task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        stubs.emplace_back(observer.get_testing_stub());
-    }
-
-    executor->bulk_post<testing_stub>(stubs);
-
-    assert_equal(executor->size(), task_count);
-    assert_false(executor->empty());
-
-    assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(0));
-
-    for (size_t i = 0; i < task_count / 2; i++) {
-        assert_true(executor->loop_once());
-        assert_equal(observer.get_execution_count(), i + 1);
-        assert_equal(observer.get_destruction_count(), i + 1);
-    }
-
-    executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
-
-    assert_executed_locally(observer.get_execution_map());
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_post_inline() {
-    object_observer observer;
-    constexpr size_t task_count = 1'024;
-    auto executor = std::make_shared<manual_executor>();
-    executor_shutdowner shutdown(executor);
-
-    executor->post([executor, &observer]() mutable {
-        std::vector<testing_stub> stubs;
-        stubs.reserve(task_count);
-
-        for (size_t i = 0; i < task_count; i++) {
-            stubs.emplace_back(observer.get_testing_stub());
-        }
-
-        executor->bulk_post<testing_stub>(stubs);
-    });
-
-    // the tasks are not enqueued yet, only the spawning task is.
-    assert_equal(executor->size(), static_cast<size_t>(1));
-    assert_false(executor->empty());
-
-    assert_true(executor->loop_once());
-    assert_equal(executor->size(), task_count);
-    assert_false(executor->empty());
-
-    assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(0));
-
-    for (size_t i = 0; i < task_count / 2; i++) {
-        assert_true(executor->loop_once());
-        assert_equal(observer.get_execution_count(), i + 1);
-        assert_equal(observer.get_destruction_count(), i + 1);
-    }
-
-    executor->shutdown();
-    assert_equal(observer.get_destruction_count(), task_count);
-
-    assert_executed_locally(observer.get_execution_map());
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_post() {
-    test_manual_executor_bulk_post_exception();
-    test_manual_executor_bulk_post_foreign();
-    test_manual_executor_bulk_post_inline();
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_submit_exception() {
-    auto executor = std::make_shared<manual_executor>();
-    executor_shutdowner shutdown(executor);
-    constexpr intptr_t id = 12345;
-
-    auto thrower = [] {
-        throw custom_exception(id);
-    };
-
-    std::vector<decltype(thrower)> tasks;
-    tasks.resize(4, thrower);
-
-    auto results = executor->bulk_submit<decltype(thrower)>(tasks);
-    assert_equal(executor->loop(4), 4);
-
-    for (auto& result : results) {
-        result.wait();
-        test_ready_result_custom_exception(std::move(result), id);
-    }
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_submit_foreign() {
-    object_observer observer;
-    const size_t task_count = 1'024;
-    auto executor = std::make_shared<manual_executor>();
-    executor_shutdowner shutdown(executor);
-
-    std::vector<value_testing_stub> stubs;
-    stubs.reserve(task_count);
-
-    for (size_t i = 0; i < task_count; i++) {
-        stubs.emplace_back(observer.get_testing_stub(i));
-    }
-
-    auto results = executor->bulk_submit<value_testing_stub>(stubs);
-
-    assert_false(executor->empty());
-    assert_equal(executor->size(), task_count);
-
-    assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(0));
-
-    for (size_t i = 0; i < task_count / 2; i++) {
-        assert_true(executor->loop_once());
-        assert_equal(results[i].get(), i);
-        assert_equal(observer.get_execution_count(), i + 1);
-        assert_equal(observer.get_destruction_count(), i + 1);
-    }
-
-    executor->shutdown();
-
-    assert_executed_locally(observer.get_execution_map());
-
-    for (size_t i = task_count / 2; i < task_count; i++) {
-        assert_throws<errors::broken_task>([&, i] {
-            results[i].get();
-        });
-    }
-
-    assert_equal(observer.get_destruction_count(), task_count);
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_submit_inline() {
-    object_observer observer;
-    constexpr size_t task_count = 1'024;
-    auto executor = std::make_shared<manual_executor>();
-    executor_shutdowner shutdown(executor);
-
-    auto results_res = executor->submit([executor, &observer] {
-        std::vector<value_testing_stub> stubs;
-        stubs.reserve(task_count);
-
-        for (size_t i = 0; i < task_count; i++) {
-            stubs.emplace_back(observer.get_testing_stub(i));
-        }
-
-        return executor->bulk_submit<value_testing_stub>(stubs);
-    });
-
-    // the tasks are not enqueued yet, only the spawning task is.
-    assert_equal(executor->size(), static_cast<size_t>(1));
-    assert_false(executor->empty());
-
-    assert_true(executor->loop_once());
-    assert_equal(executor->size(), task_count);
-    assert_false(executor->empty());
-
-    assert_equal(observer.get_execution_count(), static_cast<size_t>(0));
-    assert_equal(observer.get_destruction_count(), static_cast<size_t>(0));
-
-    assert_equal(results_res.status(), result_status::value);
-    auto results = results_res.get();
-
-    for (size_t i = 0; i < task_count / 2; i++) {
-        assert_true(executor->loop_once());
-        assert_equal(results[i].get(), i);
-        assert_equal(observer.get_execution_count(), i + 1);
-        assert_equal(observer.get_destruction_count(), i + 1);
-    }
-
-    executor->shutdown();
-
-    assert_executed_locally(observer.get_execution_map());
-
-    for (size_t i = task_count / 2; i < task_count; i++) {
-        assert_throws<errors::broken_task>([&, i] {
-            results[i].get();
-        });
-    }
-
-    assert_equal(observer.get_destruction_count(), task_count);
-}
-
-void concurrencpp::tests::test_manual_executor_bulk_submit() {
-    test_manual_executor_bulk_submit_exception();
-    test_manual_executor_bulk_submit_foreign();
-    test_manual_executor_bulk_submit_inline();
 }
 
 void concurrencpp::tests::test_manual_executor_loop_once() {
@@ -1535,8 +1308,6 @@ int main() {
     tester.add_step("max_concurrency_level", test_manual_executor_max_concurrency_level);
     tester.add_step("post", test_manual_executor_post);
     tester.add_step("submit", test_manual_executor_submit);
-    tester.add_step("bulk_post", test_manual_executor_bulk_post);
-    tester.add_step("bulk_submit", test_manual_executor_bulk_submit);
     tester.add_step("loop_once", test_manual_executor_loop_once);
     tester.add_step("loop_once_for", test_manual_executor_loop_once_for);
     tester.add_step("loop_once_until", test_manual_executor_loop_once_until);

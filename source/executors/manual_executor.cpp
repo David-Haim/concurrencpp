@@ -180,9 +180,16 @@ size_t manual_executor::clear() {
         details::throw_runtime_shutdown_exception(name);
     }
 
-    const auto tasks = std::move(m_tasks);
+    auto tasks = std::move(m_tasks);
     lock.unlock();
-    return tasks.size();
+
+    const auto cleared_count = tasks.size();
+    while (!tasks.empty()) {
+        auto& task = tasks.pop_front();
+        task.interrupt();
+    }
+
+    return cleared_count;
 }
 
 void manual_executor::wait_for_task() {
