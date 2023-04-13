@@ -5,6 +5,7 @@
 #include "concurrencpp/results/constants.h"
 #include "concurrencpp/executors/executor.h"
 
+#include <memory>
 #include <type_traits>
 
 namespace concurrencpp::details {

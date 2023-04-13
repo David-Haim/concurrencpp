@@ -53,13 +53,12 @@ namespace concurrencpp {
         }
     };
 
-    class CRCPP_API executor {
-       public:
+    struct CRCPP_API executor {
+        const std::string name;
+
         executor(std::string_view name) : name(name) {}
 
         virtual ~executor() noexcept = default;
-
-        const std::string name;
 
         virtual void enqueue(task& task) = 0;
 

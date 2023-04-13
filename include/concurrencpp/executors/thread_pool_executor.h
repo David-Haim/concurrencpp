@@ -3,7 +3,7 @@
 
 #include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/executor.h"
 
 #include <vector>
 
@@ -39,7 +39,7 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
-    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_executor final : public derivable_executor<thread_pool_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_executor final : public executor {
 
         friend class details::thread_pool_worker;
 

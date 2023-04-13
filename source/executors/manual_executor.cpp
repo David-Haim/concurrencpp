@@ -3,9 +3,7 @@
 
 using concurrencpp::manual_executor;
 
-manual_executor::manual_executor() :
-    derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {
-}
+manual_executor::manual_executor() : executor(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {}
 
 void manual_executor::enqueue(concurrencpp::task& task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -13,7 +11,7 @@ void manual_executor::enqueue(concurrencpp::task& task) {
         details::throw_runtime_shutdown_exception(name);
     }
 
-   // m_tasks.emplace_back(std::move(task));
+    // m_tasks.emplace_back(std::move(task));
     lock.unlock();
 
     m_condition.notify_all();

@@ -8,8 +8,8 @@ namespace concurrencpp::details {
 using concurrencpp::worker_thread_executor;
 
 worker_thread_executor::worker_thread_executor() :
-    derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
-    m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false), m_abort(false) {
+    executor(details::consts::k_worker_thread_executor_name), m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false),
+    m_abort(false) {
     m_thread = details::thread(details::make_executor_worker_name(name), [this] {
         work_loop();
     });
@@ -140,7 +140,6 @@ void worker_thread_executor::shutdown() {
         private_queue = std::move(m_private_queue);
         public_queue = std::move(m_public_queue);
     }
-
 
     while (!public_queue.empty()) {
         auto task = public_queue.pop_front();

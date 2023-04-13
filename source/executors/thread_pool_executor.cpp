@@ -210,7 +210,7 @@ void thread_pool_worker::balance_work() {
     for (const auto idle_worker_index : m_idle_worker_list) {
         assert(idle_worker_index != m_index);
         assert(idle_worker_index < m_pool_size);
-        
+
         auto current_donation_count = donation_count;
 
         if (extra != 0) {
@@ -321,7 +321,7 @@ bool thread_pool_worker::drain_queue() {
     }
 
     assert(m_private_queue.empty());
-    m_private_queue = std::move(m_public_queue);  
+    m_private_queue = std::move(m_public_queue);
     lock.unlock();
 
     return drain_queue_impl();
@@ -431,7 +431,7 @@ void thread_pool_worker::shutdown() {
 
     while (!public_queue.empty()) {
         auto task = public_queue.pop_front();
-        task->interrupt(); 
+        task->interrupt();
     }
 
     while (!private_queue.empty()) {
@@ -449,8 +449,7 @@ bool thread_pool_worker::appears_empty() const noexcept {
 }
 
 thread_pool_executor::thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time) :
-    derivable_executor<concurrencpp::thread_pool_executor>(pool_name), m_round_robin_cursor(0), m_idle_workers(pool_size),
-    m_abort(false) {
+    executor(pool_name), m_round_robin_cursor(0), m_idle_workers(pool_size), m_abort(false) {
     m_workers.reserve(pool_size);
 
     for (size_t i = 0; i < pool_size; i++) {

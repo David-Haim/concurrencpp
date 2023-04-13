@@ -10,8 +10,7 @@
 #include <semaphore>
 
 namespace concurrencpp {
-    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final :
-        public derivable_executor<worker_thread_executor> {
+    class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final : public executor {
 
        private:
         list<task> m_private_queue;

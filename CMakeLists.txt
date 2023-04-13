@@ -39,7 +39,6 @@ set(concurrencpp_headers
         include/concurrencpp/platform_defs.h
         include/concurrencpp/coroutines/coroutine.h
         include/concurrencpp/executors/constants.h
-        include/concurrencpp/executors/derivable_executor.h
         include/concurrencpp/executors/executor.h
         include/concurrencpp/executors/executor_all.h
         include/concurrencpp/executors/inline_executor.h
