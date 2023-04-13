@@ -1,5 +1,6 @@
 #include "concurrencpp/errors.h"
 #include "concurrencpp/utils/list.h"
+#include "concurrencpp/threads/thread.h"
 #include "concurrencpp/executors/thread_pool_executor.h"
 
 #include <mutex>
@@ -219,7 +220,6 @@ void thread_pool_worker::balance_work() {
         }
 
         auto [head, tail] = m_private_queue.pop_front(current_donation_count);
-
         m_parent_pool.worker_at(idle_worker_index).enqueue_foreign(head, tail, current_donation_count);
     }
 
@@ -291,8 +291,8 @@ bool thread_pool_worker::drain_queue_impl() {
         }
 
         assert(!m_private_queue.empty());
-        auto task_ptr = m_private_queue.pop_back();
-        task_ptr->resume();
+        auto& task = m_private_queue.pop_back();
+        task.resume();
     }
 
     if (aborted) {
@@ -378,7 +378,7 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
 
     const auto is_empty = m_public_queue.empty();
-    m_public_queue.push_back(&task);
+    m_public_queue.push_back(task);
     ensure_worker_active(is_empty, lock);
 }
 
@@ -400,7 +400,7 @@ void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
-    m_private_queue.push_back(&task);
+    m_private_queue.push_back(task);
 }
 
 void thread_pool_worker::shutdown() {
@@ -430,13 +430,13 @@ void thread_pool_worker::shutdown() {
     }
 
     while (!public_queue.empty()) {
-        auto task = public_queue.pop_front();
-        task->interrupt();
+        auto& task = public_queue.pop_front();
+        task.interrupt();
     }
 
     while (!private_queue.empty()) {
-        auto task = private_queue.pop_front();
-        task->interrupt();
+        auto& task = private_queue.pop_front();
+        task.interrupt();
     }
 }
 

@@ -1,7 +1,6 @@
 #ifndef CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 #define CONCURRENCPP_THREAD_POOL_EXECUTOR_H
 
-#include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/executor.h"
 
@@ -33,9 +32,7 @@ namespace concurrencpp::details {
         size_t find_idle_worker(size_t caller_index) noexcept;
         void find_idle_workers(size_t caller_index, std::vector<size_t>& result_buffer, size_t max_count) noexcept;
     };
-}  // namespace concurrencpp::details
 
-namespace concurrencpp::details {
     class thread_pool_worker;
 }  // namespace concurrencpp::details
 

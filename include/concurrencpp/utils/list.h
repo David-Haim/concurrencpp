@@ -40,37 +40,37 @@ namespace concurrencpp::details {
             return m_size == 0;
         }
 
-        void push_front(node_type* node) noexcept {
+        void push_front(node_type& node) noexcept {
             ++m_size;
 
             if (m_head == nullptr) {
                 assert(m_tail == nullptr);
-                m_head = node;
-                m_tail = node;
+                m_head = &node;
+                m_tail = &node;
                 return;
             }
 
             assert(m_tail != nullptr);
-            node->prev = nullptr;
-            node->next = m_head;
-            m_head->prev = node;
-            m_head = node;
+            node.prev = nullptr;
+            node.next = m_head;
+            m_head->prev = &node;
+            m_head = &node;
         }
 
-        void push_back(node_type* node) noexcept {
+        void push_back(node_type& node) noexcept {
             ++m_size;
 
             if (m_tail == nullptr) {
                 assert(m_head == nullptr);
-                m_head = node;
-                m_tail = node;
+                m_head = &node;
+                m_tail = &node;
                 return;
             }
 
             assert(m_head != nullptr);
-            node->prev = m_tail;
-            m_tail->next = node;
-            m_tail = node;
+            node.prev = m_tail;
+            m_tail->next = &node;
+            m_tail = &node;
         }
 
         void push_back(node_type* head, node_type* tail, size_t count) noexcept {
@@ -97,7 +97,7 @@ namespace concurrencpp::details {
             m_tail = tail;
         }
 
-        node_type* pop_front() noexcept {
+        node_type& pop_front() noexcept {
             assert(!empty());
 
             --m_size;
@@ -106,7 +106,7 @@ namespace concurrencpp::details {
             if (m_size == 0) {
                 m_head = nullptr;
                 m_tail = nullptr;
-                return result;
+                return *result;
             }
 
             if (m_head->next != nullptr) {
@@ -114,7 +114,9 @@ namespace concurrencpp::details {
             }
 
             m_head = m_head->next;
-            return result;
+            
+            assert(result != nullptr);
+            return *result;
         }
 
         std::pair<node_type*, node_type*> pop_front(size_t count) noexcept {
@@ -149,7 +151,7 @@ namespace concurrencpp::details {
             return {old_head, tail_cursor};
         }
 
-        node_type* pop_back() noexcept {
+        node_type& pop_back() noexcept {
             assert(!empty());
 
             --m_size;
@@ -158,7 +160,7 @@ namespace concurrencpp::details {
             if (m_size == 0) {
                 m_head = nullptr;
                 m_tail = nullptr;
-                return result;
+                return *result;
             }
 
             if (m_tail->prev != nullptr) {
@@ -166,7 +168,9 @@ namespace concurrencpp::details {
             }
 
             m_tail = m_tail->prev;
-            return result;
+
+            assert(result != nullptr);
+            return *result;
         }
     };
 }  // namespace concurrencpp::details

@@ -1,5 +1,5 @@
-#include "concurrencpp/executors/worker_thread_executor.h"
 #include "concurrencpp/executors/constants.h"
+#include "concurrencpp/executors/worker_thread_executor.h"
 
 namespace concurrencpp::details {
     static thread_local worker_thread_executor* s_tl_this_worker = nullptr;
@@ -17,13 +17,12 @@ worker_thread_executor::worker_thread_executor() :
 
 bool worker_thread_executor::drain_queue_impl() {
     while (!m_private_queue.empty()) {
-        auto task = m_private_queue.pop_front();
-
         if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
             return false;
         }
 
-        task->resume();
+        auto& task = m_private_queue.pop_front();
+        task.resume();
     }
 
     return true;
@@ -80,7 +79,7 @@ void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
         details::throw_runtime_shutdown_exception(name);
     }
 
-    m_private_queue.push_back(&task);
+    m_private_queue.push_back(task);
 }
 
 void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
@@ -90,7 +89,7 @@ void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
     }
 
     const auto is_empty = m_public_queue.empty();
-    m_public_queue.push_front(&task);
+    m_public_queue.push_front(task);
     lock.unlock();
 
     if (is_empty) {
@@ -142,12 +141,12 @@ void worker_thread_executor::shutdown() {
     }
 
     while (!public_queue.empty()) {
-        auto task = public_queue.pop_front();
-        task->interrupt();
+        auto& task = public_queue.pop_front();
+        task.interrupt();
     }
 
     while (!private_queue.empty()) {
-        auto task = private_queue.pop_front();
-        task->interrupt();
+        auto& task = private_queue.pop_front();
+        task.interrupt();
     }
 }

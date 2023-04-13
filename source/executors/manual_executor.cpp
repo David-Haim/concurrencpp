@@ -11,7 +11,7 @@ void manual_executor::enqueue(concurrencpp::task& task) {
         details::throw_runtime_shutdown_exception(name);
     }
 
-    // m_tasks.emplace_back(std::move(task));
+    m_tasks.push_back(task);
     lock.unlock();
 
     m_condition.notify_all();
@@ -51,10 +51,10 @@ size_t manual_executor::loop_impl(size_t max_count) {
             break;
         }
 
-        auto task = m_tasks.pop_front();
+        auto& task = m_tasks.pop_front();
         lock.unlock();
 
-        task->resume();
+        task.resume();
         ++executed;
     }
 
@@ -97,10 +97,10 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
         }
 
         assert(!m_tasks.empty());
-        auto task = m_tasks.pop_front();
+        auto& task = m_tasks.pop_front();
         lock.unlock();
 
-        task->resume();
+        task.resume();
         ++executed;
     }
 
@@ -218,8 +218,8 @@ void manual_executor::shutdown() {
     m_condition.notify_all();
 
     while (!tasks.empty()) {
-        auto task = tasks.pop_front();
-        task->interrupt();
+        auto& task = tasks.pop_front();
+        task.interrupt();
     }
 }
 
