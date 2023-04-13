@@ -1,6 +1,5 @@
 #include "concurrencpp/timers/timer.h"
 #include "concurrencpp/timers/timer_queue.h"
-
 #include "concurrencpp/coroutines/coroutine.h"
 
 #include <set>
@@ -285,7 +284,6 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
             m_parent_queue.make_timer_impl(m_due_time_ms, 0, std::move(m_executor), true, [this] {
                 m_task.resume();
             });
-
         }
 
         void await_resume() const {

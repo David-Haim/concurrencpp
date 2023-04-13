@@ -2,10 +2,10 @@
 #define CONCURRENCPP_TIMER_QUEUE_H
 
 #include "timer.h"
-#include "constants.h"
 #include "concurrencpp/errors.h"
 #include "concurrencpp/utils/bind.h"
 #include "concurrencpp/threads/thread.h"
+#include "concurrencpp/timers/constants.h"
 #include "concurrencpp/results/lazy_result.h"
 
 #include <mutex>
