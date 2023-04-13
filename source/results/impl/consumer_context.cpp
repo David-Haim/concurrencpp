@@ -5,7 +5,6 @@
 
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
-using concurrencpp::details::await_via_functor;
 using concurrencpp::details::result_state_base;
 
 namespace concurrencpp::details {
@@ -21,35 +20,6 @@ namespace concurrencpp::details {
         }
     }  // namespace
 }  // namespace concurrencpp::details
-
-/*
- * await_via_functor
- */
-
-await_via_functor::await_via_functor(coroutine_handle<void> caller_handle, bool* interrupted) noexcept :
-    m_caller_handle(caller_handle), m_interrupted(interrupted) {
-    assert(static_cast<bool>(caller_handle));
-    assert(!caller_handle.done());
-    assert(interrupted != nullptr);
-}
-
-await_via_functor::await_via_functor(await_via_functor&& rhs) noexcept :
-    m_caller_handle(std::exchange(rhs.m_caller_handle, {})), m_interrupted(std::exchange(rhs.m_interrupted, nullptr)) {}
-
-await_via_functor ::~await_via_functor() noexcept {
-    if (m_interrupted == nullptr) {
-        return;
-    }
-
-    *m_interrupted = true;
-    m_caller_handle();
-}
-
-void await_via_functor::operator()() noexcept {
-    assert(m_interrupted != nullptr);
-    m_interrupted = nullptr;
-    m_caller_handle();
-}
 
 /*
  * when_any_context

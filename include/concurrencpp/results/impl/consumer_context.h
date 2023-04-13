@@ -8,20 +8,6 @@
 #include <semaphore>
 
 namespace concurrencpp::details {
-    class CRCPP_API await_via_functor {
-
-       private:
-        coroutine_handle<void> m_caller_handle;
-        bool* m_interrupted;
-
-       public:
-        await_via_functor(coroutine_handle<void> caller_handle, bool* interrupted) noexcept;
-        await_via_functor(await_via_functor&& rhs) noexcept;
-        ~await_via_functor() noexcept;
-
-        void operator()() noexcept;
-    };
-
     class CRCPP_API when_any_context {
 
        private:
