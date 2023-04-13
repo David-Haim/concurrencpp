@@ -43,10 +43,6 @@ namespace concurrencpp {
             coro_handle();
         }
 
-        bool interrupted() const noexcept {
-            return m_interrupted;
-        }
-
         void throw_if_interrupted() const {
             if (m_interrupted) {
                 throw errors::broken_task(details::consts::k_broken_task_exception_error_msg);

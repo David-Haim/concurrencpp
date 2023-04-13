@@ -10,17 +10,14 @@ namespace concurrencpp {
        private:
         std::atomic_bool m_abort;
 
-        void throw_if_aborted() const {
-            if (m_abort.load(std::memory_order_relaxed)) {
-                details::throw_runtime_shutdown_exception(name);
-            }
-        }
-
        public:
         inline_executor() noexcept : executor(details::consts::k_inline_executor_name), m_abort(false) {}
 
         void enqueue(concurrencpp::task& task) override {
-            throw_if_aborted();
+            if (m_abort.load(std::memory_order_relaxed)) {
+                details::throw_runtime_shutdown_exception(name);
+            }
+
             task.resume();
         }
 

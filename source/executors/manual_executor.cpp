@@ -51,11 +51,10 @@ size_t manual_executor::loop_impl(size_t max_count) {
             break;
         }
 
-        auto task = std::move(m_tasks.front());
-        m_tasks.pop_front();
+        auto task = m_tasks.pop_front();
         lock.unlock();
 
-        task.resume();
+        task->resume();
         ++executed;
     }
 
@@ -98,11 +97,10 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
         }
 
         assert(!m_tasks.empty());
-        auto task = std::move(m_tasks.front());
-        m_tasks.pop_front();
+        auto task = m_tasks.pop_front();
         lock.unlock();
 
-        task.resume();
+        task->resume();
         ++executed;
     }
 
@@ -209,7 +207,7 @@ void manual_executor::shutdown() {
         return;  // shutdown had been called before.
     }
 
-    decltype(m_tasks) tasks;
+    details::list<task> tasks;
 
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -219,7 +217,10 @@ void manual_executor::shutdown() {
 
     m_condition.notify_all();
 
-    tasks.clear();
+    while (!tasks.empty()) {
+        auto task = tasks.pop_front();
+        task->interrupt();
+    }
 }
 
 bool manual_executor::shutdown_requested() const {

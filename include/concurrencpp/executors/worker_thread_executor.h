@@ -4,7 +4,7 @@
 #include "concurrencpp/utils/list.h"
 #include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/executor.h"
 
 #include <mutex>
 #include <semaphore>
@@ -13,11 +13,11 @@ namespace concurrencpp {
     class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) worker_thread_executor final : public executor {
 
        private:
-        list<task> m_private_queue;
+        details::list<task> m_private_queue;
         std::atomic_bool m_private_atomic_abort;
         details::thread m_thread;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
-        list<task> m_public_queue;
+        details::list<task> m_public_queue;
         std::binary_semaphore m_semaphore;
         std::atomic_bool m_atomic_abort;
         bool m_abort;

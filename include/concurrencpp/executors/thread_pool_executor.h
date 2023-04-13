@@ -5,6 +5,7 @@
 #include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/executor.h"
 
+#include <memory>
 #include <vector>
 
 namespace concurrencpp::details {

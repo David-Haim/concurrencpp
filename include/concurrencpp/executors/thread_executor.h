@@ -3,10 +3,9 @@
 
 #include "concurrencpp/threads/thread.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/executor.h"
 
 #include <list>
-#include <span>
 #include <mutex>
 #include <condition_variable>
 

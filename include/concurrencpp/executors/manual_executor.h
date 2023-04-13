@@ -1,10 +1,10 @@
 #ifndef CONCURRENCPP_MANUAL_EXECUTOR_H
 #define CONCURRENCPP_MANUAL_EXECUTOR_H
 
+#include "concurrencpp/utils/list.h"
 #include "concurrencpp/threads/cache_line.h"
-#include "concurrencpp/executors/derivable_executor.h"
+#include "concurrencpp/executors/executor.h"
 
-#include <deque>
 #include <mutex>
 #include <chrono>
 #include <condition_variable>
@@ -14,7 +14,7 @@ namespace concurrencpp {
 
        private:
         mutable std::mutex m_lock;
-        std::deque<task> m_tasks;
+        details::list<task> m_tasks;
         std::condition_variable m_condition;
         bool m_abort;
         std::atomic_bool m_atomic_abort;
