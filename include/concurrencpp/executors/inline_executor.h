@@ -19,16 +19,9 @@ namespace concurrencpp {
        public:
         inline_executor() noexcept : executor(details::consts::k_inline_executor_name), m_abort(false) {}
 
-        void enqueue(concurrencpp::task task) override {
+        void enqueue(concurrencpp::task& task) override {
             throw_if_aborted();
-            task();
-        }
-
-        void enqueue(std::span<concurrencpp::task> tasks) override {
-            throw_if_aborted();
-            for (auto& task : tasks) {
-                task();
-            }
+            task.resume();
         }
 
         int max_concurrency_level() const noexcept override {

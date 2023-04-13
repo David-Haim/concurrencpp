@@ -5,8 +5,7 @@
 #include "concurrencpp/threads/cache_line.h"
 #include "concurrencpp/executors/derivable_executor.h"
 
-#include <deque>
-#include <mutex>
+#include <vector>
 
 namespace concurrencpp::details {
     class idle_worker_set {
@@ -59,10 +58,9 @@ namespace concurrencpp {
        public:
         thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time);
 
-        ~thread_pool_executor() override;
+        ~thread_pool_executor() noexcept override;
 
-        void enqueue(task task) override;
-        void enqueue(std::span<task> tasks) override;
+        void enqueue(task& task) override;
 
         int max_concurrency_level() const noexcept override;
 

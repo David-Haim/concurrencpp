@@ -40,9 +40,8 @@ namespace concurrencpp {
        public:
         manual_executor();
 
-        void enqueue(task task) override;
-        void enqueue(std::span<task> tasks) override;
-
+        void enqueue(task& task) override;
+       
         int max_concurrency_level() const noexcept override;
 
         void shutdown() override;

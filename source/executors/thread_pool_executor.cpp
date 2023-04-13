@@ -1,5 +1,8 @@
+#include "concurrencpp/errors.h"
+#include "concurrencpp/utils/list.h"
 #include "concurrencpp/executors/thread_pool_executor.h"
 
+#include <mutex>
 #include <semaphore>
 #include <algorithm>
 
@@ -30,7 +33,7 @@ namespace concurrencpp::details {
     class alignas(CRCPP_CACHE_LINE_ALIGNMENT) thread_pool_worker {
 
        private:
-        std::deque<task> m_private_queue;
+        list<task> m_private_queue;
         std::vector<size_t> m_idle_worker_list;
         std::atomic_bool m_atomic_abort;
         thread_pool_executor& m_parent_pool;
@@ -39,7 +42,7 @@ namespace concurrencpp::details {
         const std::chrono::milliseconds m_max_idle_time;
         const std::string m_worker_name;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
-        std::deque<task> m_public_queue;
+        list<task> m_public_queue;
         std::binary_semaphore m_semaphore;
         bool m_idle;
         bool m_abort;
@@ -63,12 +66,9 @@ namespace concurrencpp::details {
         ~thread_pool_worker() noexcept;
 
         void enqueue_foreign(concurrencpp::task& task);
-        void enqueue_foreign(std::span<concurrencpp::task> tasks);
-        void enqueue_foreign(std::deque<concurrencpp::task>::iterator begin, std::deque<concurrencpp::task>::iterator end);
-        void enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end);
+        void enqueue_foreign(task* head, task* tail, size_t count);
 
         void enqueue_local(concurrencpp::task& task);
-        void enqueue_local(std::span<concurrencpp::task> tasks);
 
         void shutdown();
 
@@ -207,48 +207,23 @@ void thread_pool_worker::balance_work() {
     const auto donation_count = task_count / total_worker_count;
     auto extra = task_count - donation_count * total_worker_count;
 
-    size_t begin = 0;
-    size_t end = donation_count;
-
     for (const auto idle_worker_index : m_idle_worker_list) {
         assert(idle_worker_index != m_index);
         assert(idle_worker_index < m_pool_size);
-        assert(begin < task_count);
+        
+        auto current_donation_count = donation_count;
 
         if (extra != 0) {
-            end++;
+            current_donation_count++;
             extra--;
         }
 
-        assert(end <= task_count);
+        auto [head, tail] = m_private_queue.pop_front(current_donation_count);
 
-        auto donation_begin_it = m_private_queue.begin() + begin;
-        auto donation_end_it = m_private_queue.begin() + end;
-
-        assert(donation_begin_it < m_private_queue.end());
-        assert(donation_end_it <= m_private_queue.end());
-
-        m_parent_pool.worker_at(idle_worker_index).enqueue_foreign(donation_begin_it, donation_end_it);
-
-        begin = end;
-        end += donation_count;
+        m_parent_pool.worker_at(idle_worker_index).enqueue_foreign(head, tail, current_donation_count);
     }
 
     assert(m_private_queue.size() == task_count);
-
-    // clear everything we've donated.
-    assert(std::all_of(m_private_queue.begin(), m_private_queue.begin() + begin, [](auto& task) {
-        return !static_cast<bool>(task);
-    }));
-
-    assert(std::all_of(m_private_queue.begin() + begin, m_private_queue.end(), [](auto& task) {
-        return static_cast<bool>(task);
-    }));
-
-    m_private_queue.erase(m_private_queue.begin(), m_private_queue.begin() + begin);
-
-    assert(!m_private_queue.empty());
-
     m_idle_worker_list.clear();
 }
 
@@ -316,9 +291,8 @@ bool thread_pool_worker::drain_queue_impl() {
         }
 
         assert(!m_private_queue.empty());
-        auto task = std::move(m_private_queue.back());
-        m_private_queue.pop_back();
-        task();
+        auto task_ptr = m_private_queue.pop_back();
+        task_ptr->resume();
     }
 
     if (aborted) {
@@ -347,7 +321,7 @@ bool thread_pool_worker::drain_queue() {
     }
 
     assert(m_private_queue.empty());
-    std::swap(m_private_queue, m_public_queue);  // reuse underlying allocations.
+    m_private_queue = std::move(m_public_queue);  
     lock.unlock();
 
     return drain_queue_impl();
@@ -404,11 +378,11 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
 
     const auto is_empty = m_public_queue.empty();
-    m_public_queue.emplace_back(std::move(task));
+    m_public_queue.push_back(&task);
     ensure_worker_active(is_empty, lock);
 }
 
-void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
+void thread_pool_worker::enqueue_foreign(task* head, task* tail, size_t count) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
@@ -417,33 +391,7 @@ void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
 
     const auto is_empty = m_public_queue.empty();
-    m_public_queue.insert(m_public_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
-    ensure_worker_active(is_empty, lock);
-}
-
-void thread_pool_worker::enqueue_foreign(std::deque<task>::iterator begin, std::deque<task>::iterator end) {
-    std::unique_lock<std::mutex> lock(m_lock);
-    if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
-    }
-
-    m_task_found_or_abort.store(true, std::memory_order_relaxed);
-
-    const auto is_empty = m_public_queue.empty();
-    m_public_queue.insert(m_public_queue.end(), std::make_move_iterator(begin), std::make_move_iterator(end));
-    ensure_worker_active(is_empty, lock);
-}
-
-void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end) {
-    std::unique_lock<std::mutex> lock(m_lock);
-    if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
-    }
-
-    m_task_found_or_abort.store(true, std::memory_order_relaxed);
-
-    const auto is_empty = m_public_queue.empty();
-    m_public_queue.insert(m_public_queue.end(), std::make_move_iterator(begin), std::make_move_iterator(end));
+    m_public_queue.push_back(head, tail, count);
     ensure_worker_active(is_empty, lock);
 }
 
@@ -452,15 +400,7 @@ void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
     }
 
-    m_private_queue.emplace_back(std::move(task));
-}
-
-void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
-    if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
-    }
-
-    m_private_queue.insert(m_private_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
+    m_private_queue.push_back(&task);
 }
 
 void thread_pool_worker::shutdown() {
@@ -489,8 +429,15 @@ void thread_pool_worker::shutdown() {
         private_queue = std::move(m_private_queue);
     }
 
-    public_queue.clear();
-    private_queue.clear();
+    while (!public_queue.empty()) {
+        auto task = public_queue.pop_front();
+        task->interrupt(); 
+    }
+
+    while (!private_queue.empty()) {
+        auto task = private_queue.pop_front();
+        task->interrupt();
+    }
 }
 
 std::chrono::milliseconds thread_pool_worker::max_worker_idle_time() const noexcept {
@@ -536,7 +483,7 @@ void thread_pool_executor::mark_worker_active(size_t index) noexcept {
     m_idle_workers.set_active(index);
 }
 
-void thread_pool_executor::enqueue(concurrencpp::task task) {
+void thread_pool_executor::enqueue(concurrencpp::task& task) {
     const auto this_worker = details::s_tl_thread_pool_data.this_worker;
     const auto this_worker_index = details::s_tl_thread_pool_data.this_thread_index;
 
@@ -556,51 +503,6 @@ void thread_pool_executor::enqueue(concurrencpp::task task) {
     const auto next_worker = m_round_robin_cursor.fetch_add(1, std::memory_order_relaxed) % m_workers.size();
     m_workers[next_worker].enqueue_foreign(task);
 }
-
-void thread_pool_executor::enqueue(std::span<concurrencpp::task> tasks) {
-    if (details::s_tl_thread_pool_data.this_worker != nullptr) {
-        return details::s_tl_thread_pool_data.this_worker->enqueue_local(tasks);
-    }
-
-    if (tasks.size() < m_workers.size()) {
-        for (auto& task : tasks) {
-            enqueue(std::move(task));
-        }
-
-        return;
-    }
-
-    const auto task_count = tasks.size();
-    const auto total_worker_count = m_workers.size();
-    const auto donation_count = task_count / total_worker_count;
-    auto extra = task_count - donation_count * total_worker_count;
-
-    size_t begin = 0;
-    size_t end = donation_count;
-
-    for (size_t i = 0; i < total_worker_count; i++) {
-        assert(begin < task_count);
-
-        if (extra != 0) {
-            end++;
-            extra--;
-        }
-
-        assert(end <= task_count);
-
-        auto tasks_begin_it = tasks.begin() + begin;
-        auto tasks_end_it = tasks.begin() + end;
-
-        assert(tasks_begin_it < tasks.end());
-        assert(tasks_end_it <= tasks.end());
-
-        m_workers[i].enqueue_foreign(tasks_begin_it, tasks_end_it);
-
-        begin = end;
-        end += donation_count;
-    }
-}
-
 int thread_pool_executor::max_concurrency_level() const noexcept {
     return static_cast<int>(m_workers.size());
 }

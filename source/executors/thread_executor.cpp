@@ -12,35 +12,17 @@ thread_executor::~thread_executor() noexcept {
     assert(m_last_retired.empty());
 }
 
-void thread_executor::enqueue_impl(std::unique_lock<std::mutex>& lock, concurrencpp::task& task) {
-    assert(lock.owns_lock());
+void thread_executor::enqueue(concurrencpp::task& task) {
+    std::unique_lock<std::mutex> lock(m_lock);
+    if (m_abort) {
+        details::throw_runtime_shutdown_exception(name);
+    }
 
     auto& new_thread = m_workers.emplace_front();
-    new_thread = details::thread(details::make_executor_worker_name(name),
-                                 [this, self_it = m_workers.begin(), task = std::move(task)]() mutable {
-                                     task();
-                                     retire_worker(self_it);
-                                 });
-}
-
-void thread_executor::enqueue(concurrencpp::task task) {
-    std::unique_lock<std::mutex> lock(m_lock);
-    if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
-    }
-
-    enqueue_impl(lock, task);
-}
-
-void thread_executor::enqueue(std::span<concurrencpp::task> tasks) {
-    std::unique_lock<std::mutex> lock(m_lock);
-    if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
-    }
-
-    for (auto& task : tasks) {
-        enqueue_impl(lock, task);
-    }
+    new_thread = details::thread(details::make_executor_worker_name(name), [this, self_it = m_workers.begin(), &task]() mutable {
+        task.resume();
+        retire_worker(self_it);
+    });
 }
 
 int thread_executor::max_concurrency_level() const noexcept {

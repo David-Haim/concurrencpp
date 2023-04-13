@@ -1,6 +1,8 @@
 #ifndef CONCURRENCPP_RESUME_ON_H
 #define CONCURRENCPP_RESUME_ON_H
 
+#include "concurrencpp/errors.h"
+#include "concurrencpp/results/constants.h"
 #include "concurrencpp/executors/executor.h"
 #include "concurrencpp/results/impl/consumer_context.h"
 
@@ -12,7 +14,7 @@ namespace concurrencpp::details {
 
        private:
         executor_type& m_executor;
-        bool m_interrupted = false;
+        task m_task;
 
        public:
         resume_on_awaitable(executor_type& executor) noexcept : m_executor(executor) {}
@@ -24,17 +26,12 @@ namespace concurrencpp::details {
         resume_on_awaitable& operator=(resume_on_awaitable&&) = delete;
 
         void await_suspend(coroutine_handle<void> handle) {
-            try {
-                m_executor.post(await_via_functor {handle, &m_interrupted});
-            } catch (...) {
-                // the exception caused the enqeueud task to be broken and resumed with an interrupt, no need to do anything here.
-            }
+            m_task.set_coroutine_handle(handle);
+            m_executor.enqueue(m_task);
         }
 
         void await_resume() const {
-            if (m_interrupted) {
-                throw errors::broken_task(consts::k_broken_task_exception_error_msg);
-            }
+            m_task.throw_if_interrupted();
         }
     };
 }  // namespace concurrencpp::details

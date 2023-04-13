@@ -1,17 +1,13 @@
 #ifndef CONCURRENCPP_PROMISES_H
 #define CONCURRENCPP_PROMISES_H
 
+#include "concurrencpp/errors.h"
+#include "concurrencpp/results/constants.h"
+#include "concurrencpp/executors/executor.h"
 #include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/executors/executor_all.h"
 #include "concurrencpp/results/impl/lazy_result_state.h"
 #include "concurrencpp/results/impl/result_state.h"
 #include "concurrencpp/results/impl/return_value_struct.h"
-#include "concurrencpp/task.h"
-
-#include <vector>
-
-#include "constants.h"
-#include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
     template<class executor_type>
@@ -51,20 +47,16 @@ namespace concurrencpp::details {
         class initial_scheduling_awaiter : public suspend_always {
 
            private:
-            bool m_interrupted = false;
+            task m_task;
 
            public:
             template<class promise_type>
             void await_suspend(coroutine_handle<promise_type> handle) {
-                try {
-                    handle.promise().m_initial_executor.post(await_via_functor {handle, &m_interrupted});                
-                } catch (...) {
-                    // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
-                }
+                handle.promise().m_initial_executor.enqueue(m_task);
             }
 
             void await_resume() const {
-                if (m_interrupted) {
+                if (m_task.interrupted()) {
                     throw errors::broken_task(consts::k_broken_task_exception_error_msg);
                 }
             }
@@ -152,19 +144,19 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 namespace CRCPP_COROUTINE_NAMESPACE {
-    // No executor + No result
+    // null_result + no executor
     template<class... arguments>
     struct coroutine_traits<::concurrencpp::null_result, arguments...> {
         using promise_type = concurrencpp::details::initialy_resumed_null_result_promise;
     };
 
-    // No executor + result
+    // result + no executor
     template<class type, class... arguments>
     struct coroutine_traits<::concurrencpp::result<type>, arguments...> {
         using promise_type = concurrencpp::details::initialy_resumed_result_promise<type>;
     };
 
-    // Executor + no result
+    // null_result + via executor
     template<class executor_type, class... arguments>
     struct coroutine_traits<concurrencpp::null_result, concurrencpp::executor_tag, std::shared_ptr<executor_type>, arguments...> {
         using promise_type = concurrencpp::details::initialy_rescheduled_null_result_promise<executor_type>;
@@ -180,7 +172,7 @@ namespace CRCPP_COROUTINE_NAMESPACE {
         using promise_type = concurrencpp::details::initialy_rescheduled_null_result_promise<executor_type>;
     };
 
-    // Executor + result
+    // result + via executor
     template<class type, class executor_type, class... arguments>
     struct coroutine_traits<::concurrencpp::result<type>, concurrencpp::executor_tag, std::shared_ptr<executor_type>, arguments...> {
         using promise_type = concurrencpp::details::initialy_rescheduled_result_promise<type, executor_type>;

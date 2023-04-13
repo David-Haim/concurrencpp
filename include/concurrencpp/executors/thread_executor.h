@@ -21,15 +21,13 @@ namespace concurrencpp {
         bool m_abort;
         std::atomic_bool m_atomic_abort;
 
-        void enqueue_impl(std::unique_lock<std::mutex>& lock, task& task);
         void retire_worker(std::list<details::thread>::iterator it);
 
        public:
         thread_executor();
         ~thread_executor() noexcept;
 
-        void enqueue(task task) override;
-        void enqueue(std::span<task> tasks) override;
+        void enqueue(task& task) override;
 
         int max_concurrency_level() const noexcept override;
 

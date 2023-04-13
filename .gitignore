@@ -45,6 +45,7 @@ CMakeSettings.json
 build/
 msvc_intermediate/
 out/
+CMakeFiles/
 
 # CLion
 .idea/

@@ -17,7 +17,6 @@ endif()
 # ---- Declare library ----
 
 set(concurrencpp_sources
-        source/task.cpp
         source/executors/executor.cpp
         source/executors/manual_executor.cpp
         source/executors/thread_executor.cpp
@@ -36,7 +35,6 @@ set(concurrencpp_sources
 set(concurrencpp_headers
         include/concurrencpp/concurrencpp.h
         include/concurrencpp/errors.h
-        include/concurrencpp/task.h
         include/concurrencpp/forward_declarations.h
         include/concurrencpp/platform_defs.h
         include/concurrencpp/coroutines/coroutine.h
@@ -79,7 +77,8 @@ set(concurrencpp_headers
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
         include/concurrencpp/utils/bind.h
-        include/concurrencpp/utils/slist.h)
+        include/concurrencpp/utils/slist.h
+        include/concurrencpp/utils/list.h)
 
 add_library(concurrencpp ${concurrencpp_headers} ${concurrencpp_sources})
 add_library(concurrencpp::concurrencpp ALIAS concurrencpp)

@@ -7,25 +7,13 @@ manual_executor::manual_executor() :
     derivable_executor<concurrencpp::manual_executor>(details::consts::k_manual_executor_name), m_abort(false), m_atomic_abort(false) {
 }
 
-void manual_executor::enqueue(concurrencpp::task task) {
+void manual_executor::enqueue(concurrencpp::task& task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_runtime_shutdown_exception(name);
     }
 
-    m_tasks.emplace_back(std::move(task));
-    lock.unlock();
-
-    m_condition.notify_all();
-}
-
-void manual_executor::enqueue(std::span<concurrencpp::task> tasks) {
-    std::unique_lock<decltype(m_lock)> lock(m_lock);
-    if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
-    }
-
-    m_tasks.insert(m_tasks.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
+   // m_tasks.emplace_back(std::move(task));
     lock.unlock();
 
     m_condition.notify_all();
@@ -69,7 +57,7 @@ size_t manual_executor::loop_impl(size_t max_count) {
         m_tasks.pop_front();
         lock.unlock();
 
-        task();
+        task.resume();
         ++executed;
     }
 
@@ -116,7 +104,7 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
         m_tasks.pop_front();
         lock.unlock();
 
-        task();
+        task.resume();
         ++executed;
     }
 
