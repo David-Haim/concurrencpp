@@ -27,9 +27,9 @@ void timer_state_base::fire() {
 
     assert(static_cast<bool>(m_executor));
 
-    m_executor->post([self = shared_from_this()]() mutable {
-        self->execute();
-    });
+//    m_executor->post([self = shared_from_this()]() mutable {
+ //       self->execute();
+  //  });
 }
 
 timer::timer(std::shared_ptr<timer_state_base> timer_impl) noexcept : m_state(std::move(timer_impl)) {}

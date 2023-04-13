@@ -223,7 +223,7 @@ void thread_pool_worker::balance_work() {
         m_parent_pool.worker_at(idle_worker_index).enqueue_foreign(head, tail, current_donation_count);
     }
 
-    assert(m_private_queue.size() == task_count);
+    assert(!m_private_queue.empty());
     m_idle_worker_list.clear();
 }
 

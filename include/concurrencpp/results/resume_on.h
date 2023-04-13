@@ -4,7 +4,6 @@
 #include "concurrencpp/errors.h"
 #include "concurrencpp/results/constants.h"
 #include "concurrencpp/executors/executor.h"
-#include "concurrencpp/results/impl/consumer_context.h"
 
 #include <type_traits>
 

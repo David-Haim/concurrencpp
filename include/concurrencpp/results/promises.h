@@ -52,6 +52,7 @@ namespace concurrencpp::details {
            public:
             template<class promise_type>
             void await_suspend(coroutine_handle<promise_type> handle) {
+                m_task.set_coroutine_handle(handle);
                 handle.promise().m_initial_executor.enqueue(m_task);
             }
 
