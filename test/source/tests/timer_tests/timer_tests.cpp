@@ -63,13 +63,9 @@ namespace concurrencpp::tests {
        public:
         counting_executor() : executor("counting executor"), m_invocation_count(0) {}
 
-        void enqueue(concurrencpp::task task) override {
+        void enqueue(concurrencpp::task& task) override {
             ++m_invocation_count;
-            task();
-        }
-
-        void enqueue(std::span<concurrencpp::task>) override {
-            // do nothing
+            task.resume();
         }
 
         int max_concurrency_level() const noexcept override {
@@ -101,7 +97,7 @@ namespace concurrencpp::tests {
             m_time_points.reserve(128);
         }
 
-        void enqueue(concurrencpp::task task) override {
+        void enqueue(concurrencpp::task& task) override {
             const auto now = high_resolution_clock::now();
 
             {
@@ -109,11 +105,7 @@ namespace concurrencpp::tests {
                 m_time_points.emplace_back(now);
             }
 
-            task();
-        }
-
-        void enqueue(std::span<concurrencpp::task>) override {
-            // do nothing
+            task.resume();
         }
 
         int max_concurrency_level() const noexcept override {
