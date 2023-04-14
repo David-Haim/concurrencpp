@@ -461,7 +461,7 @@ thread_pool_executor::thread_pool_executor(std::string_view pool_name, std::size
     }
 }
 
-thread_pool_executor::~thread_pool_executor() = default;
+thread_pool_executor::~thread_pool_executor() noexcept {}
 
 void thread_pool_executor::find_idle_workers(std::size_t caller_index, std::vector<std::size_t>& buffer, std::size_t max_count) noexcept {
     m_idle_workers.find_idle_workers(caller_index, buffer, max_count);

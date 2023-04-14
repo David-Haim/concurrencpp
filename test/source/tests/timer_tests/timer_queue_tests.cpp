@@ -76,7 +76,7 @@ void concurrencpp::tests::test_timer_queue_make_delay_object() {
     timer_queue->shutdown();
     assert_true(timer_queue->shutdown_requested());
 
-    assert_throws_with_error_message<errors::broken_task>(
+    assert_throws_with_error_message<errors::runtime_shutdown>(
         [timer_queue] {
             auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
             timer_queue->make_delay_object(100ms, inline_executor).run().get();

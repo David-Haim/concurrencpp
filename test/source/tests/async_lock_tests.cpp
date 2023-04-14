@@ -139,7 +139,7 @@ void concurrencpp::tests::test_async_lock_unlock_resumption_fails() {
     g.unlock();
 
     for (auto& err_result : results) {
-        assert_throws<errors::broken_task>([&err_result] {
+        assert_throws<errors::runtime_shutdown>([&err_result] {
             err_result.get();
         });
     }

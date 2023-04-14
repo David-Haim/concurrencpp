@@ -55,8 +55,7 @@ namespace concurrencpp {
 
        public:
         thread_pool_executor(std::string_view pool_name, std::size_t pool_size, std::chrono::milliseconds max_idle_time);
-
-        ~thread_pool_executor() noexcept override;
+        ~thread_pool_executor() noexcept;
 
         void enqueue(task& task) override;
 
