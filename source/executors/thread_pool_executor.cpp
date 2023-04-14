@@ -45,6 +45,8 @@ namespace concurrencpp::details {
         bool m_abort;
         std::atomic_bool m_task_found_or_abort;
         thread m_thread;
+        std::function<void(const char* thread_name)> m_thread_started_callback;
+        std::function<void(const char* thread_name)> m_thread_terminated_callback;
 
         void balance_work();
 
@@ -57,7 +59,12 @@ namespace concurrencpp::details {
         void ensure_worker_active(bool first_enqueuer, std::unique_lock<std::mutex>& lock);
 
        public:
-        thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::milliseconds max_idle_time);
+        thread_pool_worker(thread_pool_executor& parent_pool,
+                           size_t index,
+                           size_t pool_size,
+                           std::chrono::milliseconds max_idle_time,
+                           const std::function<void(const char* thread_name)>& thread_started_callback,
+                           const std::function<void(const char* thread_name)>& thread_terminated_callback);
 
         thread_pool_worker(thread_pool_worker&& rhs) noexcept;
         ~thread_pool_worker() noexcept;

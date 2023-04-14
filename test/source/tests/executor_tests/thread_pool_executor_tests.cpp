@@ -553,7 +553,7 @@ void concurrencpp::tests::test_thread_pool_executor_dynamic_resizing() {
 void concurrencpp::tests::test_thread_pool_executor_thread_callbacks() {
     constexpr std::string_view thread_pool_name = "threadpool";
     test_thread_callbacks(
-        [](auto thread_started_callback, auto thread_terminated_callback) {
+        [thread_pool_name](auto thread_started_callback, auto thread_terminated_callback) {
             return std::make_shared<thread_pool_executor>(thread_pool_name,
                                                           1,
                                                           std::chrono::seconds(10),
