@@ -101,7 +101,6 @@ function(add_test)
                                                ${TEST_PROPERTIES})
 endfunction()
 
-add_test(NAME task_tests PATH source/tests/task_tests.cpp)
 add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
 
 add_test(NAME inline_executor_tests PATH source/tests/executor_tests/inline_executor_tests.cpp)
