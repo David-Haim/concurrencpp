@@ -5,6 +5,8 @@
 #include "utils/object_observer.h"
 #include "utils/test_generators.h"
 
+#include <span>
+
 using namespace concurrencpp::tests;
 
 namespace concurrencpp::tests {
