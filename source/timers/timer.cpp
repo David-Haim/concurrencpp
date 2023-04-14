@@ -26,11 +26,9 @@ void timer_state_base::fire() {
     m_deadline = make_deadline(milliseconds(frequency));
 
     assert(static_cast<bool>(m_executor));
-
-    auto fire = [](executor_tag, std::shared_ptr<executor> executor, std::shared_ptr<timer_state_base> self) -> null_result {
+    m_executor->post([self = shared_from_this()] {
         self->execute();
-        co_return;
-    };
+    });
 }
 
 timer::timer(std::shared_ptr<timer_state_base> timer_impl) noexcept : m_state(std::move(timer_impl)) {}
