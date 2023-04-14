@@ -9,6 +9,8 @@
 #include <chrono>
 #include <condition_variable>
 
+#include <cstdint>
+
 namespace concurrencpp {
     class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public executor {
 
