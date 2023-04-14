@@ -15,8 +15,7 @@ namespace concurrencpp::tests {
 
         dummy_executor(const char* name, int, float) : executor(name) {}
 
-        void enqueue(concurrencpp::task) override {}
-        void enqueue(std::span<concurrencpp::task>) override {}
+        void enqueue(concurrencpp::task&) override {}
 
         int max_concurrency_level() const noexcept override {
             return 0;
