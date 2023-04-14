@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include <cstdint>
 #include <cassert>
 
 namespace concurrencpp::details {

@@ -7,8 +7,6 @@
 
 void test_executor_post(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread = 100'000);
 void test_executor_submit(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread = 100'000);
-void test_executor_bulk_post(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread = 100'000);
-void test_executor_bulk_submit(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread = 100'000);
 
 void test_manual_executor_wait_for_task(std::shared_ptr<concurrencpp::manual_executor> executor);
 void test_manual_executor_wait_for_task_for(std::shared_ptr<concurrencpp::manual_executor> executor);
@@ -31,8 +29,6 @@ int main() {
 
         test_executor_post(ie);
         test_executor_submit(ie);
-        test_executor_bulk_post(ie);
-        test_executor_bulk_submit(ie);
     }
 
     {
@@ -42,8 +38,6 @@ int main() {
 
         test_executor_post(tpe);
         test_executor_submit(tpe);
-        test_executor_bulk_post(tpe);
-        test_executor_bulk_submit(tpe);
     }
 
     {
@@ -51,8 +45,6 @@ int main() {
 
         test_executor_post(runtime.make_worker_thread_executor());
         test_executor_submit(runtime.make_worker_thread_executor());
-        test_executor_bulk_post(runtime.make_worker_thread_executor());
-        test_executor_bulk_submit(runtime.make_worker_thread_executor());
     }
 
     {
@@ -62,8 +54,6 @@ int main() {
 
         test_executor_post(te, 216);
         test_executor_submit(te, 216);
-        test_executor_bulk_post(te, 216);
-        test_executor_bulk_submit(te, 216);
     }
 
     {
@@ -71,8 +61,6 @@ int main() {
 
         test_executor_post(runtime.make_manual_executor());
         test_executor_submit(runtime.make_manual_executor());
-        test_executor_bulk_post(runtime.make_manual_executor());
-        test_executor_bulk_submit(runtime.make_manual_executor());
         test_manual_executor_wait_for_task(runtime.make_manual_executor());
         test_manual_executor_wait_for_task_for(runtime.make_manual_executor());
         test_manual_executor_wait_for_tasks(runtime.make_manual_executor());
@@ -180,108 +168,6 @@ void test_executor_submit(std::shared_ptr<concurrencpp::executor> executor, size
                 const auto val = results[i].get();
                 if (val != i) {
                     std::cerr << "submit test failed, submitted " << i << " got " << val << std::endl;
-                    std::abort();
-                }
-            }
-        });
-    }
-
-    auto maybe_consumer_threads = maybe_inject_consumer_threads(executor, submit_tp, num_of_threads, tasks_per_thread);
-
-    for (auto& thread : submitter_threads) {
-        thread.join();
-    }
-
-    for (auto& thread : maybe_consumer_threads) {
-        thread.join();
-    }
-
-    std::cout << "===================================" << std::endl;
-}
-
-void test_executor_bulk_post(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread) {
-    std::cout << executor->name << "::bulk_post" << std::endl;
-
-    const auto post_tp = system_clock::now() + milliseconds(250);
-    const auto num_of_threads = std::thread::hardware_concurrency() * 4;
-    const auto total_task_count = tasks_per_thread * num_of_threads;
-
-    std::latch latch(total_task_count);
-
-    std::vector<std::thread> poster_threads;
-    poster_threads.resize(num_of_threads);
-
-    for (auto& thread : poster_threads) {
-        thread = std::thread([=, &latch] {
-            auto task = [&latch]() mutable {
-                latch.count_down();
-            };
-
-            std::vector<decltype(task)> tasks;
-            tasks.reserve(tasks_per_thread);
-
-            for (size_t i = 0; i < tasks_per_thread; i++) {
-                tasks.emplace_back(task);
-            }
-
-            std::this_thread::sleep_until(post_tp);
-
-            executor->bulk_post<decltype(task)>(tasks);
-        });
-    }
-
-    auto maybe_consumer_threads = maybe_inject_consumer_threads(executor, post_tp, num_of_threads, tasks_per_thread);
-
-    latch.wait();
-
-    for (auto& thread : poster_threads) {
-        thread.join();
-    }
-
-    for (auto& thread : maybe_consumer_threads) {
-        thread.join();
-    }
-
-    std::cout << "===================================" << std::endl;
-}
-
-struct val_returner {
-    const size_t val;
-
-    val_returner(size_t val) noexcept : val(val) {}
-    val_returner(const val_returner&) noexcept = default;
-
-    size_t operator()() const noexcept {
-        return val;
-    }
-};
-
-void test_executor_bulk_submit(std::shared_ptr<concurrencpp::executor> executor, size_t tasks_per_thread) {
-    std::cout << executor->name << "::bulk_submit" << std::endl;
-
-    const auto submit_tp = system_clock::now() + milliseconds(250);
-    const auto num_of_threads = std::thread::hardware_concurrency() * 4;
-
-    std::vector<std::thread> submitter_threads;
-    submitter_threads.resize(num_of_threads);
-
-    for (auto& thread : submitter_threads) {
-        thread = std::thread([=]() mutable {
-            std::vector<val_returner> tasks;
-            tasks.reserve(tasks_per_thread);
-
-            for (size_t i = 0; i < tasks_per_thread; i++) {
-                tasks.emplace_back(i);
-            }
-
-            std::this_thread::sleep_until(submit_tp);
-
-            auto results = executor->bulk_submit<val_returner>(tasks);
-
-            for (size_t i = 0; i < tasks_per_thread; i++) {
-                const auto val = results[i].get();
-                if (val != i) {
-                    std::cerr << "bulk_submit test failed, submitted " << i << " got " << val << std::endl;
                     std::abort();
                 }
             }
