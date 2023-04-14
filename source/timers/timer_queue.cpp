@@ -278,7 +278,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
             m_due_time_ms(due_time_ms),
             m_parent_queue(parent_queue), m_executor(std::move(executor)) {}
 
-        void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
+        void await_suspend(details::coroutine_handle<void> coro_handle)  {
             m_task.set_coroutine_handle(coro_handle);
             
             m_parent_queue.make_timer_impl(m_due_time_ms, 0, std::move(m_executor), true, [this] {
