@@ -44,7 +44,10 @@ int main(int argc, const char* argv[]) {
         std::this_thread::sleep_for(std::chrono::seconds(5));
 
         std::cout << "thread_id " << std::this_thread::get_id() << " is posting " << tasks.size() << " tasks." << std::endl;
-        manual_executor->bulk_post<dummy_task>(tasks);
+
+        for (auto& dummy_task : tasks) {
+            manual_executor->post(dummy_task);
+        }
     });
 
     threads.emplace_back([manual_executor] {
@@ -53,7 +56,9 @@ int main(int argc, const char* argv[]) {
         std::this_thread::sleep_for(std::chrono::seconds(12));
 
         std::cout << "thread_id " << std::this_thread::get_id() << " is posting " << tasks.size() << " tasks." << std::endl;
-        manual_executor->bulk_post<dummy_task>(tasks);
+        for (auto& dummy_task : tasks) {
+            manual_executor->post(dummy_task);
+        }
     });
 
     threads.emplace_back([manual_executor] {
@@ -62,7 +67,9 @@ int main(int argc, const char* argv[]) {
         std::this_thread::sleep_for(std::chrono::seconds(18));
 
         std::cout << "thread_id " << std::this_thread::get_id() << " is posting " << tasks.size() << " tasks." << std::endl;
-        manual_executor->bulk_post<dummy_task>(tasks);
+        for (auto& dummy_task : tasks) {
+            manual_executor->post(dummy_task);
+        }
     });
 
     std::this_thread::sleep_for(std::chrono::seconds(35));
