@@ -10,8 +10,8 @@ using concurrencpp::timer;
 using concurrencpp::details::timer_state;
 using concurrencpp::details::timer_state_base;
 
-timer_state_base::timer_state_base(size_t due_time,
-                                   size_t frequency,
+timer_state_base::timer_state_base(std::size_t due_time,
+                                   std::size_t frequency,
                                    std::shared_ptr<concurrencpp::executor> executor,
                                    std::weak_ptr<concurrencpp::timer_queue> timer_queue,
                                    bool is_oneshot) noexcept :

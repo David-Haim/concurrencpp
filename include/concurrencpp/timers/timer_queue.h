@@ -53,8 +53,8 @@ namespace concurrencpp {
                                                  std::shared_ptr<concurrencpp::executor> executor);
 
         template<class callable_type>
-        timer_ptr make_timer_impl(size_t due_time,
-                                  size_t frequency,
+        timer_ptr make_timer_impl(std::size_t due_time,
+                                  std::size_t frequency,
                                   std::shared_ptr<concurrencpp::executor> executor,
                                   bool is_oneshot,
                                   callable_type&& callable) {

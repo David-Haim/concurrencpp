@@ -33,7 +33,7 @@ namespace concurrencpp::details {
         }
 
         template<std::size_t... is, typename tuple_type>
-        static result_state_base& at_impl(std::index_sequence<is...>, tuple_type& tuple, size_t n) noexcept {
+        static result_state_base& at_impl(std::index_sequence<is...>, tuple_type& tuple, std::size_t n) noexcept {
             result_state_base* bases[] = {(&get_state_base(std::get<is>(tuple)))...};
             assert(bases[n] != nullptr);
             return *bases[n];
@@ -41,24 +41,24 @@ namespace concurrencpp::details {
 
        public:
         template<typename tuple_type>
-        static result_state_base& at(tuple_type& tuple, size_t n) noexcept {
+        static result_state_base& at(tuple_type& tuple, std::size_t n) noexcept {
             auto seq = std::make_index_sequence<std::tuple_size<tuple_type>::value>();
             return at_impl(seq, tuple, n);
         }
 
         template<typename type>
-        static result_state_base& at(std::vector<result<type>>& vector, size_t n) noexcept {
+        static result_state_base& at(std::vector<result<type>>& vector, std::size_t n) noexcept {
             assert(n < vector.size());
             return get_state_base(vector[n]);
         }
 
         template<class... types>
-        static size_t size(std::tuple<types...>& tuple) noexcept {
+        static std::size_t size(std::tuple<types...>& tuple) noexcept {
             return std::tuple_size_v<std::tuple<types...>>;
         }
 
         template<class type>
-        static size_t size(const std::vector<type>& vector) noexcept {
+        static std::size_t size(const std::vector<type>& vector) noexcept {
             return vector.size();
         }
 
@@ -113,7 +113,7 @@ namespace concurrencpp::details {
                 m_promise = std::make_shared<when_any_context>(coro_handle);
 
                 const auto range_length = when_result_helper::size(m_results);
-                for (size_t i = 0; i < range_length; i++) {
+                for (std::size_t i = 0; i < range_length; i++) {
                     if (m_promise->any_result_finished()) {
                         return false;
                     }
@@ -128,12 +128,12 @@ namespace concurrencpp::details {
                 return m_promise->finish_processing();
             }
 
-            size_t await_resume() noexcept {
+            std::size_t await_resume() noexcept {
                 const auto completed_result_state = m_promise->completed_result();
-                auto completed_result_index = std::numeric_limits<size_t>::max();
+                auto completed_result_index = std::numeric_limits<std::size_t>::max();
 
                 const auto range_length = when_result_helper::size(m_results);
-                for (size_t i = 0; i < range_length; i++) {
+                for (std::size_t i = 0; i < range_length; i++) {
                     auto& state_ref = when_result_helper::at(m_results, i);
                     state_ref.try_rewind_consumer();
                     if (completed_result_state == &state_ref) {
@@ -141,7 +141,7 @@ namespace concurrencpp::details {
                     }
                 }
 
-                assert(completed_result_index != std::numeric_limits<size_t>::max());
+                assert(completed_result_index != std::numeric_limits<std::size_t>::max());
                 return completed_result_index;
             }
         };
@@ -154,10 +154,10 @@ namespace concurrencpp {
         std::size_t index;
         sequence_type results;
 
-        when_any_result() noexcept : index(static_cast<size_t>(-1)) {}
+        when_any_result() noexcept : index(static_cast<std::size_t>(-1)) {}
 
         template<class... result_types>
-        when_any_result(size_t index, result_types&&... results) noexcept :
+        when_any_result(std::size_t index, result_types&&... results) noexcept :
             index(index), results(std::forward<result_types>(results)...) {}
 
         when_any_result(when_any_result&&) noexcept = default;
@@ -168,7 +168,7 @@ namespace concurrencpp {
 namespace concurrencpp::details {
     template<class executor_type, class collection_type>
     lazy_result<collection_type> when_all_impl(std::shared_ptr<executor_type> resume_executor, collection_type collection) {
-        for (size_t i = 0; i < when_result_helper::size(collection); i++) {
+        for (std::size_t i = 0; i < when_result_helper::size(collection); i++) {
             auto& state_ref = when_result_helper::at(collection, i);
             co_await when_result_helper::when_all_awaitable {state_ref};
         }

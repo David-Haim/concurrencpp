@@ -9,8 +9,6 @@
 #include <chrono>
 #include <condition_variable>
 
-#include <cstdint>
-
 namespace concurrencpp {
     class CRCPP_API alignas(CRCPP_CACHE_LINE_ALIGNMENT) manual_executor final : public executor {
 
@@ -33,11 +31,11 @@ namespace concurrencpp {
             return std::chrono::system_clock::now() + ms;
         }
 
-        size_t loop_impl(size_t max_count);
-        size_t loop_until_impl(size_t max_count, std::chrono::time_point<std::chrono::system_clock> deadline);
+        std::size_t loop_impl(std::size_t max_count);
+        std::size_t loop_until_impl(std::size_t max_count, std::chrono::time_point<std::chrono::system_clock> deadline);
 
-        void wait_for_tasks_impl(size_t count);
-        size_t wait_for_tasks_impl(size_t count, std::chrono::time_point<std::chrono::system_clock> deadline);
+        void wait_for_tasks_impl(std::size_t count);
+        std::size_t wait_for_tasks_impl(std::size_t count, std::chrono::time_point<std::chrono::system_clock> deadline);
 
        public:
         manual_executor();
@@ -49,10 +47,10 @@ namespace concurrencpp {
         void shutdown() override;
         bool shutdown_requested() const override;
 
-        size_t size() const;
+        std::size_t size() const;
         bool empty() const;
 
-        size_t clear();
+        std::size_t clear();
 
         bool loop_once();
         bool loop_once_for(std::chrono::milliseconds max_waiting_time);
@@ -62,11 +60,11 @@ namespace concurrencpp {
             return loop_until_impl(1, to_system_time_point(timeout_time));
         }
 
-        size_t loop(size_t max_count);
-        size_t loop_for(size_t max_count, std::chrono::milliseconds max_waiting_time);
+        std::size_t loop(std::size_t max_count);
+        std::size_t loop_for(std::size_t max_count, std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>
-        size_t loop_until(size_t max_count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
+        std::size_t loop_until(std::size_t max_count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
             return loop_until_impl(max_count, to_system_time_point(timeout_time));
         }
 
@@ -78,11 +76,11 @@ namespace concurrencpp {
             return wait_for_tasks_impl(1, to_system_time_point(timeout_time)) == 1;
         }
 
-        void wait_for_tasks(size_t count);
-        size_t wait_for_tasks_for(size_t count, std::chrono::milliseconds max_waiting_time);
+        void wait_for_tasks(std::size_t count);
+        std::size_t wait_for_tasks_for(std::size_t count, std::chrono::milliseconds max_waiting_time);
 
         template<class clock_type, class duration_type>
-        size_t wait_for_tasks_until(size_t count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
+        std::size_t wait_for_tasks_until(std::size_t count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
             return wait_for_tasks_impl(count, to_system_time_point(timeout_time));
         }
     };

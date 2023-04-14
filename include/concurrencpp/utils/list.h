@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#include <cstdint>
+#include <cstddef>
 #include <cassert>
 
 namespace concurrencpp::details {
@@ -13,7 +13,7 @@ namespace concurrencpp::details {
        private:
         node_type* m_head = nullptr;
         node_type* m_tail = nullptr;
-        size_t m_size = 0;
+        std::size_t m_size = 0;
 
        public:
         list() noexcept = default;
@@ -33,7 +33,7 @@ namespace concurrencpp::details {
             return *this;
         }
 
-        size_t size() const noexcept {
+        std::size_t size() const noexcept {
             return m_size;
         }
 
@@ -74,7 +74,7 @@ namespace concurrencpp::details {
             m_tail = &node;
         }
 
-        void push_back(node_type* head, node_type* tail, size_t count) noexcept {
+        void push_back(node_type* head, node_type* tail, std::size_t count) noexcept {
             if (count == 0) {
                 return;
             }
@@ -120,7 +120,7 @@ namespace concurrencpp::details {
             return *result;
         }
 
-        std::pair<node_type*, node_type*> pop_front(size_t count) noexcept {
+        std::pair<node_type*, node_type*> pop_front(std::size_t count) noexcept {
             assert(m_size >= count);
 
             if (count == 0) {
@@ -139,7 +139,7 @@ namespace concurrencpp::details {
 
             auto old_head = m_head;
             auto tail_cursor = m_head;
-            for (size_t i = 0; i < count - 1; i++) {
+            for (std::size_t i = 0; i < count - 1; i++) {
                 tail_cursor = tail_cursor->next;
             }
 

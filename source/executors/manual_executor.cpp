@@ -21,7 +21,7 @@ int manual_executor::max_concurrency_level() const noexcept {
     return details::consts::k_manual_executor_max_concurrency_level;
 }
 
-size_t manual_executor::size() const {
+std::size_t manual_executor::size() const {
     std::unique_lock<std::mutex> lock(m_lock);
     return m_tasks.size();
 }
@@ -30,12 +30,12 @@ bool manual_executor::empty() const {
     return size() == 0;
 }
 
-size_t manual_executor::loop_impl(size_t max_count) {
+std::size_t manual_executor::loop_impl(std::size_t max_count) {
     if (max_count == 0) {
         return 0;
     }
 
-    size_t executed = 0;
+    std::size_t executed = 0;
 
     while (true) {
         if (executed == max_count) {
@@ -65,12 +65,12 @@ size_t manual_executor::loop_impl(size_t max_count) {
     return executed;
 }
 
-size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_point<std::chrono::system_clock> deadline) {
+std::size_t manual_executor::loop_until_impl(std::size_t max_count, std::chrono::time_point<std::chrono::system_clock> deadline) {
     if (max_count == 0) {
         return 0;
     }
 
-    size_t executed = 0;
+    std::size_t executed = 0;
     deadline += std::chrono::milliseconds(1);
 
     while (true) {
@@ -111,7 +111,7 @@ size_t manual_executor::loop_until_impl(size_t max_count, std::chrono::time_poin
     return executed;
 }
 
-void manual_executor::wait_for_tasks_impl(size_t count) {
+void manual_executor::wait_for_tasks_impl(std::size_t count) {
     if (count == 0) {
         if (shutdown_requested()) {
             details::throw_runtime_shutdown_exception(name);
@@ -131,7 +131,7 @@ void manual_executor::wait_for_tasks_impl(size_t count) {
     assert(m_tasks.size() >= count);
 }
 
-size_t manual_executor::wait_for_tasks_impl(size_t count, std::chrono::time_point<std::chrono::system_clock> deadline) {
+std::size_t manual_executor::wait_for_tasks_impl(std::size_t count, std::chrono::time_point<std::chrono::system_clock> deadline) {
     deadline += std::chrono::milliseconds(1);
 
     std::unique_lock<decltype(m_lock)> lock(m_lock);
@@ -158,11 +158,11 @@ bool manual_executor::loop_once_for(std::chrono::milliseconds max_waiting_time) 
     return loop_until_impl(1, time_point_from_now(max_waiting_time));
 }
 
-size_t manual_executor::loop(size_t max_count) {
+std::size_t manual_executor::loop(std::size_t max_count) {
     return loop_impl(max_count);
 }
 
-size_t manual_executor::loop_for(size_t max_count, std::chrono::milliseconds max_waiting_time) {
+std::size_t manual_executor::loop_for(std::size_t max_count, std::chrono::milliseconds max_waiting_time) {
     if (max_count == 0) {
         return 0;
     }
@@ -174,7 +174,7 @@ size_t manual_executor::loop_for(size_t max_count, std::chrono::milliseconds max
     return loop_until_impl(max_count, time_point_from_now(max_waiting_time));
 }
 
-size_t manual_executor::clear() {
+std::size_t manual_executor::clear() {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
         details::throw_runtime_shutdown_exception(name);
@@ -200,11 +200,11 @@ bool manual_executor::wait_for_task_for(std::chrono::milliseconds max_waiting_ti
     return wait_for_tasks_impl(1, time_point_from_now(max_waiting_time)) == 1;
 }
 
-void manual_executor::wait_for_tasks(size_t count) {
+void manual_executor::wait_for_tasks(std::size_t count) {
     wait_for_tasks_impl(count);
 }
 
-size_t manual_executor::wait_for_tasks_for(size_t count, std::chrono::milliseconds max_waiting_time) {
+std::size_t manual_executor::wait_for_tasks_for(std::size_t count, std::chrono::milliseconds max_waiting_time) {
     return wait_for_tasks_impl(count, time_point_from_now(max_waiting_time));
 }
 

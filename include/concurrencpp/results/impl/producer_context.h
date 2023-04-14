@@ -195,7 +195,7 @@ namespace concurrencpp::details {
 
             auto pointer = std::addressof(reference);
             assert(pointer != nullptr);
-            assert(reinterpret_cast<size_t>(pointer) % alignof(type) == 0);
+            assert(reinterpret_cast<std::size_t>(pointer) % alignof(type) == 0);
 
             m_storage.pointer = pointer;
             m_status = result_status::value;
@@ -220,7 +220,7 @@ namespace concurrencpp::details {
 
             if (m_status == result_status::value) {
                 assert(m_storage.pointer != nullptr);
-                assert(reinterpret_cast<size_t>(m_storage.pointer) % alignof(type) == 0);
+                assert(reinterpret_cast<std::size_t>(m_storage.pointer) % alignof(type) == 0);
                 return *m_storage.pointer;
             }
 

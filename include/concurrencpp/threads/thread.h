@@ -35,7 +35,7 @@ namespace concurrencpp::details {
         bool joinable() const noexcept;
         void join();
 
-        static size_t hardware_concurrency() noexcept;
+        static std::size_t hardware_concurrency() noexcept;
     };
 }  // namespace concurrencpp::details
 

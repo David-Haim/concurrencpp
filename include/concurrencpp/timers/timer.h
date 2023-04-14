@@ -19,7 +19,7 @@ namespace concurrencpp::details {
        private:
         const std::weak_ptr<timer_queue> m_timer_queue;
         const std::shared_ptr<executor> m_executor;
-        const size_t m_due_time;
+        const std::size_t m_due_time;
         std::atomic_size_t m_frequency;
         time_point m_deadline;  // set by the c.tor, changed only by the timer_queue thread.
         std::atomic_bool m_cancelled;
@@ -30,8 +30,8 @@ namespace concurrencpp::details {
         }
 
        public:
-        timer_state_base(size_t due_time,
-                         size_t frequency,
+        timer_state_base(std::size_t due_time,
+                         std::size_t frequency,
                          std::shared_ptr<concurrencpp::executor> executor,
                          std::weak_ptr<concurrencpp::timer_queue> timer_queue,
                          bool is_oneshot) noexcept;
@@ -50,11 +50,11 @@ namespace concurrencpp::details {
             return m_deadline;
         }
 
-        size_t get_frequency() const noexcept {
+        std::size_t get_frequency() const noexcept {
             return m_frequency.load(std::memory_order_relaxed);
         }
 
-        size_t get_due_time() const noexcept {
+        std::size_t get_due_time() const noexcept {
             return m_due_time;  // no need to synchronize, const anyway.
         }
 
@@ -70,7 +70,7 @@ namespace concurrencpp::details {
             return m_timer_queue;
         }
 
-        void set_new_frequency(size_t new_frequency) noexcept {
+        void set_new_frequency(std::size_t new_frequency) noexcept {
             m_frequency.store(new_frequency, std::memory_order_relaxed);
         }
 
@@ -91,8 +91,8 @@ namespace concurrencpp::details {
 
        public:
         template<class given_callable_type>
-        timer_state(size_t due_time,
-                    size_t frequency,
+        timer_state(std::size_t due_time,
+                    std::size_t frequency,
                     std::shared_ptr<concurrencpp::executor> executor,
                     std::weak_ptr<concurrencpp::timer_queue> timer_queue,
                     bool is_oneshot,

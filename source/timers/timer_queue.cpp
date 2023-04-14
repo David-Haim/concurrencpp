@@ -266,13 +266,13 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
     class delay_object_awaitable : public details::suspend_always {
 
        private:
-        const size_t m_due_time_ms;
+        const std::size_t m_due_time_ms;
         timer_queue& m_parent_queue;
         std::shared_ptr<concurrencpp::executor> m_executor;
         task m_task;
 
        public:
-        delay_object_awaitable(size_t due_time_ms,
+        delay_object_awaitable(std::size_t due_time_ms,
                                timer_queue& parent_queue,
                                std::shared_ptr<concurrencpp::executor> executor) noexcept :
             m_due_time_ms(due_time_ms),
@@ -291,7 +291,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
         }
     };
 
-    co_await delay_object_awaitable {static_cast<size_t>(due_time.count()), *this, std::move(executor)};
+    co_await delay_object_awaitable {static_cast<std::size_t>(due_time.count()), *this, std::move(executor)};
 }
 
 concurrencpp::lazy_result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time,

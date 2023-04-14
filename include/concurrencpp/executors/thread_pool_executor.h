@@ -19,18 +19,18 @@ namespace concurrencpp::details {
        private:
         std::atomic_intptr_t m_approx_size;
         const std::unique_ptr<padded_flag[]> m_idle_flags;
-        const size_t m_size;
+        const std::size_t m_size;
 
-        bool try_acquire_flag(size_t index) noexcept;
+        bool try_acquire_flag(std::size_t index) noexcept;
 
        public:
-        idle_worker_set(size_t size);
+        idle_worker_set(std::size_t size);
 
-        void set_idle(size_t idle_thread) noexcept;
-        void set_active(size_t idle_thread) noexcept;
+        void set_idle(std::size_t idle_thread) noexcept;
+        void set_active(std::size_t idle_thread) noexcept;
 
-        size_t find_idle_worker(size_t caller_index) noexcept;
-        void find_idle_workers(size_t caller_index, std::vector<size_t>& result_buffer, size_t max_count) noexcept;
+        std::size_t find_idle_worker(std::size_t caller_index) noexcept;
+        void find_idle_workers(std::size_t caller_index, std::vector<size_t>& result_buffer, std::size_t max_count) noexcept;
     };
 
     class thread_pool_worker;
@@ -47,14 +47,14 @@ namespace concurrencpp {
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) details::idle_worker_set m_idle_workers;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::atomic_bool m_abort;
 
-        void mark_worker_idle(size_t index) noexcept;
-        void mark_worker_active(size_t index) noexcept;
-        void find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept;
+        void mark_worker_idle(std::size_t index) noexcept;
+        void mark_worker_active(std::size_t index) noexcept;
+        void find_idle_workers(std::size_t caller_index, std::vector<std::size_t>& buffer, std::size_t max_count) noexcept;
 
-        details::thread_pool_worker& worker_at(size_t index) noexcept;
+        details::thread_pool_worker& worker_at(std::size_t index) noexcept;
 
        public:
-        thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time);
+        thread_pool_executor(std::string_view pool_name, std::size_t pool_size, std::chrono::milliseconds max_idle_time);
 
         ~thread_pool_executor() noexcept override;
 

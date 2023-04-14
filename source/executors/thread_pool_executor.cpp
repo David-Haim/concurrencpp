@@ -15,17 +15,17 @@ namespace concurrencpp::details {
     namespace {
         struct thread_pool_per_thread_data {
             thread_pool_worker* this_worker;
-            size_t this_thread_index;
-            const size_t this_thread_hashed_id;
+            std::size_t this_thread_index;
+            const std::size_t this_thread_hashed_id;
 
-            static size_t calculate_hashed_id() noexcept {
+            static std::size_t calculate_hashed_id() noexcept {
                 const auto this_thread_id = thread::get_current_virtual_id();
-                const std::hash<size_t> hash;
+                const std::hash<std::size_t> hash;
                 return hash(this_thread_id);
             }
 
             thread_pool_per_thread_data() noexcept :
-                this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
+                this_worker(nullptr), this_thread_index(static_cast<std::size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
         };
 
         thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
@@ -35,11 +35,11 @@ namespace concurrencpp::details {
 
        private:
         list<task> m_private_queue;
-        std::vector<size_t> m_idle_worker_list;
+        std::vector<std::size_t> m_idle_worker_list;
         std::atomic_bool m_atomic_abort;
         thread_pool_executor& m_parent_pool;
-        const size_t m_index;
-        const size_t m_pool_size;
+        const std::size_t m_index;
+        const std::size_t m_pool_size;
         const std::chrono::milliseconds m_max_idle_time;
         const std::string m_worker_name;
         alignas(CRCPP_CACHE_LINE_ALIGNMENT) std::mutex m_lock;
@@ -61,13 +61,13 @@ namespace concurrencpp::details {
         void ensure_worker_active(bool first_enqueuer, std::unique_lock<std::mutex>& lock);
 
        public:
-        thread_pool_worker(thread_pool_executor& parent_pool, size_t index, size_t pool_size, std::chrono::milliseconds max_idle_time);
+        thread_pool_worker(thread_pool_executor& parent_pool, std::size_t index, std::size_t pool_size, std::chrono::milliseconds max_idle_time);
 
         thread_pool_worker(thread_pool_worker&& rhs) noexcept;
         ~thread_pool_worker() noexcept;
 
         void enqueue_foreign(concurrencpp::task& task);
-        void enqueue_foreign(task* head, task* tail, size_t count);
+        void enqueue_foreign(task* head, task* tail, std::size_t count);
 
         void enqueue_local(concurrencpp::task& task);
 
@@ -79,9 +79,9 @@ namespace concurrencpp::details {
     };
 }  // namespace concurrencpp::details
 
-idle_worker_set::idle_worker_set(size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {}
+idle_worker_set::idle_worker_set(std::size_t size) : m_approx_size(0), m_idle_flags(std::make_unique<padded_flag[]>(size)), m_size(size) {}
 
-void idle_worker_set::set_idle(size_t idle_thread) noexcept {
+void idle_worker_set::set_idle(std::size_t idle_thread) noexcept {
     const auto before = m_idle_flags[idle_thread].flag.exchange(status::idle, std::memory_order_relaxed);
     if (before == status::idle) {
         return;
@@ -90,7 +90,7 @@ void idle_worker_set::set_idle(size_t idle_thread) noexcept {
     m_approx_size.fetch_add(1, std::memory_order_relaxed);
 }
 
-void idle_worker_set::set_active(size_t idle_thread) noexcept {
+void idle_worker_set::set_active(std::size_t idle_thread) noexcept {
     const auto before = m_idle_flags[idle_thread].flag.exchange(status::active, std::memory_order_relaxed);
     if (before == status::active) {
         return;
@@ -99,7 +99,7 @@ void idle_worker_set::set_active(size_t idle_thread) noexcept {
     m_approx_size.fetch_sub(1, std::memory_order_relaxed);
 }
 
-bool idle_worker_set::try_acquire_flag(size_t index) noexcept {
+bool idle_worker_set::try_acquire_flag(std::size_t index) noexcept {
     const auto worker_status = m_idle_flags[index].flag.load(std::memory_order_relaxed);
     if (worker_status == status::active) {
         return false;
@@ -114,15 +114,15 @@ bool idle_worker_set::try_acquire_flag(size_t index) noexcept {
     return swapped;
 }
 
-size_t idle_worker_set::find_idle_worker(size_t caller_index) noexcept {
+std::size_t idle_worker_set::find_idle_worker(std::size_t caller_index) noexcept {
     if (m_approx_size.load(std::memory_order_relaxed) <= 0) {
-        return static_cast<size_t>(-1);
+        return static_cast<std::size_t>(-1);
     }
 
     const auto starting_pos =
-        (caller_index != static_cast<size_t>(-1)) ? caller_index : (s_tl_thread_pool_data.this_thread_hashed_id % m_size);
+        (caller_index != static_cast<std::size_t>(-1)) ? caller_index : (s_tl_thread_pool_data.this_thread_hashed_id % m_size);
 
-    for (size_t i = 0; i < m_size; i++) {
+    for (std::size_t i = 0; i < m_size; i++) {
         const auto index = (starting_pos + i) % m_size;
         if (index == caller_index) {
             continue;
@@ -133,10 +133,10 @@ size_t idle_worker_set::find_idle_worker(size_t caller_index) noexcept {
         }
     }
 
-    return static_cast<size_t>(-1);
+    return static_cast<std::size_t>(-1);
 }
 
-void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>& result_buffer, size_t max_count) noexcept {
+void idle_worker_set::find_idle_workers(std::size_t caller_index, std::vector<std::size_t>& result_buffer, std::size_t max_count) noexcept {
     assert(result_buffer.capacity() >= max_count);
 
     const auto approx_size = m_approx_size.load(std::memory_order_relaxed);
@@ -147,10 +147,10 @@ void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>
     assert(caller_index < m_size);
     assert(caller_index == s_tl_thread_pool_data.this_thread_index);
 
-    size_t count = 0;
-    const auto max_waiters = std::min(static_cast<size_t>(approx_size), max_count);
+    std::size_t count = 0;
+    const auto max_waiters = std::min(static_cast<std::size_t>(approx_size), max_count);
 
-    for (size_t i = 0; (i < m_size) && (count < max_waiters); i++) {
+    for (std::size_t i = 0; (i < m_size) && (count < max_waiters); i++) {
         const auto index = (caller_index + i) % m_size;
         if (index == caller_index) {
             continue;
@@ -164,8 +164,8 @@ void idle_worker_set::find_idle_workers(size_t caller_index, std::vector<size_t>
 }
 
 thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool,
-                                       size_t index,
-                                       size_t pool_size,
+                                       std::size_t index,
+                                       std::size_t pool_size,
                                        std::chrono::milliseconds max_idle_time) :
     m_atomic_abort(false),
     m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
@@ -382,7 +382,7 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     ensure_worker_active(is_empty, lock);
 }
 
-void thread_pool_worker::enqueue_foreign(task* head, task* tail, size_t count) {
+void thread_pool_worker::enqueue_foreign(task* head, task* tail, std::size_t count) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
         throw_runtime_shutdown_exception(m_parent_pool.name);
@@ -448,36 +448,36 @@ bool thread_pool_worker::appears_empty() const noexcept {
     return m_private_queue.empty() && !m_task_found_or_abort.load(std::memory_order_relaxed);
 }
 
-thread_pool_executor::thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time) :
+thread_pool_executor::thread_pool_executor(std::string_view pool_name, std::size_t pool_size, std::chrono::milliseconds max_idle_time) :
     executor(pool_name), m_round_robin_cursor(0), m_idle_workers(pool_size), m_abort(false) {
     m_workers.reserve(pool_size);
 
-    for (size_t i = 0; i < pool_size; i++) {
+    for (std::size_t i = 0; i < pool_size; i++) {
         m_workers.emplace_back(*this, i, pool_size, max_idle_time);
     }
 
-    for (size_t i = 0; i < pool_size; i++) {
+    for (std::size_t i = 0; i < pool_size; i++) {
         m_idle_workers.set_idle(i);
     }
 }
 
 thread_pool_executor::~thread_pool_executor() = default;
 
-void thread_pool_executor::find_idle_workers(size_t caller_index, std::vector<size_t>& buffer, size_t max_count) noexcept {
+void thread_pool_executor::find_idle_workers(std::size_t caller_index, std::vector<std::size_t>& buffer, std::size_t max_count) noexcept {
     m_idle_workers.find_idle_workers(caller_index, buffer, max_count);
 }
 
-thread_pool_worker& thread_pool_executor::worker_at(size_t index) noexcept {
+thread_pool_worker& thread_pool_executor::worker_at(std::size_t index) noexcept {
     assert(index <= m_workers.size());
     return m_workers[index];
 }
 
-void thread_pool_executor::mark_worker_idle(size_t index) noexcept {
+void thread_pool_executor::mark_worker_idle(std::size_t index) noexcept {
     assert(index < m_workers.size());
     m_idle_workers.set_idle(index);
 }
 
-void thread_pool_executor::mark_worker_active(size_t index) noexcept {
+void thread_pool_executor::mark_worker_active(std::size_t index) noexcept {
     assert(index < m_workers.size());
     m_idle_workers.set_active(index);
 }
@@ -491,7 +491,7 @@ void thread_pool_executor::enqueue(concurrencpp::task& task) {
     }
 
     const auto idle_worker_pos = m_idle_workers.find_idle_worker(this_worker_index);
-    if (idle_worker_pos != static_cast<size_t>(-1)) {
+    if (idle_worker_pos != static_cast<std::size_t>(-1)) {
         return m_workers[idle_worker_pos].enqueue_foreign(task);
     }
 

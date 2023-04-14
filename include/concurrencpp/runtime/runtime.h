@@ -25,10 +25,10 @@ namespace concurrencpp::details {
 
 namespace concurrencpp {
     struct CRCPP_API runtime_options {
-        size_t max_cpu_threads;
+        std::size_t max_cpu_threads;
         std::chrono::milliseconds max_thread_pool_executor_waiting_time;
 
-        size_t max_background_threads;
+        std::size_t max_background_threads;
         std::chrono::milliseconds max_background_executor_waiting_time;
 
         std::chrono::milliseconds max_timer_queue_waiting_time;
