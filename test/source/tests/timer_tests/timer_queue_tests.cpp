@@ -81,7 +81,7 @@ void concurrencpp::tests::test_timer_queue_make_delay_object() {
             auto inline_executor = std::make_shared<concurrencpp::inline_executor>();
             timer_queue->make_delay_object(100ms, inline_executor).run().get();
         },
-        concurrencpp::details::consts::k_broken_task_exception_error_msg);
+        concurrencpp::details::consts::k_timer_queue_shutdown_err_msg);
 }
 
 void concurrencpp::tests::test_timer_queue_max_worker_idle_time() {
