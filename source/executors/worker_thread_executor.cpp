@@ -10,7 +10,7 @@ using concurrencpp::worker_thread_executor;
 worker_thread_executor::worker_thread_executor() :
     executor(details::consts::k_worker_thread_executor_name), m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false),
     m_abort(false) {
-    m_thread = details::thread(details::make_executor_worker_name(name), [this] {
+    m_thread = details::thread(make_executor_worker_name(name), [this] {
         work_loop();
     });
 }
@@ -76,7 +76,7 @@ void worker_thread_executor::work_loop() {
 
 void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     m_private_queue.push_back(task);
@@ -85,7 +85,7 @@ void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
 void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     const auto is_empty = m_public_queue.empty();

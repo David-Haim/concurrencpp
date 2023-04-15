@@ -26,11 +26,11 @@ namespace concurrencpp {
         void enqueue_impl(functor_type&& functor) {
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
-                details::throw_runtime_shutdown_exception(name);
+                throw_runtime_shutdown_exception(name);
             }
 
             auto& new_thread = m_workers.emplace_front();
-            new_thread = details::thread(details::make_executor_worker_name(name),
+            new_thread = details::thread(make_executor_worker_name(name),
                                          [this, self_it = m_workers.begin(), func = std::move(functor)]() mutable {
                                              func();
                                              retire_worker(self_it);

@@ -8,7 +8,7 @@ manual_executor::manual_executor() : executor(details::consts::k_manual_executor
 void manual_executor::enqueue(concurrencpp::task& task) {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     m_tasks.push_back(task);
@@ -59,7 +59,7 @@ std::size_t manual_executor::loop_impl(std::size_t max_count) {
     }
 
     if (shutdown_requested()) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     return executed;
@@ -105,7 +105,7 @@ std::size_t manual_executor::loop_until_impl(std::size_t max_count, std::chrono:
     }
 
     if (shutdown_requested()) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     return executed;
@@ -114,7 +114,7 @@ std::size_t manual_executor::loop_until_impl(std::size_t max_count, std::chrono:
 void manual_executor::wait_for_tasks_impl(std::size_t count) {
     if (count == 0) {
         if (shutdown_requested()) {
-            details::throw_runtime_shutdown_exception(name);
+            throw_runtime_shutdown_exception(name);
         }
         return;
     }
@@ -125,7 +125,7 @@ void manual_executor::wait_for_tasks_impl(std::size_t count) {
     });
 
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     assert(m_tasks.size() >= count);
@@ -140,7 +140,7 @@ std::size_t manual_executor::wait_for_tasks_impl(std::size_t count, std::chrono:
     });
 
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     return m_tasks.size();
@@ -177,7 +177,7 @@ std::size_t manual_executor::loop_for(std::size_t max_count, std::chrono::millis
 std::size_t manual_executor::clear() {
     std::unique_lock<decltype(m_lock)> lock(m_lock);
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception(name);
     }
 
     auto tasks = std::move(m_tasks);
