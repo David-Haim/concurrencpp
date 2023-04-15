@@ -11,15 +11,8 @@ thread_executor::~thread_executor() noexcept {
 }
 
 void thread_executor::enqueue(concurrencpp::task& task) {
-    std::unique_lock<std::mutex> lock(m_lock);
-    if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
-    }
-
-    auto& new_thread = m_workers.emplace_front();
-    new_thread = details::thread(details::make_executor_worker_name(name), [this, self_it = m_workers.begin(), &task]() mutable {
+    enqueue_impl([&task] {
         task.resume();
-        retire_worker(self_it);
     });
 }
 

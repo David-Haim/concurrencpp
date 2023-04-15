@@ -32,6 +32,16 @@ namespace concurrencpp {
         bool shutdown_requested() const override {
             return m_abort.load(std::memory_order_relaxed);
         }
+
+        template<class callable_type, class... argument_types>
+        null_result post(callable_type&& callable, argument_types&&... arguments) {
+            try {
+                callable(std::forward<argument_types>(arguments)...);            
+            } catch (...) {
+                // do nothing, post throws away any returned value or thrown exception
+            }
+            return {};
+        }
     };
 }  // namespace concurrencpp
 
