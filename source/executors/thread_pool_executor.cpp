@@ -372,7 +372,7 @@ void thread_pool_worker::ensure_worker_active(bool first_enqueuer, std::unique_l
 void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        m_parent_pool.throw_runtime_shutdown_exception(m_parent_pool.name);
+        m_parent_pool.throw_runtime_shutdown_exception();
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -385,7 +385,7 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
 void thread_pool_worker::enqueue_foreign(task* head, task* tail, std::size_t count) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        m_parent_pool.throw_runtime_shutdown_exception(m_parent_pool.name);
+        m_parent_pool.throw_runtime_shutdown_exception();
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -397,7 +397,7 @@ void thread_pool_worker::enqueue_foreign(task* head, task* tail, std::size_t cou
 
 void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
     if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        m_parent_pool.throw_runtime_shutdown_exception(m_parent_pool.name);
+        m_parent_pool.throw_runtime_shutdown_exception();
     }
 
     m_private_queue.push_back(task);

@@ -61,7 +61,7 @@ namespace concurrencpp {
         }
 
        protected:
-        [[noreturn]] static CRCPP_API void throw_runtime_shutdown_exception(std::string_view executor_name);
+        [[noreturn]] static CRCPP_API void throw_runtime_shutdown_exception();
         static std::string make_executor_worker_name(std::string_view executor_name);
 
        public:

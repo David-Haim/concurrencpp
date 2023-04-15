@@ -76,7 +76,7 @@ void worker_thread_executor::work_loop() {
 
 void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
     if (m_private_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception();
     }
 
     m_private_queue.push_back(task);
@@ -85,7 +85,7 @@ void worker_thread_executor::enqueue_local(concurrencpp::task& task) {
 void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_runtime_shutdown_exception(name);
+        throw_runtime_shutdown_exception();
     }
 
     const auto is_empty = m_public_queue.empty();

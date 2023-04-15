@@ -15,7 +15,7 @@ namespace concurrencpp {
 
         void enqueue(concurrencpp::task& task) override {
             if (m_abort.load(std::memory_order_relaxed)) {
-                throw_runtime_shutdown_exception(name);
+                throw_runtime_shutdown_exception();
             }
 
             task.resume();
@@ -36,7 +36,7 @@ namespace concurrencpp {
         template<class callable_type, class... argument_types>
         null_result post(callable_type&& callable, argument_types&&... arguments) {
             if (m_abort.load(std::memory_order_relaxed)) {
-                throw_runtime_shutdown_exception(name);
+                throw_runtime_shutdown_exception();
             }
 
             try {

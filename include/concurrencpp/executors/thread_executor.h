@@ -26,7 +26,7 @@ namespace concurrencpp {
         void enqueue_impl(functor_type&& functor) {
             std::unique_lock<std::mutex> lock(m_lock);
             if (m_abort) {
-                throw_runtime_shutdown_exception(name);
+                throw_runtime_shutdown_exception();
             }
 
             auto& new_thread = m_workers.emplace_front();
