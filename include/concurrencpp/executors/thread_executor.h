@@ -30,7 +30,7 @@ namespace concurrencpp {
             }
 
             auto& new_thread = m_workers.emplace_front();
-            new_thread = details::thread(make_executor_worker_name(name),
+            new_thread = details::thread(make_executor_worker_name(),
                                          [this, self_it = m_workers.begin(), func = std::move(functor)]() mutable {
                                              func();
                                              retire_worker(self_it);

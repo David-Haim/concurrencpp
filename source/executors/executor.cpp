@@ -7,6 +7,6 @@ void concurrencpp::executor::throw_runtime_shutdown_exception() {
     throw errors::runtime_shutdown(error_msg);
 }
 
-std::string concurrencpp::executor::make_executor_worker_name(std::string_view executor_name) {
-    return std::string(executor_name) + " worker";
+std::string concurrencpp::executor::make_executor_worker_name() {
+    return name + " worker";
 }

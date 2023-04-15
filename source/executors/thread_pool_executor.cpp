@@ -169,7 +169,7 @@ thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool,
                                        std::chrono::milliseconds max_idle_time) :
     m_atomic_abort(false),
     m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
-    m_worker_name(m_parent_pool.make_executor_worker_name(parent_pool.name)), m_semaphore(0), m_idle(true), m_abort(false),
+    m_worker_name(parent_pool.make_executor_worker_name()), m_semaphore(0), m_idle(true), m_abort(false),
     m_task_found_or_abort(false) {
     m_idle_worker_list.reserve(pool_size);
 }

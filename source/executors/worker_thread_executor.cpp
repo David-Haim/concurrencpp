@@ -10,7 +10,7 @@ using concurrencpp::worker_thread_executor;
 worker_thread_executor::worker_thread_executor() :
     executor(details::consts::k_worker_thread_executor_name), m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false),
     m_abort(false) {
-    m_thread = details::thread(make_executor_worker_name(name), [this] {
+    m_thread = details::thread(make_executor_worker_name(), [this] {
         work_loop();
     });
 }
