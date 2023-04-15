@@ -44,6 +44,7 @@ namespace concurrencpp {
             } catch (...) {
                 // do nothing, post throws away any returned value or thrown exception
             }
+   
             return {};
         }
     };

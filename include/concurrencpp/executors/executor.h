@@ -11,11 +11,6 @@
 
 #include <cassert>
 
-namespace concurrencpp::details {
-    [[noreturn]] CRCPP_API void throw_runtime_shutdown_exception(std::string_view executor_name);
-    std::string make_executor_worker_name(std::string_view executor_name);
-}  // namespace concurrencpp::details
-
 namespace concurrencpp {
     class CRCPP_API task {
 
@@ -64,6 +59,10 @@ namespace concurrencpp {
         static result<return_type> submit_impl(executor_tag, executor&, callable_type callable, argument_types... arguments) {
             co_return callable(arguments...);
         }
+
+       protected:
+        static [[noreturn]] CRCPP_API void throw_runtime_shutdown_exception(std::string_view executor_name);
+        static std::string make_executor_worker_name(std::string_view executor_name);
 
        public:
         const std::string name;
