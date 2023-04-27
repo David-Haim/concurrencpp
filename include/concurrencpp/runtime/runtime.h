@@ -34,8 +34,8 @@ namespace concurrencpp {
 
         std::chrono::milliseconds max_timer_queue_waiting_time;
 
-        std::function<void(const char* thread_name)> thread_started_callback;
-        std::function<void(const char* thread_name)> thread_terminated_callback;
+        std::function<void(std::string_view thread_name)> thread_started_callback;
+        std::function<void(std::string_view thread_name)> thread_terminated_callback;
 
         runtime_options() noexcept;
 

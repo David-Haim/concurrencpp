@@ -40,8 +40,8 @@ namespace concurrencpp {
         bool m_abort;
         bool m_idle;
         const std::chrono::milliseconds m_max_waiting_time;
-        std::function<void(const char* thread_name)> m_thread_started_callback;
-        std::function<void(const char* thread_name)> m_thread_terminated_callback;
+        std::function<void(std::string_view thread_name)> m_thread_started_callback;
+        std::function<void(std::string_view thread_name)> m_thread_terminated_callback;
 
         details::thread ensure_worker_thread(std::unique_lock<std::mutex>& lock);
 
@@ -82,8 +82,8 @@ namespace concurrencpp {
 
        public:
         timer_queue(std::chrono::milliseconds max_waiting_time,
-                    const std::function<void(const char* thread_name)>& thread_started_callback = nullptr,
-                    const std::function<void(const char* thread_name)>& thread_terminated_callback = nullptr);
+                    const std::function<void(std::string_view thread_name)>& thread_started_callback = {},
+                    const std::function<void(std::string_view thread_name)>& thread_terminated_callback = {});
         ~timer_queue() noexcept;
 
         void shutdown();

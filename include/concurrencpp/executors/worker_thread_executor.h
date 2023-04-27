@@ -35,8 +35,8 @@ namespace concurrencpp {
         void enqueue_foreign(std::span<concurrencpp::task> task);
 
        public:
-        worker_thread_executor(const std::function<void(const char* thread_name)>& thread_started_callback = nullptr,
-                               const std::function<void(const char* thread_name)>& thread_terminated_callback = nullptr);
+        worker_thread_executor(const std::function<void(std::string_view thread_name)>& thread_started_callback = {},
+                               const std::function<void(std::string_view thread_name)>& thread_terminated_callback = {});
 
         void enqueue(concurrencpp::task task) override;
         void enqueue(std::span<concurrencpp::task> tasks) override;

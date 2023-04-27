@@ -146,8 +146,8 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 timer_queue::timer_queue(milliseconds max_waiting_time,
-                         const std::function<void(const char* thread_name)>& thread_started_callback,
-                         const std::function<void(const char* thread_name)>& thread_terminated_callback) :
+                         const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                         const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
     m_thread_started_callback(thread_started_callback),
     m_thread_terminated_callback(thread_terminated_callback), m_atomic_abort(false), m_abort(false), m_idle(true),
     m_max_waiting_time(max_waiting_time) {}

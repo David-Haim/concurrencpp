@@ -109,15 +109,15 @@ void concurrencpp::tests::test_timer_queue_thread_injection() {
 }
 
 void concurrencpp::tests::test_timer_queue_thread_callbacks() {
-    size_t thread_started_callback_invocations_num = 0;
-    size_t thread_terminated_callback_invocations_num = 0;
+    std::atomic_size_t thread_started_callback_invocations_num = 0;
+    std::atomic_size_t thread_terminated_callback_invocations_num = 0;
 
-    auto thread_started_callback = [&thread_started_callback_invocations_num](const char* thread_name) {
+    auto thread_started_callback = [&thread_started_callback_invocations_num](std::string_view thread_name) {
         ++thread_started_callback_invocations_num;
         assert_equal(thread_name, concurrencpp::details::make_executor_worker_name(concurrencpp::details::consts::k_timer_queue_name));
     };
 
-    auto thread_terminated_callback = [&thread_terminated_callback_invocations_num](const char* thread_name) {
+    auto thread_terminated_callback = [&thread_terminated_callback_invocations_num](std::string_view thread_name) {
         ++thread_terminated_callback_invocations_num;
         assert_equal(thread_name, concurrencpp::details::make_executor_worker_name(concurrencpp::details::consts::k_timer_queue_name));
     };

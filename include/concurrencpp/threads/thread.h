@@ -22,21 +22,23 @@ namespace concurrencpp::details {
         template<class callable_type>
         thread(std::string name,
                callable_type&& callable,
-               std::function<void(const char* thread_name)> thread_started_callback,
-               std::function<void(const char* thread_name)> thread_terminated_callback) {
+               std::function<void(std::string_view thread_name)> thread_started_callback,
+               std::function<void(std::string_view thread_name)> thread_terminated_callback) {
             m_thread = std::thread([name = std::move(name),
                                     callable = std::forward<callable_type>(callable),
                                     thread_started_callback = std::move(thread_started_callback),
                                     thread_terminated_callback = std::move(thread_terminated_callback)]() mutable {
                 set_name(name);
 
-                if (thread_started_callback)
+                if (thread_started_callback) {
                     thread_started_callback(name.c_str());
+                }
 
                 callable();
 
-                if (thread_terminated_callback)
+                if (thread_terminated_callback) {
                     thread_terminated_callback(name.c_str());
+                }
             });
         }
 

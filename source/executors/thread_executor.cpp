@@ -3,8 +3,8 @@
 
 using concurrencpp::thread_executor;
 
-thread_executor::thread_executor(const std::function<void(const char* thread_name)>& thread_started_callback,
-                                 const std::function<void(const char* thread_name)>& thread_terminated_callback) :
+thread_executor::thread_executor(const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                                 const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
     derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name),
     m_abort(false), m_atomic_abort(false), m_thread_started_callback(thread_started_callback),
     m_thread_terminated_callback(thread_terminated_callback) {}

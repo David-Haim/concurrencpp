@@ -40,14 +40,16 @@ void concurrencpp::tests::test_runtime_constructor() {
     opts.max_background_threads = 7;
     opts.max_background_executor_waiting_time = std::chrono::milliseconds(54321);
 
-    size_t thread_started_callback_invocations_num = 0;
-    size_t thread_terminated_callback_invocations_num = 0;
+    std::atomic_size_t thread_started_callback_invocations_num = 0;
+    std::atomic_size_t thread_terminated_callback_invocations_num = 0;
 
-    opts.thread_started_callback = [&thread_started_callback_invocations_num](const char* thread_name) {
+    opts.thread_started_callback = [&thread_started_callback_invocations_num](std::string_view thread_name) {
+        assert_false(thread_name.empty());
         ++thread_started_callback_invocations_num;
     };
 
-    opts.thread_terminated_callback = [&thread_terminated_callback_invocations_num](const char* thread_name) {
+    opts.thread_terminated_callback = [&thread_terminated_callback_invocations_num](std::string_view thread_name) {
+        assert_false(thread_name.empty());
         ++thread_terminated_callback_invocations_num;
     };
 

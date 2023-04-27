@@ -5,23 +5,23 @@
 #include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp::tests {
-    template<class executor_fabric_type>
-    void test_thread_callbacks(executor_fabric_type executor_fabric, std::string_view expected_thread_name) {
-        size_t thread_started_callback_invocations_num = 0;
-        size_t thread_terminated_callback_invocations_num = 0;
+    template<class executor_factory_type>
+    void test_thread_callbacks(executor_factory_type executor_factory, std::string_view expected_thread_name) {
+        std::atomic_size_t thread_started_callback_invocations_num = 0;
+        std::atomic_size_t thread_terminated_callback_invocations_num = 0;
 
-        auto thread_started_callback = [&thread_started_callback_invocations_num, expected_thread_name](const char* thread_name) {
+        auto thread_started_callback = [&thread_started_callback_invocations_num, expected_thread_name](std::string_view thread_name) {
             ++thread_started_callback_invocations_num;
             assert_equal(thread_name, expected_thread_name);
         };
 
         auto thread_terminated_callback = [&thread_terminated_callback_invocations_num,
-                                           expected_thread_name](const char* thread_name) {
+                                           expected_thread_name](std::string_view thread_name) {
             ++thread_terminated_callback_invocations_num;
             assert_equal(thread_name, expected_thread_name);
         };
 
-        std::shared_ptr<executor> executor = executor_fabric(thread_started_callback, thread_terminated_callback);
+        std::shared_ptr<executor> executor = executor_factory(thread_started_callback, thread_terminated_callback);
         assert_equal(thread_started_callback_invocations_num, 0);
         assert_equal(thread_terminated_callback_invocations_num, 0);
 

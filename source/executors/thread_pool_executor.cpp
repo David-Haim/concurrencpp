@@ -45,8 +45,8 @@ namespace concurrencpp::details {
         bool m_abort;
         std::atomic_bool m_task_found_or_abort;
         thread m_thread;
-        std::function<void(const char* thread_name)> m_thread_started_callback;
-        std::function<void(const char* thread_name)> m_thread_terminated_callback;
+        std::function<void(std::string_view thread_name)> m_thread_started_callback;
+        std::function<void(std::string_view thread_name)> m_thread_terminated_callback;
 
         void balance_work();
 
@@ -63,8 +63,8 @@ namespace concurrencpp::details {
                            size_t index,
                            size_t pool_size,
                            std::chrono::milliseconds max_idle_time,
-                           const std::function<void(const char* thread_name)>& thread_started_callback,
-                           const std::function<void(const char* thread_name)>& thread_terminated_callback);
+                           const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                           const std::function<void(std::string_view thread_name)>& thread_terminated_callback);
 
         thread_pool_worker(thread_pool_worker&& rhs) noexcept;
         ~thread_pool_worker() noexcept;
@@ -173,8 +173,8 @@ thread_pool_worker::thread_pool_worker(thread_pool_executor& parent_pool,
                                        size_t index,
                                        size_t pool_size,
                                        std::chrono::milliseconds max_idle_time,
-                                       const std::function<void(const char* thread_name)>& thread_started_callback,
-                                       const std::function<void(const char* thread_name)>& thread_terminated_callback) :
+                                       const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                                       const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
     m_atomic_abort(false),
     m_parent_pool(parent_pool), m_index(index), m_pool_size(pool_size), m_max_idle_time(max_idle_time),
     m_worker_name(details::make_executor_worker_name(parent_pool.name)), m_semaphore(0), m_idle(true), m_abort(false),
@@ -518,8 +518,8 @@ bool thread_pool_worker::appears_empty() const noexcept {
 thread_pool_executor::thread_pool_executor(std::string_view pool_name,
                                            size_t pool_size,
                                            std::chrono::milliseconds max_idle_time,
-                                           const std::function<void(const char* thread_name)>& thread_started_callback,
-                                           const std::function<void(const char* thread_name)>& thread_terminated_callback) :
+                                           const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                                           const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
     derivable_executor<concurrencpp::thread_pool_executor>(pool_name),
     m_round_robin_cursor(0), m_idle_workers(pool_size), m_abort(false) {
     m_workers.reserve(pool_size);
