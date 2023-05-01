@@ -88,14 +88,12 @@ template<class type>
 result<void> concurrencpp::tests::test_result_resolve_impl_result_not_ready_value(std::shared_ptr<thread_executor> thread_executor) {
     std::atomic_uintptr_t setting_thread_id = 0;
 
-    result_promise<type> result_promise;
-    auto result = result_promise.get_result();
-
-    thread_executor->post([rp = std::move(result_promise), &setting_thread_id]() mutable {
+    auto result = thread_executor->submit([&setting_thread_id]() mutable -> type {
         setting_thread_id = thread::get_current_virtual_id();
-        rp.set_from_function([]() -> type {
-            return value_gen<type>::default_value();
-        });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+
+        return value_gen<type>::default_value();
     });
 
     auto done_result = co_await result.resolve();
@@ -107,18 +105,22 @@ template<class type>
 result<void> concurrencpp::tests::test_result_resolve_impl_result_not_ready_exception(
     std::shared_ptr<thread_executor> thread_executor) {
     std::atomic_uintptr_t setting_thread_id = 0;
-    const auto id = 1234567;
 
-    result_promise<type> result_promise;
-    auto result = result_promise.get_result();
-
-    thread_executor->post([rp = std::move(result_promise), id, &setting_thread_id]() mutable {
+    auto result = thread_executor->submit([&setting_thread_id]() mutable -> type {
         setting_thread_id = thread::get_current_virtual_id();
-        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+
+        return value_gen<type>::throw_ex();
     });
 
     auto done_result = co_await result.resolve();
-    test_ready_result_custom_exception(std::move(done_result), id);
+    
+    assert_equal(done_result.status(), result_status::exception);
+    assert_throws<test_exception>([&done_result] {
+        done_result.get();
+    });
+
     assert_equal(thread::get_current_virtual_id(), setting_thread_id.load());
 }
 
@@ -164,7 +166,7 @@ result<void> concurrencpp::tests::test_result_await_impl_result_ready_value() {
     assert_equal(thread_id_0, thread_id_1);
     test_ready_result(std::move(done_result));
 }
-
+ 
 template<class type>
 result<void> concurrencpp::tests::test_result_await_impl_result_ready_exception() {
     const auto id = 1234567;
@@ -185,14 +187,12 @@ template<class type>
 result<void> concurrencpp::tests::test_result_await_impl_result_not_ready_value(std::shared_ptr<thread_executor> thread_executor) {
     std::atomic_uintptr_t setting_thread_id = 0;
 
-    result_promise<type> result_promise;
-    auto result = result_promise.get_result();
-
-    thread_executor->post([rp = std::move(result_promise), &setting_thread_id]() mutable {
+    auto result = thread_executor->submit([&setting_thread_id]() mutable -> type {
         setting_thread_id = thread::get_current_virtual_id();
-        rp.set_from_function([]() -> type {
-            return value_gen<type>::default_value();
-        });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+
+        return value_gen<type>::default_value();
     });
 
     auto done_result = co_await wrap_co_await(std::move(result)).resolve();
@@ -203,18 +203,22 @@ result<void> concurrencpp::tests::test_result_await_impl_result_not_ready_value(
 template<class type>
 result<void> concurrencpp::tests::test_result_await_impl_result_not_ready_exception(std::shared_ptr<thread_executor> thread_executor) {
     std::atomic_uintptr_t setting_thread_id = 0;
-    const auto id = 1234567;
 
-    result_promise<type> result_promise;
-    auto result = result_promise.get_result();
-
-    thread_executor->post([rp = std::move(result_promise), id, &setting_thread_id]() mutable {
+    auto result = thread_executor->submit([&setting_thread_id]() mutable -> type {
         setting_thread_id = thread::get_current_virtual_id();
-        rp.set_exception(std::make_exception_ptr(custom_exception(id)));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+
+        return value_gen<type>::throw_ex();
     });
 
     auto done_result = co_await wrap_co_await(std::move(result)).resolve();
-    test_ready_result_custom_exception(std::move(done_result), id);
+
+    assert_equal(done_result.status(), result_status::exception);
+    assert_throws<test_exception>([&done_result] {
+        done_result.get();
+    });
+
     assert_equal(thread::get_current_virtual_id(), setting_thread_id.load());
 }
 
