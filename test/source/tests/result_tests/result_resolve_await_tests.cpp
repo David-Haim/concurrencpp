@@ -73,11 +73,11 @@ result<void> concurrencpp::tests::test_result_resolve_impl_result_ready_exceptio
     const auto id = 1234567;
     auto result = make_exceptional_result<type>(custom_exception(id));
 
-    const auto thread_id_0 = concurrencpp::details::thread::get_current_virtual_id();
+    const auto thread_id_0 = thread::get_current_virtual_id();
 
     auto done_result = co_await result.resolve();
 
-    const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
+    const auto thread_id_1 = thread::get_current_virtual_id();
 
     assert_false(static_cast<bool>(result));
     assert_equal(thread_id_0, thread_id_1);
@@ -172,11 +172,11 @@ result<void> concurrencpp::tests::test_result_await_impl_result_ready_exception(
     const auto id = 1234567;
     auto result = make_exceptional_result<type>(custom_exception(id));
 
-    const auto thread_id_0 = concurrencpp::details::thread::get_current_virtual_id();
+    const auto thread_id_0 = thread::get_current_virtual_id();
 
     auto done_result = co_await wrap_co_await(std::move(result)).resolve();
 
-    const auto thread_id_1 = concurrencpp::details::thread::get_current_virtual_id();
+    const auto thread_id_1 = thread::get_current_virtual_id();
 
     assert_false(static_cast<bool>(result));
     assert_equal(thread_id_0, thread_id_1);
