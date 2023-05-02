@@ -19,24 +19,28 @@ namespace concurrencpp {
         task* prev = nullptr;
 
        private:
-        details::coroutine_handle<void> coro_handle;
+        details::coroutine_handle<void> m_handle;
         bool m_interrupted = false;
 
        public:
         void set_coroutine_handle(details::coroutine_handle<void> handle) noexcept {
-            coro_handle = handle;
+            assert(static_cast<bool>(handle));
+            assert(!handle.done());
+            assert(!static_cast<bool>(m_handle));
+            
+            m_handle = handle;
         }
 
         void resume() noexcept {
-            assert(static_cast<bool>(coro_handle));
-            coro_handle();
+            assert(static_cast<bool>(m_handle));
+            m_handle();
         }
 
         void interrupt() noexcept {
             m_interrupted = true;
 
-            assert(static_cast<bool>(coro_handle));
-            coro_handle();
+            assert(static_cast<bool>(m_handle));
+            m_handle();
         }
 
         void throw_if_interrupted() const {

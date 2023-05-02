@@ -29,20 +29,16 @@ namespace concurrencpp::details {
 
        public:
         template<class... argument_types>
+        initialy_rescheduled_promise(executor_tag, executor_type& executor_ref, argument_types&&...) noexcept :
+            m_initial_executor(executor_ref) {}
+
+        template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, executor_type* executor_ptr, argument_types&&...) :
             m_initial_executor(to_ref(executor_ptr)) {}
 
         template<class... argument_types>
-        initialy_rescheduled_promise(executor_tag, executor_type& executor_ptr, argument_types&&...) :
-            m_initial_executor(executor_ptr) {}
-
-        template<class... argument_types>
         initialy_rescheduled_promise(executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
             initialy_rescheduled_promise(executor_tag {}, executor.get(), std::forward<argument_types>(args)...) {}
-
-        template<class class_type, class... argument_types>
-        initialy_rescheduled_promise(class_type&&, executor_tag, std::shared_ptr<executor_type> executor, argument_types&&... args) :
-            initialy_rescheduled_promise(executor_tag {}, *executor, std::forward<argument_types>(args)...) {}
 
         class initial_scheduling_awaiter : public suspend_always {
 
@@ -101,11 +97,11 @@ namespace concurrencpp::details {
        public:
         template<class... argument_types>
         void set_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
-            this->m_result_state.set_result(std::forward<argument_types>(arguments)...);
+            m_result_state.set_result(std::forward<argument_types>(arguments)...);
         }
 
         void unhandled_exception() noexcept {
-            this->m_result_state.set_exception(std::current_exception());
+            m_result_state.set_exception(std::current_exception());
         }
 
         result<type> get_return_object() noexcept {
@@ -113,7 +109,7 @@ namespace concurrencpp::details {
         }
 
         void complete_producer(coroutine_handle<void> done_handle) noexcept {
-            this->m_result_state.complete_producer(done_handle);
+            m_result_state.complete_producer(done_handle);
         }
 
         result_publisher final_suspend() const noexcept {
@@ -129,6 +125,7 @@ namespace concurrencpp::details {
     template<class return_type>
     struct initialy_resumed_result_promise : public initialy_resumed_promise, public result_coro_promise<return_type> {};
 
+    // TODO: maybe align these two to a cache line alignment
     template<class executor_type>
     struct initialy_rescheduled_null_result_promise : public initialy_rescheduled_promise<executor_type>, public null_result_promise {
         using initialy_rescheduled_promise<executor_type>::initialy_rescheduled_promise;
