@@ -23,24 +23,30 @@ namespace concurrencpp {
         bool m_interrupted = false;
 
        public:
+        task() noexcept = default;
+
+        task(const task&) noexcept = delete;
+        task(task&&) noexcept = delete;
+
+        task& operator=(const task&) noexcept = delete;
+        task& operator=(task&&) noexcept = delete;
+
         void set_coroutine_handle(details::coroutine_handle<void> handle) noexcept {
-            assert(static_cast<bool>(handle));
-            assert(!handle.done());
-            assert(!static_cast<bool>(m_handle));
-            
-            m_handle = handle;
+            if (static_cast<bool>(handle)) {
+                assert(!handle.done());
+                m_handle = handle;
+            }
         }
 
         void resume() noexcept {
-            assert(static_cast<bool>(m_handle));
-            m_handle();
+            if (static_cast<bool>(m_handle)) {
+                m_handle();
+            }
         }
 
         void interrupt() noexcept {
             m_interrupted = true;
-
-            assert(static_cast<bool>(m_handle));
-            m_handle();
+            resume();
         }
 
         void throw_if_interrupted() const {
@@ -88,9 +94,12 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class... argument_types>
-        auto submit(callable_type&& callable, argument_types&&... arguments) { 
+        auto submit(callable_type&& callable, argument_types&&... arguments) {
             using return_type = typename std::invoke_result_t<callable_type, argument_types...>;
-            return submit_impl<return_type>({}, *this, std::forward<callable_type>(callable), std::forward<argument_types>(arguments)...);
+            return submit_impl<return_type>({},
+                                            *this,
+                                            std::forward<callable_type>(callable),
+                                            std::forward<argument_types>(arguments)...);
         }
     };
 }  // namespace concurrencpp
