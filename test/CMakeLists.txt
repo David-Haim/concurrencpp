@@ -110,8 +110,7 @@ add_test(NAME thread_pool_executor_tests PATH source/tests/executor_tests/thread
 add_test(NAME worker_thread_executor_tests PATH source/tests/executor_tests/worker_thread_executor_tests.cpp)
 
 add_test(NAME result_tests PATH source/tests/result_tests/result_tests.cpp)
-add_test(NAME result_resolving_tests PATH source/tests/result_tests/result_resolve_tests.cpp)
-add_test(NAME result_awaiting_tests PATH source/tests/result_tests/result_await_tests.cpp)
+add_test(NAME result_resolve_await_tests PATH source/tests/result_tests/result_resolve_await_tests.cpp)
 
 add_test(NAME lazy_result_tests PATH source/tests/result_tests/lazy_result_tests.cpp)
 
