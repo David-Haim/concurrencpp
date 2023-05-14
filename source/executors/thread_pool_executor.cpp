@@ -357,10 +357,15 @@ void thread_pool_worker::work_loop() {
     s_tl_thread_pool_data.this_worker = this;
     s_tl_thread_pool_data.this_thread_index = m_index;
 
-    while (true) {
-        if (!drain_queue()) {
-            return;
+    try {
+        while (true) {
+            if (!drain_queue()) {
+                return;
+            }
         }
+    } catch (const errors::runtime_shutdown&) {
+        std::unique_lock<std::mutex> lock(m_lock);
+        m_idle = true;
     }
 }
 

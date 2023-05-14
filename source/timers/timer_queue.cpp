@@ -288,8 +288,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
                                                details::await_via_functor {coro_handle, &m_interrupted});
 
             } catch (...) {
-                // if an exception is thrown, await_via_functor d.tor will set an interrupt and resume the coro
-                // no need to let the exception propagate.
+                // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
             }
         }
 

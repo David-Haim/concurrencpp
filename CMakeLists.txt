@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(concurrencpp
-        VERSION 0.1.5
+        VERSION 0.1.6
         LANGUAGES CXX)
 
 include(cmake/coroutineOptions.cmake)
@@ -26,7 +26,6 @@ set(concurrencpp_sources
         source/results/impl/consumer_context.cpp
         source/results/impl/result_state.cpp
         source/results/impl/shared_result_state.cpp
-        source/results/promises.cpp
         source/runtime/runtime.cpp
         source/threads/async_lock.cpp
         source/threads/async_condition_variable.cpp
@@ -71,6 +70,7 @@ set(concurrencpp_headers
         include/concurrencpp/results/generator.h
         include/concurrencpp/runtime/constants.h
         include/concurrencpp/runtime/runtime.h
+        include/concurrencpp/threads/constants.h
         include/concurrencpp/threads/async_lock.h
         include/concurrencpp/threads/async_condition_variable.h
         include/concurrencpp/threads/thread.h

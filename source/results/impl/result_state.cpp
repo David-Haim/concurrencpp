@@ -77,6 +77,28 @@ result_state_base::pc_state result_state_base::when_any(const std::shared_ptr<wh
     return state;
 }
 
+void concurrencpp::details::result_state_base::share(const std::shared_ptr<shared_result_state_base>& shared_result_state) noexcept {
+    const auto state = m_pc_state.load(std::memory_order_acquire);
+    if (state == pc_state::producer_done) {
+        return shared_result_state->on_result_finished();
+    }
+
+    m_consumer.set_shared_context(shared_result_state);
+
+    auto expected_state = pc_state::idle;
+    const auto idle = m_pc_state.compare_exchange_strong(expected_state,
+                                                         pc_state::consumer_set,
+                                                         std::memory_order_acq_rel,
+                                                         std::memory_order_acquire);
+
+    if (idle) {
+        return;
+    }
+
+    assert_done();
+    shared_result_state->on_result_finished();
+}
+
 void result_state_base::try_rewind_consumer() noexcept {
     const auto pc_state = m_pc_state.load(std::memory_order_acquire);
     if (pc_state != pc_state::consumer_set) {

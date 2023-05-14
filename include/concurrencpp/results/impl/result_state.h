@@ -27,6 +27,8 @@ namespace concurrencpp::details {
         bool await(coroutine_handle<void> caller_handle) noexcept;
         pc_state when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept;
 
+        void share(const std::shared_ptr<shared_result_state_base>& shared_result_state) noexcept;
+
         void try_rewind_consumer() noexcept;
     };
 
@@ -102,6 +104,10 @@ namespace concurrencpp::details {
             }
 
             if (wait_ctx->try_acquire_for(duration + std::chrono::milliseconds(1))) {
+                // counting_semaphore isn't required to synchronize non atomic data, 
+                // we'll synchronize it manually using m_pc_state::load(memory_order_acquire)
+                const auto status = m_pc_state.load(std::memory_order_acquire);
+                (void)status;
                 assert_done();
                 return m_producer.status();
             }
@@ -144,6 +150,11 @@ namespace concurrencpp::details {
         type get() {
             assert_done();
             return m_producer.get();
+        }
+
+        std::add_lvalue_reference_t<type> get_ref() {
+            assert_done();
+            return m_producer.get_ref();
         }
 
         template<class callable_type>

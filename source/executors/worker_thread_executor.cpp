@@ -157,6 +157,7 @@ void worker_thread_executor::shutdown() {
         m_abort = true;
     }
 
+    m_private_atomic_abort.store(true, std::memory_order_relaxed);
     m_semaphore.release();
 
     if (m_thread.joinable()) {

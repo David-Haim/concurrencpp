@@ -6,6 +6,7 @@
 namespace concurrencpp::details {
     template<class type>
     class shared_awaitable_base : public suspend_always {
+       
        protected:
         std::shared_ptr<shared_result_state<type>> m_state;
 
