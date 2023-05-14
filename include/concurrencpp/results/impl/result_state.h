@@ -3,6 +3,7 @@
 
 #include "concurrencpp/results/impl/consumer_context.h"
 #include "concurrencpp/results/impl/producer_context.h"
+#include "concurrencpp/platform_defs.h"
 
 #include <atomic>
 #include <type_traits>
@@ -45,7 +46,14 @@ namespace concurrencpp::details {
                 return done_handle.destroy();
             }
 
+#ifdef CRCPP_GCC_COMPILER
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#endif
             delete state;
+#ifdef CRCPP_GCC_COMPILER
+#    pragma GCC diagnostic pop
+#endif
         }
 
         template<class callable_type>
