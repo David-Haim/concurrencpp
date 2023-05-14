@@ -71,7 +71,7 @@ jobs:
         id: libstdcxx
         with:
           version: ${{ matrix.libstdcxx-version }}
-        if: ${{ matrix.stdlib == 'libstdc++' && matrix.libstdcxx-version != 'HEAD' }}
+        if: ${{ matrix.stdlib == 'libstdc++' }}
 
       - uses: ./.github/actions/fetch-clang
         id: clang
@@ -79,13 +79,6 @@ jobs:
           version: ${{ matrix.clang-version }}
           base-directory: build/tools
         if: ${{ matrix.clang-version }}
-
-      - uses: ./.github/actions/fetch-gcc
-        id: gcc
-        with:
-          version: ${{ matrix.gcc-version }}
-          base-directory: build/tools
-        if: ${{ matrix.gcc-version }}
 
       - name: Build Examples
         uses: ./.github/actions/cmake-build

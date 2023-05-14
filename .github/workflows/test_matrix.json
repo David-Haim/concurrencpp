@@ -178,33 +178,6 @@
 		"name" : "ubuntu-22.04, clang-15, libstdcxx-12, shared=true, tsan=false"
 	},
 	{
-		"os": "ubuntu-22.04",
-		"gcc-version": "HEAD",
-		"stdlib": "libstdc++",
-		"libstdcxx-version": "HEAD",
-		"tsan": false,
-		"shared": false,
-		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=false, tsan=false"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"gcc-version": "HEAD",
-		"stdlib": "libstdc++",
-		"libstdcxx-version": "HEAD",
-		"tsan": false,
-		"shared": true,
-		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=true, tsan=false"
-	},
-	{
-		"os": "ubuntu-22.04",
-		"gcc-version": "HEAD",
-		"stdlib": "libstdc++",
-		"libstdcxx-version": "HEAD",
-		"tsan": true,
-		"shared": false,
-		"name" : "ubuntu-22.04, gcc-HEAD, libstdc++-HEAD, shared=false, tsan=true"
-	},
-	{
 		"os": "windows-2019",
 		"msvc-version": 2019,
 		"stdlib": "msvc-stl",
