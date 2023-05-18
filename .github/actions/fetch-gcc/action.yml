@@ -29,7 +29,6 @@ runs:
           }
         }
         if ($IsMacOs) {
-          #Write-Error "GCC installation on macOS is not supported"
           Invoke-NativeCommand brew install gcc@${version}
           Add-Content "${env:GITHUB_OUTPUT}" "gcc=gcc-${version}"
           Add-Content "${env:GITHUB_OUTPUT}" "gplusplus=g++-${version}"
