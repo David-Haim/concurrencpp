@@ -2344,8 +2344,8 @@ int main() {
 ### Supported platforms and tools
 
 * **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
-* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang 14+, Clang 11-13 with libc++
-* **Tools:** CMake (3.16 and above) 
+* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang 14+, Clang 11-13 with libc++, GCC 13+
+* **Tools:** CMake (3.16 and above)
 
 ### Building, installing and testing
 
@@ -2377,7 +2377,7 @@ $ cmake --build build/lib
 ```
 ##### Running the tests on *nix platforms 
 
-With clang, it is also possible to run the tests with TSAN (thread sanitizer) support.
+With clang and gcc, it is also possible to run the tests with TSAN (thread sanitizer) support.
 
 ```cmake
 $ git clone https://github.com/David-Haim/concurrencpp.git

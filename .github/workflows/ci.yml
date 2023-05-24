@@ -71,7 +71,7 @@ jobs:
         id: libstdcxx
         with:
           version: ${{ matrix.libstdcxx-version }}
-        if: ${{ matrix.stdlib == 'libstdc++' }}
+        if: ${{ matrix.stdlib == 'libstdc++' && matrix.libstdcxx-version }}
 
       - uses: ./.github/actions/fetch-clang
         id: clang
@@ -80,11 +80,17 @@ jobs:
           base-directory: build/tools
         if: ${{ matrix.clang-version }}
 
+      - uses: ./.github/actions/fetch-gcc
+        id: gcc
+        with:
+          version: ${{ matrix.gcc-version }}
+        if: ${{ matrix.gcc-version }}
+
       - name: Build Examples
         uses: ./.github/actions/cmake-build
         continue-on-error: ${{ matrix.os == 'macos-11' }}
         env:
-          CXX: ${{ steps.clang.outputs.clangxx }}
+          CXX: ${{ steps.clang.outputs.clangxx || steps.gcc.outputs.gplusplus }}
         with:
           cmake: ${{ steps.cmake.outputs.cmake }}
           ninja: ${{ steps.ninja.outputs.ninja }}
@@ -100,7 +106,7 @@ jobs:
         uses: ./.github/actions/cmake-build
         continue-on-error: ${{ matrix.os == 'macos-11' }}
         env:
-          CXX: ${{ steps.clang.outputs.clangxx }}
+          CXX: ${{ steps.clang.outputs.clangxx || steps.gcc.outputs.gplusplus }}
         with:
           cmake: ${{ steps.cmake.outputs.cmake }}
           ninja: ${{ steps.ninja.outputs.ninja }}
