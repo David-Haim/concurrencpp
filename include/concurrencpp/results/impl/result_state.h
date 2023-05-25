@@ -104,7 +104,7 @@ namespace concurrencpp::details {
             const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
                                                                    pc_state::consumer_set,
                                                                    std::memory_order_acq_rel,
-                                                                   std::memory_order_acquire);
+                                                                   std::memory_order_acq_rel);
 
             if (!idle_0) {
                 assert_done();
