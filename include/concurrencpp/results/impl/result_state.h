@@ -99,6 +99,8 @@ namespace concurrencpp::details {
 
             const auto wait_ctx = std::make_shared<std::binary_semaphore>(0);
             m_consumer.set_wait_for_context(wait_ctx);
+            
+            std::atomic_thread_fence(std::memory_order_release);
 
             auto expected_idle_state = pc_state::idle;
             const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
