@@ -45,8 +45,8 @@ namespace concurrencpp::details {
         bool m_abort;
         std::atomic_bool m_task_found_or_abort;
         thread m_thread;
-        std::function<void(std::string_view thread_name)> m_thread_started_callback;
-        std::function<void(std::string_view thread_name)> m_thread_terminated_callback;
+        const std::function<void(std::string_view thread_name)> m_thread_started_callback;
+        const std::function<void(std::string_view thread_name)> m_thread_terminated_callback;
 
         void balance_work();
 

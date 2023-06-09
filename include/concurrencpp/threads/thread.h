@@ -30,14 +30,14 @@ namespace concurrencpp::details {
                                     thread_terminated_callback = std::move(thread_terminated_callback)]() mutable {
                 set_name(name);
 
-                if (thread_started_callback) {
-                    thread_started_callback(name.c_str());
+                if (static_cast<bool>(thread_started_callback)) {
+                    thread_started_callback(name);
                 }
 
                 callable();
 
-                if (thread_terminated_callback) {
-                    thread_terminated_callback(name.c_str());
+                if (static_cast<bool>(thread_terminated_callback)) {
+                    thread_terminated_callback(name);
                 }
             });
         }

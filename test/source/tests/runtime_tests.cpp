@@ -74,22 +74,19 @@ void concurrencpp::tests::test_runtime_constructor() {
 
     auto test_runtime_executor = [&thread_started_callback_invocations_num,
                                   &thread_terminated_callback_invocations_num](std::shared_ptr<executor> executor) {
-        size_t start_thread_started_callback_invocations_num = thread_started_callback_invocations_num;
-        size_t start_thread_terminated_callback_invocations_num = thread_terminated_callback_invocations_num;
+        thread_started_callback_invocations_num = 0;
+        thread_terminated_callback_invocations_num = 0;
 
         executor
-            ->submit([&thread_started_callback_invocations_num,
-                      &thread_terminated_callback_invocations_num,
-                      start_thread_started_callback_invocations_num,
-                      start_thread_terminated_callback_invocations_num]() {
-                assert_equal(thread_started_callback_invocations_num, start_thread_started_callback_invocations_num + 1);
-                assert_equal(thread_terminated_callback_invocations_num, start_thread_terminated_callback_invocations_num);
+            ->submit([&thread_started_callback_invocations_num, &thread_terminated_callback_invocations_num]() {
+                assert_equal(thread_started_callback_invocations_num, 1);
+                assert_equal(thread_terminated_callback_invocations_num, 0);
             })
             .get();
 
         executor->shutdown();
-        assert_equal(thread_started_callback_invocations_num, start_thread_started_callback_invocations_num + 1);
-        assert_equal(thread_terminated_callback_invocations_num, start_thread_terminated_callback_invocations_num + 1);
+        assert_equal(thread_started_callback_invocations_num, 1);
+        assert_equal(thread_terminated_callback_invocations_num, 1);
     };
 
     test_runtime_executor(runtime.thread_executor());
