@@ -57,7 +57,11 @@ namespace concurrencpp {
         details::thread_pool_worker& worker_at(size_t index) noexcept;
 
        public:
-        thread_pool_executor(std::string_view pool_name, size_t pool_size, std::chrono::milliseconds max_idle_time);
+        thread_pool_executor(std::string_view pool_name,
+                             size_t pool_size,
+                             std::chrono::milliseconds max_idle_time,
+                             const std::function<void(std::string_view thread_name)>& thread_started_callback = {},
+                             const std::function<void(std::string_view thread_name)>& thread_terminated_callback = {});
 
         ~thread_pool_executor() override;
 

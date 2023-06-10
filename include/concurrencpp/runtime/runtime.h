@@ -9,6 +9,7 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
+#include <functional>
 
 namespace concurrencpp::details {
     class CRCPP_API executor_collection {
@@ -32,6 +33,9 @@ namespace concurrencpp {
         std::chrono::milliseconds max_background_executor_waiting_time;
 
         std::chrono::milliseconds max_timer_queue_waiting_time;
+
+        std::function<void(std::string_view thread_name)> thread_started_callback;
+        std::function<void(std::string_view thread_name)> thread_terminated_callback;
 
         runtime_options() noexcept;
 
