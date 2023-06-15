@@ -54,6 +54,14 @@ void thread::set_name(std::string_view name) noexcept {
     ::SetThreadDescription(::GetCurrentThread(), utf16_name.data());
 }
 
+#elif defined(CRCPP_MINGW_OS)
+
+#    include <pthread.h>
+
+void thread::set_name(std::string_view name) noexcept {
+    ::pthread_setname_np(::pthread_self(), name.data());
+}
+
 #elif defined(CRCPP_UNIX_OS)
 
 #    include <pthread.h>
