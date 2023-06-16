@@ -1,7 +1,9 @@
 #ifndef CONCURRENCPP_PLATFORM_DEFS_H
 #define CONCURRENCPP_PLATFORM_DEFS_H
 
-#if defined(_WIN32)
+#if defined(__MINGW32__)
+#    define CRCPP_MINGW_OS
+#elif defined(_WIN32)
 #    define CRCPP_WIN_OS
 #elif defined(unix) || defined(__unix__) || defined(__unix)
 #    define CRCPP_UNIX_OS
