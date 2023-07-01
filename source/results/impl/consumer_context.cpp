@@ -231,8 +231,12 @@ void consumer_context::resume_consumer(result_state_base& self) const {
         }
 
         case consumer_status::shared: {
-            const auto shared_ctx = m_storage.shared_ctx;
-            return shared_ctx->on_result_finished();
+            const auto weak_shared_ctx = m_storage.shared_ctx;
+            const auto shared_ctx = weak_shared_ctx.lock();
+            if (static_cast<bool>(shared_ctx)) {
+                shared_ctx->on_result_finished();
+            }
+            return;
         }
     }
 

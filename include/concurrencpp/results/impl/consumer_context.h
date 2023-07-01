@@ -51,7 +51,7 @@ namespace concurrencpp::details {
             coroutine_handle<void> caller_handle;
             std::shared_ptr<std::binary_semaphore> wait_for_ctx;
             std::shared_ptr<when_any_context> when_any_ctx;
-            std::shared_ptr<shared_result_state_base> shared_ctx;
+            std::weak_ptr<shared_result_state_base> shared_ctx;
 
             storage() noexcept {}
             ~storage() noexcept {}
