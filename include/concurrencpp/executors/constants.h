@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_EXECUTORS_CONSTS_H
 #define CONCURRENCPP_EXECUTORS_CONSTS_H
 
+#include <limits>
 #include <numeric>
 
 namespace concurrencpp::details::consts {
