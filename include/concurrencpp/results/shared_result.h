@@ -29,7 +29,8 @@ namespace concurrencpp {
                 return;
             }
 
-            m_state = std::make_shared<details::shared_result_state<type>>(details::shared_result_helper::get_state(rhs));
+            auto result_state = details::shared_result_helper::get_state(rhs);
+            m_state = std::make_shared<details::shared_result_state<type>>(std::move(result_state));
             m_state->share(std::static_pointer_cast<details::shared_result_state_base>(m_state));
         }
 
