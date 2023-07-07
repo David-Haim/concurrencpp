@@ -235,22 +235,6 @@
 	},
 	{
 		"os": "windows-2022",
-		"clang-version": 14,
-		"stdlib": "msvc-stl",
-		"tsan": false,
-		"shared": false,
-		"name" : "windows-2022, clang-14, msvc-stl, shared=false, tsan=false"
-	},
-	{
-		"os": "windows-2022",
-		"clang-version": 14,
-		"stdlib": "msvc-stl",
-		"tsan": false,
-		"shared": true,
-		"name" : "windows-2022, clang-14, msvc-stl, shared=true, tsan=false"
-	},
-	{
-		"os": "windows-2022",
 		"clang-version": 15,
 		"stdlib": "msvc-stl",
 		"tsan": false,
