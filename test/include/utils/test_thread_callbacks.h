@@ -2,6 +2,7 @@
 #define CONCURRENCPP_TEST_THREAD_CALLBACKS_H
 
 #include "infra/assertions.h"
+#include "utils/executor_shutdowner.h"
 #include "concurrencpp/executors/executor.h"
 
 namespace concurrencpp::tests {
@@ -22,6 +23,8 @@ namespace concurrencpp::tests {
         };
 
         std::shared_ptr<executor> executor = executor_factory(thread_started_callback, thread_terminated_callback);
+        executor_shutdowner es(executor);
+
         assert_equal(thread_started_callback_invocations_num, 0);
         assert_equal(thread_terminated_callback_invocations_num, 0);
 
