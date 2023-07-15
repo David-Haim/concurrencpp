@@ -70,22 +70,29 @@ runtime_options::runtime_options() noexcept :
 runtime::runtime() : runtime(runtime_options()) {}
 
 runtime::runtime(const runtime_options& options) {
-    m_timer_queue = std::make_shared<::concurrencpp::timer_queue>(options.max_timer_queue_waiting_time);
+    m_timer_queue = std::make_shared<::concurrencpp::timer_queue>(options.max_timer_queue_waiting_time,
+                                                                  options.thread_started_callback,
+                                                                  options.thread_terminated_callback);
 
     m_inline_executor = std::make_shared<::concurrencpp::inline_executor>();
     m_registered_executors.register_executor(m_inline_executor);
 
     m_thread_pool_executor = std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_thread_pool_executor_name,
                                                                                     options.max_cpu_threads,
-                                                                                    options.max_thread_pool_executor_waiting_time);
+                                                                                    options.max_thread_pool_executor_waiting_time,
+                                                                                    options.thread_started_callback,
+                                                                                    options.thread_terminated_callback);
     m_registered_executors.register_executor(m_thread_pool_executor);
 
     m_background_executor = std::make_shared<::concurrencpp::thread_pool_executor>(details::consts::k_background_executor_name,
                                                                                    options.max_background_threads,
-                                                                                   options.max_background_executor_waiting_time);
+                                                                                   options.max_background_executor_waiting_time,
+                                                                                   options.thread_started_callback,
+                                                                                   options.thread_terminated_callback);
     m_registered_executors.register_executor(m_background_executor);
 
-    m_thread_executor = std::make_shared<::concurrencpp::thread_executor>();
+    m_thread_executor =
+        std::make_shared<::concurrencpp::thread_executor>(options.thread_started_callback, options.thread_terminated_callback);
     m_registered_executors.register_executor(m_thread_executor);
 }
 

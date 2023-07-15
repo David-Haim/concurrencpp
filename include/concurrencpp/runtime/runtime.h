@@ -9,6 +9,7 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
+#include <functional>
 
 namespace concurrencpp::details {
     class CRCPP_API executor_collection {
@@ -33,6 +34,9 @@ namespace concurrencpp {
 
         std::chrono::milliseconds max_timer_queue_waiting_time;
 
+        std::function<void(std::string_view thread_name)> thread_started_callback;
+        std::function<void(std::string_view thread_name)> thread_terminated_callback;
+
         runtime_options() noexcept;
 
         runtime_options(const runtime_options&) noexcept = default;
@@ -42,14 +46,14 @@ namespace concurrencpp {
     class CRCPP_API runtime {
 
        private:
-        std::shared_ptr<inline_executor> m_inline_executor;
-        std::shared_ptr<thread_pool_executor> m_thread_pool_executor;
-        std::shared_ptr<thread_pool_executor> m_background_executor;
-        std::shared_ptr<thread_executor> m_thread_executor;
+        std::shared_ptr<concurrencpp::inline_executor> m_inline_executor;
+        std::shared_ptr<concurrencpp::thread_pool_executor> m_thread_pool_executor;
+        std::shared_ptr<concurrencpp::thread_pool_executor> m_background_executor;
+        std::shared_ptr<concurrencpp::thread_executor> m_thread_executor;
 
         details::executor_collection m_registered_executors;
 
-        std::shared_ptr<timer_queue> m_timer_queue;
+        std::shared_ptr<concurrencpp::timer_queue> m_timer_queue;
 
        public:
         runtime();

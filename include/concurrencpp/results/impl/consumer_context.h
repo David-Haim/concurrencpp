@@ -45,12 +45,13 @@ namespace concurrencpp::details {
     class CRCPP_API consumer_context {
 
        private:
-        enum class consumer_status { idle, await, wait_for, when_any };
+        enum class consumer_status { idle, await, wait_for, when_any, shared };
 
         union storage {
             coroutine_handle<void> caller_handle;
             std::shared_ptr<std::binary_semaphore> wait_for_ctx;
             std::shared_ptr<when_any_context> when_any_ctx;
+            std::weak_ptr<shared_result_state_base> shared_ctx;
 
             storage() noexcept {}
             ~storage() noexcept {}
@@ -71,6 +72,7 @@ namespace concurrencpp::details {
         void set_await_handle(coroutine_handle<void> caller_handle) noexcept;
         void set_wait_for_context(const std::shared_ptr<std::binary_semaphore>& wait_ctx) noexcept;
         void set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept;
+        void set_shared_context(const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept;
     };
 }  // namespace concurrencpp::details
 

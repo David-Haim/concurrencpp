@@ -3,6 +3,7 @@
 
 #include "concurrencpp/results/impl/consumer_context.h"
 #include "concurrencpp/results/impl/producer_context.h"
+#include "concurrencpp/platform_defs.h"
 
 #include <atomic>
 #include <type_traits>
@@ -27,6 +28,8 @@ namespace concurrencpp::details {
         bool await(coroutine_handle<void> caller_handle) noexcept;
         pc_state when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept;
 
+        void share(const std::shared_ptr<shared_result_state_base>& shared_result_state) noexcept;
+
         void try_rewind_consumer() noexcept;
     };
 
@@ -43,7 +46,14 @@ namespace concurrencpp::details {
                 return done_handle.destroy();
             }
 
+#ifdef CRCPP_GCC_COMPILER
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#endif
             delete state;
+#ifdef CRCPP_GCC_COMPILER
+#    pragma GCC diagnostic pop
+#endif
         }
 
         template<class callable_type>
@@ -89,6 +99,8 @@ namespace concurrencpp::details {
 
             const auto wait_ctx = std::make_shared<std::binary_semaphore>(0);
             m_consumer.set_wait_for_context(wait_ctx);
+            
+            std::atomic_thread_fence(std::memory_order_release);
 
             auto expected_idle_state = pc_state::idle;
             const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
@@ -102,6 +114,10 @@ namespace concurrencpp::details {
             }
 
             if (wait_ctx->try_acquire_for(duration + std::chrono::milliseconds(1))) {
+                // counting_semaphore isn't required to synchronize non atomic data, 
+                // we'll synchronize it manually using m_pc_state::load(memory_order_acquire)
+                const auto status = m_pc_state.load(std::memory_order_acquire);
+                (void)status;
                 assert_done();
                 return m_producer.status();
             }
@@ -144,6 +160,11 @@ namespace concurrencpp::details {
         type get() {
             assert_done();
             return m_producer.get();
+        }
+
+        std::add_lvalue_reference_t<type> get_ref() {
+            assert_done();
+            return m_producer.get_ref();
         }
 
         template<class callable_type>

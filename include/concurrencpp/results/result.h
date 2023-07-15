@@ -15,7 +15,7 @@ namespace concurrencpp {
 
         static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
 
-        static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be now-throw-move constructable or void.");
+        static_assert(valid_result_type_v, "concurrencpp::result<type> - <<type>> should be no-throw-move constructible or void.");
 
         friend class details::when_result_helper;
         friend struct details::shared_result_helper;
@@ -100,7 +100,7 @@ namespace concurrencpp {
         static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
 
         static_assert(valid_result_type_v,
-                      "concurrencpp::result_promise<type> - <<type>> should be now-throw-move constructable or void.");
+                      "concurrencpp::result_promise<type> - <<type>> should be no-throw-move constructible or void.");
 
        private:
         details::producer_result_state_ptr<type> m_producer_state;

@@ -11,7 +11,7 @@
 
 namespace concurrencpp::details {
     [[noreturn]] CRCPP_API void throw_runtime_shutdown_exception(std::string_view executor_name);
-    std::string make_executor_worker_name(std::string_view executor_name);
+    CRCPP_API std::string make_executor_worker_name(std::string_view executor_name);
 }  // namespace concurrencpp::details
 
 namespace concurrencpp {
@@ -34,7 +34,11 @@ namespace concurrencpp {
             }
 
             void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
-                accumulator.emplace_back(details::await_via_functor(coro_handle, &m_interrupted));
+                try {
+                    accumulator.emplace_back(details::await_via_functor(coro_handle, &m_interrupted));
+                } catch (...) {
+                    // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
+                }
             }
 
             void await_resume() const {

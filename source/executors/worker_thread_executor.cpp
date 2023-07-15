@@ -1,18 +1,27 @@
 #include "concurrencpp/executors/worker_thread_executor.h"
+
 #include "concurrencpp/executors/constants.h"
 
 namespace concurrencpp::details {
     static thread_local worker_thread_executor* s_tl_this_worker = nullptr;
-}
+}  // namespace concurrencpp::details
 
 using concurrencpp::worker_thread_executor;
 
-worker_thread_executor::worker_thread_executor() :
+worker_thread_executor::worker_thread_executor(const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                                               const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
     derivable_executor<concurrencpp::worker_thread_executor>(details::consts::k_worker_thread_executor_name),
-    m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false), m_abort(false) {
-    m_thread = details::thread(details::make_executor_worker_name(name), [this] {
-        work_loop();
-    });
+    m_private_atomic_abort(false), m_semaphore(0), m_atomic_abort(false), m_abort(false),
+    m_thread_started_callback(thread_started_callback), m_thread_terminated_callback(thread_terminated_callback) {}
+
+void concurrencpp::worker_thread_executor::make_os_worker_thread() {
+    m_thread = details::thread(
+        details::make_executor_worker_name(name),
+        [this] {
+            work_loop();
+        },
+        m_thread_started_callback,
+        m_thread_terminated_callback);
 }
 
 bool worker_thread_executor::drain_queue_impl() {
@@ -100,6 +109,11 @@ void worker_thread_executor::enqueue_foreign(concurrencpp::task& task) {
 
     const auto is_empty = m_public_queue.empty();
     m_public_queue.emplace_back(std::move(task));
+
+    if (!m_thread.joinable()) {
+        return make_os_worker_thread();
+    }
+
     lock.unlock();
 
     if (is_empty) {
@@ -115,6 +129,11 @@ void worker_thread_executor::enqueue_foreign(std::span<concurrencpp::task> tasks
 
     const auto is_empty = m_public_queue.empty();
     m_public_queue.insert(m_public_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
+
+    if (!m_thread.joinable()) {
+        return make_os_worker_thread();
+    }
+
     lock.unlock();
 
     if (is_empty) {
@@ -157,6 +176,7 @@ void worker_thread_executor::shutdown() {
         m_abort = true;
     }
 
+    m_private_atomic_abort.store(true, std::memory_order_relaxed);
     m_semaphore.release();
 
     if (m_thread.joinable()) {

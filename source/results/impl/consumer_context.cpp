@@ -1,6 +1,7 @@
 #include "concurrencpp/results/impl/consumer_context.h"
 
 #include "concurrencpp/executors/executor.h"
+#include "concurrencpp/results/impl/shared_result_state.h"
 
 using concurrencpp::details::when_any_context;
 using concurrencpp::details::consumer_context;
@@ -167,6 +168,10 @@ void consumer_context::destroy() noexcept {
         case consumer_status::when_any: {
             return details::destroy(m_storage.when_any_ctx);
         }
+
+        case consumer_status::shared: {
+            return details::destroy(m_storage.shared_ctx);
+        }
     }
 
     assert(false);
@@ -195,6 +200,12 @@ void consumer_context::set_when_any_context(const std::shared_ptr<when_any_conte
     details::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
+void concurrencpp::details::consumer_context::set_shared_context(const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept {
+    assert(m_status == consumer_status::idle);
+    m_status = consumer_status::shared;
+    details::build(m_storage.shared_ctx, shared_ctx);
+}
+
 void consumer_context::resume_consumer(result_state_base& self) const {
     switch (m_status) {
         case consumer_status::idle: {
@@ -217,6 +228,15 @@ void consumer_context::resume_consumer(result_state_base& self) const {
         case consumer_status::when_any: {
             const auto when_any_ctx = m_storage.when_any_ctx;
             return when_any_ctx->try_resume(self);
+        }
+
+        case consumer_status::shared: {
+            const auto weak_shared_ctx = m_storage.shared_ctx;
+            const auto shared_ctx = weak_shared_ctx.lock();
+            if (static_cast<bool>(shared_ctx)) {
+                shared_ctx->on_result_finished();
+            }
+            return;
         }
     }
 

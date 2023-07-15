@@ -2,6 +2,8 @@
 #include "concurrencpp/timers/timer_queue.h"
 
 #include "concurrencpp/coroutines/coroutine.h"
+#include "concurrencpp/executors/constants.h"
+#include "concurrencpp/executors/executor.h"
 
 #include <set>
 #include <unordered_map>
@@ -143,8 +145,12 @@ namespace concurrencpp::details {
     }  // namespace
 }  // namespace concurrencpp::details
 
-timer_queue::timer_queue(milliseconds max_waiting_time) :
-    m_atomic_abort(false), m_abort(false), m_idle(true), m_max_waiting_time(max_waiting_time) {}
+timer_queue::timer_queue(milliseconds max_waiting_time,
+                         const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                         const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
+    m_thread_started_callback(thread_started_callback),
+    m_thread_terminated_callback(thread_terminated_callback), m_atomic_abort(false), m_abort(false), m_idle(true),
+    m_max_waiting_time(max_waiting_time) {}
 
 timer_queue::~timer_queue() noexcept {
     shutdown();
@@ -253,9 +259,13 @@ concurrencpp::details::thread timer_queue::ensure_worker_thread(std::unique_lock
 
     auto old_worker = std::move(m_worker);
 
-    m_worker = details::thread("concurrencpp::timer_queue worker", [this] {
-        work_loop();
-    });
+    m_worker = details::thread(
+        details::make_executor_worker_name(details::consts::k_timer_queue_name),
+        [this] {
+            work_loop();
+        },
+        m_thread_started_callback,
+        m_thread_terminated_callback);
 
     m_idle = false;
     return old_worker;
@@ -288,8 +298,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
                                                details::await_via_functor {coro_handle, &m_interrupted});
 
             } catch (...) {
-                // if an exception is thrown, await_via_functor d.tor will set an interrupt and resume the coro
-                // no need to let the exception propagate.
+                // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
             }
         }
 

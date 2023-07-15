@@ -1,0 +1,46 @@
+name: Fetch GCC
+description: Puts gcc's path into the output
+
+inputs:
+  version:
+    description: Version of GCC to fetch
+    required: true
+outputs:
+  gcc:
+    description: Path of gcc executable
+    value: ${{ steps.script.outputs.gcc }}
+  gplusplus:
+    description: Path of g++ executable
+    value: ${{ steps.script.outputs.gplusplus }}
+
+runs:
+  using: composite
+  steps:
+    - id: script
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}"
+        function Invoke-NativeCommand {
+          $command = $args[0]
+          $arguments = $args[1..($args.Length)]
+          & $command @arguments
+          if ($LastExitCode -ne 0) {
+            Write-Error "Exit code $LastExitCode while running $command $arguments"
+          }
+        }
+        if ($IsMacOs) {
+          Invoke-NativeCommand brew install gcc@${version}
+          Add-Content "${env:GITHUB_OUTPUT}" "gcc=gcc-${version}"
+          Add-Content "${env:GITHUB_OUTPUT}" "gplusplus=g++-${version}"
+        } elseif ($IsLinux) {
+          # install Homebrew
+          $env:CI = "1"
+          Invoke-NativeCommand /bin/bash -c $(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)
+          $env:CI = $null
+          # install gcc
+          Invoke-NativeCommand /home/linuxbrew/.linuxbrew/bin/brew install gcc@${version}
+          Add-Content "${env:GITHUB_OUTPUT}" "gcc=/home/linuxbrew/.linuxbrew/bin/gcc-${version}"
+          Add-Content "${env:GITHUB_OUTPUT}" "gplusplus=/home/linuxbrew/.linuxbrew/bin/g++-${version}"
+        } elseif ($IsWindows) {
+          Write-Error "GCC installation on Windows is not supported"
+        }

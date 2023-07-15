@@ -1,167 +1,125 @@
 #ifndef CONCURRENCPP_SHARED_RESULT_STATE_H
 #define CONCURRENCPP_SHARED_RESULT_STATE_H
 
-#include "concurrencpp/coroutines/coroutine.h"
-#include "concurrencpp/forward_declarations.h"
-#include "concurrencpp/results/impl/producer_context.h"
-#include "concurrencpp/results/impl/return_value_struct.h"
+#include "concurrencpp/platform_defs.h"
+#include "concurrencpp/results/impl/result_state.h"
 
 #include <atomic>
-#include <mutex>
-#include <optional>
-#include <condition_variable>
+#include <semaphore>
 
 #include <cassert>
 
 namespace concurrencpp::details {
-    struct shared_await_context {
+    struct shared_result_helper {
+        template<class type>
+        static consumer_result_state_ptr<type> get_state(result<type>& result) noexcept {
+            return std::move(result.m_state);
+        }
+    };
+
+    struct CRCPP_API shared_await_context {
         shared_await_context* next = nullptr;
         coroutine_handle<void> caller_handle;
     };
-}  // namespace concurrencpp::details
 
-namespace concurrencpp::details {
     class CRCPP_API shared_result_state_base {
 
        protected:
-        std::atomic_bool m_ready {false};
-        mutable std::mutex m_lock;
-        shared_await_context* m_awaiters = nullptr;
-        std::optional<std::condition_variable> m_condition;
+        std::atomic<result_status> m_status {result_status::idle};
+        std::atomic<shared_await_context*> m_awaiters {nullptr};
+        std::counting_semaphore<> m_semaphore {0};
 
-        void await_impl(std::unique_lock<std::mutex>& lock, shared_await_context& awaiter) noexcept;
-        void wait_impl(std::unique_lock<std::mutex>& lock);
-        bool wait_for_impl(std::unique_lock<std::mutex>& lock, std::chrono::milliseconds ms);
+        static shared_await_context* result_ready_constant() noexcept;
 
        public:
-        void complete_producer();
-        bool await(shared_await_context& awaiter);
-        void wait();
+        virtual ~shared_result_state_base() noexcept = default;
+
+        virtual void on_result_finished() noexcept = 0;
+
+        result_status status() const noexcept;
+
+        void wait() noexcept;
+
+        bool await(shared_await_context& awaiter) noexcept;
+
+        template<class duration_unit, class ratio>
+        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
+            const auto time_point = std::chrono::system_clock::now() + duration;
+            return wait_until(time_point);
+        }
+
+        template<class clock, class duration>
+        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
+            while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
+                const auto res = m_semaphore.try_acquire_until(timeout_time);
+                (void)res;
+            }
+
+            return status();
+        }
     };
 
     template<class type>
     class shared_result_state final : public shared_result_state_base {
 
        private:
-        producer_context<type> m_producer;
-
-        void assert_done() const noexcept {
-            assert(m_ready.load(std::memory_order_acquire));
-            assert(m_producer.status() != result_status::idle);
-        }
+        consumer_result_state_ptr<type> m_result_state;
 
        public:
-        result_status status() const noexcept {
-            if (!m_ready.load(std::memory_order_acquire)) {
-                return result_status::idle;
-            }
-
-            return m_producer.status();
+        shared_result_state(consumer_result_state_ptr<type> result_state) noexcept : m_result_state(std::move(result_state)) {
+            assert(static_cast<bool>(m_result_state));
         }
 
-        template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
-            if (m_ready.load(std::memory_order_acquire)) {
-                return m_producer.status();
-            }
-
-            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration) + std::chrono::milliseconds(1);
-
-            std::unique_lock<std::mutex> lock(m_lock);
-            if (m_ready.load(std::memory_order_acquire)) {
-                return m_producer.status();
-            }
-
-            const auto ready = wait_for_impl(lock, ms);
-            if (ready) {
-                assert_done();
-                return m_producer.status();
-            }
-
-            lock.unlock();
-            return result_status::idle;
+        ~shared_result_state() noexcept {
+            assert(static_cast<bool>(m_result_state));
+            m_result_state->try_rewind_consumer();
+            m_result_state.reset();
         }
 
-        template<class clock, class duration>
-        result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            const auto now = clock::now();
-            if (timeout_time <= now) {
-                return status();
-            }
-
-            const auto diff = timeout_time - now;
-            return wait_for(diff);
+        void share(const std::shared_ptr<shared_result_state_base>& self) noexcept {
+            assert(static_cast<bool>(m_result_state));
+            m_result_state->share(self);
         }
 
         std::add_lvalue_reference_t<type> get() {
-            return m_producer.get_ref();
+            assert(static_cast<bool>(m_result_state));
+            return m_result_state->get_ref();
         }
 
-        template<class... argument_types>
-        void set_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
-            m_producer.build_result(std::forward<argument_types>(arguments)...);
-        }
+        void on_result_finished() noexcept override {
+            m_status.store(m_result_state->status(), std::memory_order_release);
+            m_status.notify_all();
 
-        void unhandled_exception() noexcept {
-            m_producer.build_exception(std::current_exception());
+            /* theoretically buggish, practically there's no way
+               that we'll have more than max(ptrdiff_t) / 2 waiters.
+               on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
+               memory will run out before enough tasks could be created to wait this synchronously
+            */
+            m_semaphore.release(m_semaphore.max() / 2);
+
+            auto k_result_ready = result_ready_constant();
+            auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
+
+            shared_await_context* current = awaiters;
+            shared_await_context *prev = nullptr, *next = nullptr;
+
+            while (current != nullptr) {
+                next = current->next;
+                current->next = prev;
+                prev = current;
+                current = next;
+            }
+
+            awaiters = prev;
+
+            while (awaiters != nullptr) {
+                assert(static_cast<bool>(awaiters->caller_handle));
+                auto caller_handle = awaiters->caller_handle;
+                awaiters = awaiters->next;
+                caller_handle();
+            }
         }
     };
 }  // namespace concurrencpp::details
-
-namespace concurrencpp::details {
-    struct shared_result_publisher : public suspend_always {
-        template<class promise_type>
-        bool await_suspend(coroutine_handle<promise_type> handle) const noexcept {
-            // TODO : this can (very rarely) throw, but the standard mandates us to have a noexcept finalizer
-            handle.promise().complete_producer();
-            return false;
-        }
-    };
-
-    template<class type>
-    class shared_result_promise : public return_value_struct<shared_result_promise<type>, type> {
-
-       private:
-        const std::shared_ptr<shared_result_state<type>> m_state = std::make_shared<shared_result_state<type>>();
-
-       public:
-        template<class... argument_types>
-        void set_result(argument_types&&... arguments) noexcept(noexcept(type(std::forward<argument_types>(arguments)...))) {
-            m_state->set_result(std::forward<argument_types>(arguments)...);
-        }
-
-        void unhandled_exception() const noexcept {
-            m_state->unhandled_exception();
-        }
-
-        shared_result<type> get_return_object() noexcept {
-            return shared_result<type> {m_state};
-        }
-
-        suspend_never initial_suspend() const noexcept {
-            return {};
-        }
-
-        shared_result_publisher final_suspend() const noexcept {
-            return {};
-        }
-
-        void complete_producer() const {
-            m_state->complete_producer();
-        }
-    };
-
-    struct shared_result_tag {};
-}  // namespace concurrencpp::details
-
-namespace CRCPP_COROUTINE_NAMESPACE {
-    // No executor + No result
-    template<class type>
-    struct coroutine_traits<::concurrencpp::shared_result<type>,
-                            concurrencpp::details::shared_result_tag,
-                            concurrencpp::result<type>> {
-        using promise_type = concurrencpp::details::shared_result_promise<type>;
-    };
-}  // namespace CRCPP_COROUTINE_NAMESPACE
 
 #endif

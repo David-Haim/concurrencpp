@@ -67,6 +67,7 @@ concurrencpp main advantages are:
 	* [`async_condition_variable` example](#async_condition_variable-example)
 * [The runtime object](#the-runtime-object)
     * [`runtime` API](#runtime-api)
+    * [Thread creation and termination monitoring](#thread-creation-and-termination-monitoring)
     * [Creating user-defined executors](#creating-user-defined-executors)
     * [`task` objects](#task-objects)
     * [`task` API](#task-api)
@@ -2133,6 +2134,58 @@ class runtime {
     static std::tuple<unsigned int, unsigned int, unsigned int> version() noexcept;
 };
 ```
+#### Thread creation and termination monitoring
+
+In some cases, applications are interested in monitoring thread creation and termination, for example, some memory allocators require new threads to be registered and unregistered upon their creation and termination.  The concurrencpp runtime allows setting a thread creation callback and a thread termination callback. those callbacks will be called whenever one of the concurrencpp workers create a new thread and when that thread is terminating. Those callbacks are always called from inside the created/terminating thread, so `std::this_thread::get_id` will always return the relevant thread ID.  The signature of those callbacks is `void callback (std::string_view thread_name)`. `thread_name` is a concurrencpp specific title that is given to the thread and can be observed in some debuggers that present the thread name. The thread name is not guaranteed to be unique and should be used for logging and debugging. 
+
+In order to set a thread-creation callback and/or a thread termination callback, applications can set the `thread_started_callback` and/or `thread_terminated_callback` members of the `runtime_options` which is passed to the runtime constructor. Since those callbacks are copied to each concurrencpp worker that might create threads, those callbacks have to be copiable.    
+
+#### Example: monitoring thread creation and termination
+
+```cpp
+#include "concurrencpp/concurrencpp.h"
+
+#include <iostream>
+
+int main() {
+    concurrencpp::runtime_options options;
+    options.thread_started_callback = [](std::string_view thread_name) {
+        std::cout << "A new thread is starting to run, name: " << thread_name << ", thread id: " << std::this_thread::get_id()
+                  << std::endl;
+    };
+
+    options.thread_terminated_callback = [](std::string_view thread_name) {
+        std::cout << "A thread is terminating, name: " << thread_name << ", thread id: " << std::this_thread::get_id() << std::endl;
+    };
+
+    concurrencpp::runtime runtime(options);
+    const auto timer_queue = runtime.timer_queue();
+    const auto thread_pool_executor = runtime.thread_pool_executor();
+
+    concurrencpp::timer timer =
+        timer_queue->make_timer(std::chrono::milliseconds(100), std::chrono::milliseconds(500), thread_pool_executor, [] {
+            std::cout << "A timer callable is executing" << std::endl;
+        });
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    return 0;
+}
+```
+Possible output:
+
+```
+A new thread is starting to run, name: concurrencpp::timer_queue worker, thread id: 7496
+A new thread is starting to run, name: concurrencpp::thread_pool_executor worker, thread id: 21620
+A timer callable is executing
+A timer callable is executing
+A timer callable is executing
+A timer callable is executing
+A timer callable is executing
+A timer callable is executing
+A thread is terminating, name: concurrencpp::timer_queue worker, thread id: 7496
+A thread is terminating, name: concurrencpp::thread_pool_executor worker, thread id: 21620
+```
 
 #### Creating user-defined executors
 
@@ -2344,8 +2397,8 @@ int main() {
 ### Supported platforms and tools
 
 * **Operating systems:** Linux, macOS, Windows (Windows 10 and above)
-* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang 14+, Clang 11-13 with libc++
-* **Tools:** CMake (3.16 and above) 
+* **Compilers:** MSVC (Visual Studio 2019 version 16.8.2 and above), Clang 14+, Clang 11-13 with libc++, GCC 13+
+* **Tools:** CMake (3.16 and above)
 
 ### Building, installing and testing
 
@@ -2377,7 +2430,7 @@ $ cmake --build build/lib
 ```
 ##### Running the tests on *nix platforms 
 
-With clang, it is also possible to run the tests with TSAN (thread sanitizer) support.
+With clang and gcc, it is also possible to run the tests with TSAN (thread sanitizer) support.
 
 ```cmake
 $ git clone https://github.com/David-Haim/concurrencpp.git

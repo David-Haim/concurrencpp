@@ -3,9 +3,11 @@
 
 using concurrencpp::thread_executor;
 
-thread_executor::thread_executor() :
-    derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name), m_abort(false), m_atomic_abort(false) {
-}
+thread_executor::thread_executor(const std::function<void(std::string_view thread_name)>& thread_started_callback,
+                                 const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
+    derivable_executor<concurrencpp::thread_executor>(details::consts::k_thread_executor_name),
+    m_abort(false), m_atomic_abort(false), m_thread_started_callback(thread_started_callback),
+    m_thread_terminated_callback(thread_terminated_callback) {}
 
 thread_executor::~thread_executor() noexcept {
     assert(m_workers.empty());
@@ -16,11 +18,14 @@ void thread_executor::enqueue_impl(std::unique_lock<std::mutex>& lock, concurren
     assert(lock.owns_lock());
 
     auto& new_thread = m_workers.emplace_front();
-    new_thread = details::thread(details::make_executor_worker_name(name),
-                                 [this, self_it = m_workers.begin(), task = std::move(task)]() mutable {
-                                     task();
-                                     retire_worker(self_it);
-                                 });
+    new_thread = details::thread(
+        details::make_executor_worker_name(name),
+        [this, self_it = m_workers.begin(), task = std::move(task)]() mutable {
+            task();
+            retire_worker(self_it);
+        },
+        m_thread_started_callback,
+        m_thread_terminated_callback);
 }
 
 void thread_executor::enqueue(concurrencpp::task task) {
