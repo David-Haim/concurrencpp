@@ -67,13 +67,15 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 #else
-void atomic_wait_native(void* atom, int32_t old) noexcept {}
 
-void atomic_wait_for_native(void* atom, int32_t old, std::chrono::milliseconds ms, size_t* polling_cycle_ptr) noexcept {}
+namespace concurrencpp::details {
+    void atomic_wait_native(void* atom, int32_t old) noexcept {}
 
-void atomic_notify_one_native(void* atom) noexcept {}
+    void atomic_wait_for_native(void* atom, int32_t old, std::chrono::milliseconds ms, size_t* polling_cycle_ptr) noexcept {}
 
-void atomic_notify_all_native(void* atom) noexcept {}
+    void atomic_notify_one_native(void* atom) noexcept {}
+
+    void atomic_notify_all_native(void* atom) noexcept {}
 }  // namespace concurrencpp::details
 
 #endif
