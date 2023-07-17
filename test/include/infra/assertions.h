@@ -20,13 +20,18 @@ namespace concurrencpp::tests::details {
     std::string to_string(const char* str);
     std::string to_string(const std::string_view str);
 
+	template<class enum_type>
+    typename std::enable_if_t<std::is_enum_v<enum_type>, std::string> to_string(enum_type enum_value) {
+        return std::to_string(static_cast<std::int64_t>(enum_value));
+    }
+
     template<class type>
     std::string to_string(type* value) {
         return std::string("pointer[") + to_string(reinterpret_cast<intptr_t>(value)) + "]";
     }
 
     template<class type>
-    std::string to_string(const type&) {
+    typename std::enable_if_t<!std::is_enum_v<type>, std::string> to_string(const type&) {
         return "{object}";
     }
 
@@ -52,7 +57,7 @@ namespace concurrencpp::tests {
     }
 
     template<class a_type, class b_type>
-    inline void assert_not_equal(const a_type& given_value, const b_type& expected_value) {
+    void assert_not_equal(const a_type& given_value, const b_type& expected_value) {
         if (given_value != expected_value) {
             return;
         }

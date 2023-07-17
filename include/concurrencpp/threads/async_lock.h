@@ -7,6 +7,8 @@
 #include "concurrencpp/results/lazy_result.h"
 #include "concurrencpp/forward_declarations.h"
 
+#include <mutex>
+
 namespace concurrencpp::details {
     class async_lock_awaiter {
 

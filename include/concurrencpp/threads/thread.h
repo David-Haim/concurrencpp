@@ -3,9 +3,9 @@
 
 #include "concurrencpp/platform_defs.h"
 
+#include <thread>
 #include <functional>
 #include <string_view>
-#include <thread>
 
 namespace concurrencpp::details {
     class CRCPP_API thread {

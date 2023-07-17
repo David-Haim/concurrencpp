@@ -120,7 +120,8 @@ namespace concurrencpp::details {
 
                     auto& state_ref = when_result_helper::at(m_results, i);
                     const auto status = state_ref.when_any(m_promise);
-                    if (status == result_state_base::pc_state::producer_done) {
+
+                    if (status == result_state_base::pc_status::producer_done) {
                         return m_promise->resume_inline(state_ref);
                     }
                 }
