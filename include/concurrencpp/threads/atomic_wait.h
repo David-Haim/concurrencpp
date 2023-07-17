@@ -96,12 +96,21 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_notify_one(std::atomic<type>& atom) noexcept {
+#if defined(CRCPP_MAC_OS)
+        atom.notify_one();
+#else
         atomic_notify_one_native(&atom);
+#endif
     }
 
     template<class type>
     void atomic_notify_all(std::atomic<type>& atom) noexcept {
+#if defined(CRCPP_MAC_OS)
+
+        atom.notify_all();
+#else
         atomic_notify_all_native(&atom);
+#endif
     }
 }  // namespace concurrencpp::details
 
