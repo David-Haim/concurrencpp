@@ -27,11 +27,11 @@ namespace concurrencpp::details {
             if (val != old) {
                 return;
             }
-#if (!CRCPP_MAC_OS)
+#if defined(CRCPP_MAC_OS)
 
-            atomic_wait_native(&atom, static_cast<int32_t>(old));
-#else
             atom.wait(old, order);
+#else
+            atomic_wait_native(&atom, static_cast<int32_t>(old));
 #endif
         }
     }
@@ -46,7 +46,7 @@ namespace concurrencpp::details {
 
         const auto deadline = std::chrono::system_clock::now() + ms;
 
-#if (CRCPP_MAC_OS)
+#if defined(CRCPP_MAC_OS)
         size_t polling_cycle = 0;
 #endif
         while (true) {
@@ -64,11 +64,7 @@ namespace concurrencpp::details {
                 return atomic_wait_status::timeout;
             }
 
-#if (!CRCPP_MAC_OS)
-            const auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
-            assert(time_diff.count() >= 0);
-            atomic_wait_for_native(&atom, static_cast<int32_t>(old), time_diff);
-#else
+#if defined(CRCPP_MAC_OS)
             if (polling_cycle < 64) {
                 std::this_thread::yield();
                 ++polling_cycle;
@@ -89,6 +85,11 @@ namespace concurrencpp::details {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
             ++polling_cycle;
+
+#else
+            const auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
+            assert(time_diff.count() >= 0);
+            atomic_wait_for_native(&atom, static_cast<int32_t>(old), time_diff);
 #endif
         }
     }
