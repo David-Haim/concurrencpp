@@ -12,7 +12,6 @@
 namespace concurrencpp::details {
     void CRCPP_API atomic_wait_native(void* atom, int32_t old) noexcept;
     void CRCPP_API atomic_wait_for_native(void* atom, int32_t old, std::chrono::milliseconds ms) noexcept;
-    void CRCPP_API atomic_notify_one_native(void* atom) noexcept;
     void CRCPP_API atomic_notify_all_native(void* atom) noexcept;
 
     enum class atomic_wait_status { ok, timeout };
@@ -92,15 +91,6 @@ namespace concurrencpp::details {
             atomic_wait_for_native(&atom, static_cast<int32_t>(old), time_diff);
 #endif
         }
-    }
-
-    template<class type>
-    void atomic_notify_one(std::atomic<type>& atom) noexcept {
-#if defined(CRCPP_MAC_OS)
-        atom.notify_one();
-#else
-        atomic_notify_one_native(&atom);
-#endif
     }
 
     template<class type>

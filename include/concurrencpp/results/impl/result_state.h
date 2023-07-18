@@ -151,7 +151,7 @@ namespace concurrencpp::details {
                 }
 
                 case pc_status::consumer_waiting: {
-                    return atomic_notify_one(m_pc_status);
+                    return atomic_notify_all(m_pc_status);
                 }
 
                 case pc_status::consumer_done: {

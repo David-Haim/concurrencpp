@@ -19,10 +19,6 @@ namespace concurrencpp::details {
         ::WaitOnAddress(atom, &old, sizeof(old), static_cast<DWORD>(ms.count()));
     }
 
-    void atomic_notify_one_native(void* atom) noexcept {
-        ::WakeByAddressSingle(atom);
-    }
-
     void atomic_notify_all_native(void* atom) noexcept {
         ::WakeByAddressAll(atom);
     }
@@ -57,10 +53,6 @@ namespace concurrencpp::details {
         futex(atom, FUTEX_WAIT_PRIVATE, old, &spec);
     }
 
-    void atomic_notify_one_native(void* atom) noexcept {
-        futex(atom, FUTEX_WAKE_PRIVATE, 1, nullptr);
-    }
-
     void atomic_notify_all_native(void* atom) noexcept {
         futex(atom, FUTEX_WAKE_PRIVATE, INT_MAX, nullptr);
     }
@@ -72,8 +64,6 @@ namespace concurrencpp::details {
     void atomic_wait_native(void* atom, int32_t old) noexcept {}
 
     void atomic_wait_for_native(void* atom, int32_t old, std::chrono::milliseconds ms, size_t* polling_cycle_ptr) noexcept {}
-
-    void atomic_notify_one_native(void* atom) noexcept {}
 
     void atomic_notify_all_native(void* atom) noexcept {}
 }  // namespace concurrencpp::details
