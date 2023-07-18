@@ -27,7 +27,6 @@ namespace concurrencpp::details {
        protected:
         std::atomic<result_status> m_status {result_status::idle};
         std::atomic<shared_await_context*> m_awaiters {nullptr};
-        std::counting_semaphore<> m_semaphore {0};
 
         static shared_await_context* result_ready_constant() noexcept;
 
@@ -50,9 +49,19 @@ namespace concurrencpp::details {
 
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            while ((status() == result_status::idle) && (clock::now() < timeout_time)) {
-                const auto res = m_semaphore.try_acquire_until(timeout_time);
-                (void)res;
+            while (true) {
+                const auto current_status = status();
+                if (current_status != result_status::idle) {
+                    return current_status;
+                }
+
+                const auto now = clock::now();
+                if (now >= timeout_time) {
+                    break;
+                }
+
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeout_time - now);
+                details::atomic_wait_for(m_status, result_status::idle, ms, std::memory_order_acquire); 
             }
 
             return status();
@@ -89,13 +98,6 @@ namespace concurrencpp::details {
         void on_result_finished() noexcept override {
             m_status.store(m_result_state->status(), std::memory_order_release);
             m_status.notify_all();
-
-            /* theoretically buggish, practically there's no way
-               that we'll have more than max(ptrdiff_t) / 2 waiters.
-               on 64 bits, that's 2^62 waiters, on 32 bits thats 2^30 waiters.
-               memory will run out before enough tasks could be created to wait this synchronously
-            */
-            m_semaphore.release(m_semaphore.max() / 2);
 
             auto k_result_ready = result_ready_constant();
             auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
