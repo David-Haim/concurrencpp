@@ -52,7 +52,7 @@ namespace concurrencpp::details {
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
             const auto time_now = clock::now(); 
             if (timeout_time >= time_now) {
-                return status;
+                return status();
             }
             return wait_for(timeout_time - time_now);
         }
