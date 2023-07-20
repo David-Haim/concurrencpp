@@ -42,29 +42,19 @@ namespace concurrencpp::details {
         bool await(shared_await_context& awaiter) noexcept;
 
         template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
-            const auto time_point = std::chrono::system_clock::now() + duration;
-            return wait_until(time_point);
+        result_status wait_for(const std::chrono::duration<duration_unit, ratio>& duration) {
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            details::atomic_wait_for(m_status, result_status::idle, ms);
+            return status();
         }
 
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            while (true) {
-                const auto current_status = status();
-                if (current_status != result_status::idle) {
-                    return current_status;
-                }
-
-                const auto now = clock::now();
-                if (now >= timeout_time) {
-                    break;
-                }
-
-                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeout_time - now);
-                details::atomic_wait_for(m_status, result_status::idle, ms, std::memory_order_acquire); 
+            const auto time_now = clock::now(); 
+            if (timeout_time >= time_now) {
+                return status;
             }
-
-            return status();
+            return wait_for(timeout_time - time_now);
         }
     };
 
