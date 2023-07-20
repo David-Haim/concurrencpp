@@ -43,14 +43,14 @@ namespace concurrencpp::details {
 
         template<class duration_unit, class ratio>
         result_status wait_for(const std::chrono::duration<duration_unit, ratio>& duration) {
-            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration) + 1;
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration) + std::chrono::milliseconds(1);
             details::atomic_wait_for(m_status, result_status::idle, ms, std::memory_order_acquire);
             return status();
         }
 
         template<class clock, class duration>
         result_status wait_until(const std::chrono::time_point<clock, duration>& timeout_time) {
-            const auto time_now = clock::now(); 
+            const auto time_now = clock::now();
             if (timeout_time >= time_now) {
                 return status();
             }
