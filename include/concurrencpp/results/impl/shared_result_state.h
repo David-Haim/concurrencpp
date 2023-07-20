@@ -54,7 +54,7 @@ namespace concurrencpp::details {
             if (timeout_time >= time_now) {
                 return status();
             }
-            return wait_for(timeout_time - time_now);
+            return details::atomic_wait_for(timeout_time - time_now);
         }
     };
 
