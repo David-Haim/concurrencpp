@@ -41,7 +41,7 @@ namespace concurrencpp::tests::details {
 					
 		};
 		
-		const std::shared_ptr<latch_state> m_state
+		const std::shared_ptr<latch_state> m_state;
 
         public:
 			latch(intptr_t counter) : m_state(std::make_shared<latch_state>(counter)) {}
