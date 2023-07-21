@@ -183,11 +183,11 @@ void test_executor_post(std::shared_ptr<concurrencpp::executor> executor, size_t
     poster_threads.resize(num_of_threads);
 
     for (auto& thread : poster_threads) {
-        thread = std::thread([=, latch] {
+        thread = std::thread([=] {
             std::this_thread::sleep_until(post_tp);
 
             for (size_t i = 0; i < tasks_per_thread; i++) {
-                executor->post([latch]() mutable {
+                executor->post([=]() mutable {
                     latch.count_down();
                 });
             }
@@ -267,8 +267,8 @@ void test_executor_bulk_post(std::shared_ptr<concurrencpp::executor> executor, s
     poster_threads.resize(num_of_threads);
 
     for (auto& thread : poster_threads) {
-        thread = std::thread([=, latch] {
-            auto task = [latch]() mutable {
+        thread = std::thread([=] {
+            auto task = [=]() mutable {
                 latch.count_down();
             };
 
