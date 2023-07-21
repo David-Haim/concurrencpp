@@ -44,7 +44,7 @@ namespace concurrencpp::details {
         template<class duration_unit, class ratio>
         result_status wait_for(const std::chrono::duration<duration_unit, ratio>& duration) {
             const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration) + std::chrono::milliseconds(2);
-            details::atomic_wait_for(m_status, result_status::idle, ms, std::memory_order_acquire);
+            atomic_wait_for(m_status, result_status::idle, ms, std::memory_order_acquire);
             return status();
         }
 
@@ -54,6 +54,7 @@ namespace concurrencpp::details {
             if (time_now >= timeout_time) {
                 return status();
             }
+
             return wait_for(timeout_time - time_now);
         }
     };
@@ -87,7 +88,7 @@ namespace concurrencpp::details {
 
         void on_result_finished() noexcept override {
             m_status.store(m_result_state->status(), std::memory_order_release);
-            m_status.notify_all();
+            atomic_notify_all(m_status);
 
             auto k_result_ready = result_ready_constant();
             auto awaiters = m_awaiters.exchange(k_result_ready, std::memory_order_acq_rel);
