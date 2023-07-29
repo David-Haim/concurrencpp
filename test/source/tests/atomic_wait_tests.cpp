@@ -99,8 +99,7 @@ void concurrencpp::tests::test_atomic_wait_for_success() {
         modification_tp.store(std::chrono::high_resolution_clock::now());
     });
 
-    const auto result =
-        concurrencpp::details::atomic_wait_for(flag, 0, std::chrono::seconds(10), std::memory_order_acquire);
+    const auto result = concurrencpp::details::atomic_wait_for(flag, 0, std::chrono::seconds(10), std::memory_order_acquire);
     const auto after = std::chrono::high_resolution_clock::now();
     const auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(after - modification_tp.load()).count();
 

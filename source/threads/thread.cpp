@@ -45,7 +45,7 @@ size_t thread::hardware_concurrency() noexcept {
 #ifdef CRCPP_WIN_OS
 
 #    define WIN32_LEAN_AND_MEAN
-#include<Windows.h>
+#    include <Windows.h>
 
 void thread::set_name(std::string_view name) noexcept {
     const std::wstring utf16_name(name.begin(),

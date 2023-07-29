@@ -187,7 +187,7 @@ namespace concurrencpp {
         }
 
         auto make_lazy_result = []() -> lazy_result<std::tuple<>> {
-            co_return std::tuple<>{};
+            co_return std::tuple<> {};
         };
 
         return make_lazy_result();

@@ -115,7 +115,7 @@ result<void> concurrencpp::tests::test_result_resolve_impl_result_not_ready_exce
     });
 
     auto done_result = co_await result.resolve();
-    
+
     assert_equal(done_result.status(), result_status::exception);
     assert_throws<test_exception>([&done_result] {
         done_result.get();
@@ -166,7 +166,7 @@ result<void> concurrencpp::tests::test_result_await_impl_result_ready_value() {
     assert_equal(thread_id_0, thread_id_1);
     test_ready_result(std::move(done_result));
 }
- 
+
 template<class type>
 result<void> concurrencpp::tests::test_result_await_impl_result_ready_exception() {
     const auto id = 1234567;

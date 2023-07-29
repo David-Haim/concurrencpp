@@ -6,55 +6,54 @@
 
 namespace concurrencpp::tests::details {
     class latch {
-		class latch_state{
-			private:
-				std::atomic_intptr_t m_counter;
-				std::mutex m_lock;
-				std::condition_variable m_cv;
-				bool m_ready = false;
-			
-			public:
-				latch_state(intptr_t counter) noexcept : m_counter(counter) {}
-		
-				void count_down() {
-					const auto new_count = m_counter.fetch_sub(1, std::memory_order_relaxed);
-					if (new_count != 1) {
-						return;
-					}
+        class latch_state {
+           private:
+            std::atomic_intptr_t m_counter;
+            std::mutex m_lock;
+            std::condition_variable m_cv;
+            bool m_ready = false;
 
-					{
-						std::unique_lock<std::mutex> lock(m_lock);
-						m_ready = true;
-					}
+           public:
+            latch_state(intptr_t counter) noexcept : m_counter(counter) {}
 
-					m_cv.notify_all();
-				}
+            void count_down() {
+                const auto new_count = m_counter.fetch_sub(1, std::memory_order_relaxed);
+                if (new_count != 1) {
+                    return;
+                }
 
-				void wait() {
-					std::unique_lock<std::mutex> lock(m_lock);
-					m_cv.wait(lock, [this] {
-						return m_ready;
-					});
+                {
+                    std::unique_lock<std::mutex> lock(m_lock);
+                    m_ready = true;
+                }
 
-					assert(m_counter.load(std::memory_order_relaxed) == 0);
-				}
-					
-		};
-		
-		const std::shared_ptr<latch_state> m_state;
+                m_cv.notify_all();
+            }
 
-        public:
-			latch(intptr_t counter) : m_state(std::make_shared<latch_state>(counter)) {}
-			latch(const latch&) noexcept = default;
+            void wait() {
+                std::unique_lock<std::mutex> lock(m_lock);
+                m_cv.wait(lock, [this] {
+                    return m_ready;
+                });
+
+                assert(m_counter.load(std::memory_order_relaxed) == 0);
+            }
+        };
+
+        const std::shared_ptr<latch_state> m_state;
+
+       public:
+        latch(intptr_t counter) : m_state(std::make_shared<latch_state>(counter)) {}
+        latch(const latch&) noexcept = default;
 
         void count_down() {
-			assert(static_cast<bool>(m_state));
-			m_state->count_down();
+            assert(static_cast<bool>(m_state));
+            m_state->count_down();
         }
 
         void wait() {
-          assert(static_cast<bool>(m_state));
-			m_state->wait();
+            assert(static_cast<bool>(m_state));
+            m_state->wait();
         }
     };
 }  // namespace concurrencpp::tests::details

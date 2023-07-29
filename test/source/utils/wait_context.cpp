@@ -10,8 +10,7 @@ void wait_context::wait() {
 }
 
 bool wait_context::wait_for(size_t milliseconds) {
-    const auto res =
-        details::atomic_wait_for(m_ready, 0, std::chrono::milliseconds(milliseconds), std::memory_order_relaxed);
+    const auto res = details::atomic_wait_for(m_ready, 0, std::chrono::milliseconds(milliseconds), std::memory_order_relaxed);
     return res == details::atomic_wait_status::ok;
 }
 

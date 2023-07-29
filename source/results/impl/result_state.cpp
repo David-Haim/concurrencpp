@@ -15,9 +15,9 @@ void result_state_base::wait() noexcept {
 
     auto expected_status = pc_status::idle;
     const auto idle = m_pc_status.compare_exchange_strong(expected_status,
-                                                         pc_status::consumer_waiting,
-                                                         std::memory_order_acq_rel,
-                                                         std::memory_order_acquire);
+                                                          pc_status::consumer_waiting,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -36,9 +36,9 @@ result_state_base::pc_status result_state_base::wait_for(std::chrono::millisecon
 
     auto expected_status = pc_status::idle;
     const auto idle = m_pc_status.compare_exchange_strong(expected_status,
-                                                         pc_status::consumer_waiting,
-                                                         std::memory_order_acq_rel,
-                                                         std::memory_order_acquire);
+                                                          pc_status::consumer_waiting,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -77,9 +77,9 @@ bool result_state_base::await(coroutine_handle<void> caller_handle) noexcept {
 
     auto expected_status = pc_status::idle;
     const auto idle = m_pc_status.compare_exchange_strong(expected_status,
-                                                         pc_status::consumer_set,
-                                                         std::memory_order_acq_rel,
-                                                         std::memory_order_acquire);
+                                                          pc_status::consumer_set,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -98,9 +98,9 @@ result_state_base::pc_status result_state_base::when_any(const std::shared_ptr<w
 
     auto expected_status = pc_status::idle;
     const auto idle = m_pc_status.compare_exchange_strong(expected_status,
-                                                         pc_status::consumer_set,
-                                                         std::memory_order_acq_rel,
-                                                         std::memory_order_acquire);
+                                                          pc_status::consumer_set,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_acquire);
 
     if (!idle) {
         assert_done();
@@ -114,14 +114,14 @@ void result_state_base::share(const std::shared_ptr<shared_result_state_base>& s
     if (state == pc_status::producer_done) {
         return shared_result_state->on_result_finished();
     }
- 
+
     m_consumer.set_shared_context(shared_result_state);
 
     auto expected_state = pc_status::idle;
     const auto idle = m_pc_status.compare_exchange_strong(expected_state,
                                                           pc_status::consumer_set,
-                                                         std::memory_order_acq_rel,
-                                                         std::memory_order_acquire);
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_acquire);
 
     if (idle) {
         return;
@@ -138,10 +138,8 @@ void result_state_base::try_rewind_consumer() noexcept {
     }
 
     auto expected_status = pc_status::consumer_set;
-    const auto swapped = m_pc_status.compare_exchange_strong(expected_status,
-                                                             pc_status::idle,
-                                                             std::memory_order_acq_rel,
-                                                             std::memory_order_acquire);
+    const auto swapped =
+        m_pc_status.compare_exchange_strong(expected_status, pc_status::idle, std::memory_order_acq_rel, std::memory_order_acquire);
 
     if (!swapped) {
         assert_done();

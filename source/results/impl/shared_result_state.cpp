@@ -28,4 +28,3 @@ bool shared_result_state_base::await(shared_await_context& awaiter) noexcept {
 void concurrencpp::details::shared_result_state_base::wait() noexcept {
     details::atomic_wait(m_status, result_status::idle, std::memory_order_acquire);
 }
-

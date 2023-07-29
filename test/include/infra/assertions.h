@@ -20,7 +20,7 @@ namespace concurrencpp::tests::details {
     std::string to_string(const char* str);
     std::string to_string(const std::string_view str);
 
-	template<class enum_type>
+    template<class enum_type>
     typename std::enable_if_t<std::is_enum_v<enum_type>, std::string> to_string(enum_type enum_value) {
         return std::to_string(static_cast<std::int64_t>(enum_value));
     }
