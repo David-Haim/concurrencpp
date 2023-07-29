@@ -26,8 +26,8 @@ namespace concurrencpp::details {
             if (val != old) {
                 return;
             }
-#if defined(CRCPP_MAC_OS)
 
+#if defined(CRCPP_MAC_OS)
             atom.wait(old, order);
 #else
             atomic_wait_native(&atom, static_cast<int32_t>(old));
