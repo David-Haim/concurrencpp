@@ -49,14 +49,13 @@ namespace concurrencpp::details {
         size_t polling_cycle = 0;
 #endif
         while (true) {
-            const auto val = atom.load(order);
-            if (val != old) {
+            if (atom.load(order) != old) {
                 return atomic_wait_status::ok;
             }
 
             const auto now = std::chrono::system_clock::now();
             if (now >= deadline) {
-                if (val != old) {
+                if (atom.load(order) != old) {
                     return atomic_wait_status::ok;
                 }
 
