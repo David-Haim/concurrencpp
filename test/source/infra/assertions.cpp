@@ -95,6 +95,11 @@ namespace concurrencpp::tests::details {
         return std::ctime(&tp);
     }
 
+    std::string to_string(std::chrono::system_clock::time_point time_point) {
+        const auto tp = std::chrono::system_clock::to_time_t(time_point);
+        return std::ctime(&tp);
+    }
+
     std::string to_string(std::tuple<> tp) {
         return "std::tuple<>";
     }

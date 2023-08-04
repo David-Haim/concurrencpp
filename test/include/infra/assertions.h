@@ -28,6 +28,7 @@ namespace concurrencpp::tests::details {
     const char* to_string(result_status status);
     std::string to_string(std::chrono::milliseconds ms);
     std::string to_string(std::chrono::steady_clock::time_point time_point);
+    std::string to_string(std::chrono::system_clock::time_point time_point);
     std::string to_string(std::tuple<> tp);
     std::string to_string(std::thread::id id);
 
