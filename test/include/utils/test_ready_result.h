@@ -22,7 +22,8 @@ namespace concurrencpp::tests {
 
 namespace concurrencpp::tests {
     template<class type>
-    void test_ready_result(::concurrencpp::result<type> result, const type& o) {
+    void test_ready_result(::concurrencpp::result<type> result,
+                           const type& o) {
         assert_true(static_cast<bool>(result));
         assert_equal(result.status(), concurrencpp::result_status::value);
 

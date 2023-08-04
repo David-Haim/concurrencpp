@@ -49,6 +49,9 @@ namespace concurrencpp::details {
 
     class when_result_helper;
     struct shared_result_helper;
+
+    template<class type>
+    class generator_iterator;
 }  // namespace concurrencpp::details
 
 #endif

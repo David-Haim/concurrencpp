@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_GENERATOR_STATE_H
 #define CONCURRENCPP_GENERATOR_STATE_H
 
-#include "concurrencpp/forward_declarations.h"
 #include "concurrencpp/coroutines/coroutine.h"
+#include "concurrencpp/results/result_fwd_declarations.h"
 
 namespace concurrencpp::details {
     template<typename type>
@@ -59,8 +59,13 @@ namespace concurrencpp::details {
 
     struct generator_end_iterator {};
 
+    template<class type>
+    void* get_raw_iterator_ptr(const generator_iterator<type>& it);
+
     template<typename type>
     class generator_iterator {
+
+        friend void* get_raw_iterator_ptr<type>(const generator_iterator&);
 
        private:
         coroutine_handle<generator_state<type>> m_coro_handle;
@@ -123,6 +128,12 @@ namespace concurrencpp::details {
             return it != end_it;
         }
     };
+
+    template<class type>
+    void* get_raw_iterator_ptr(const generator_iterator<type>& it) {
+        return it.m_coro_handle.address();
+    }
+
 }  // namespace concurrencpp::details
 
 #endif

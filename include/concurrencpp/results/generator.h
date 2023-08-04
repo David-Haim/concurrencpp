@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_GENERATOR_H
 #define CONCURRENCPP_GENERATOR_H
 
+#include "concurrencpp/errors.h"
 #include "concurrencpp/results/constants.h"
 #include "concurrencpp/results/impl/generator_state.h"
 

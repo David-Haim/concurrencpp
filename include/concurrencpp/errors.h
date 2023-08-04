@@ -1,6 +1,8 @@
 #ifndef CONCURRENCPP_ERRORS_H
 #define CONCURRENCPP_ERRORS_H
 
+#include "concurrencpp/platform_defs.h"
+
 #include <stdexcept>
 
 namespace concurrencpp::errors {
