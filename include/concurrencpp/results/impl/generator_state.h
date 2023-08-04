@@ -4,6 +4,8 @@
 #include "concurrencpp/coroutines/coroutine.h"
 #include "concurrencpp/results/result_fwd_declarations.h"
 
+#include <cassert>
+
 namespace concurrencpp::details {
     template<typename type>
     class generator_state {
