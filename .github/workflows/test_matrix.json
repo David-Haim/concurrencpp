@@ -292,6 +292,6 @@
 		"stdlib": "libstdc++",
 		"tsan": true,
 		"shared": false,
-		"name" : "macos-12, gcc-13, libstdc++-13, shared=true, tsan=false"
+		"name" : "macos-12, gcc-13, libstdc++-13, shared=false, tsan=true"
 	}
 ]
