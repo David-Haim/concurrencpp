@@ -161,10 +161,6 @@ void consumer_context::destroy() noexcept {
             return details::destroy(m_storage.caller_handle);
         }
 
-        case consumer_status::wait_for: {
-            return details::destroy(m_storage.wait_for_ctx);
-        }
-
         case consumer_status::when_any: {
             return details::destroy(m_storage.when_any_ctx);
         }
@@ -188,25 +184,20 @@ void consumer_context::set_await_handle(coroutine_handle<void> caller_handle) no
     details::build(m_storage.caller_handle, caller_handle);
 }
 
-void consumer_context::set_wait_for_context(const std::shared_ptr<std::binary_semaphore>& wait_ctx) noexcept {
-    assert(m_status == consumer_status::idle);
-    m_status = consumer_status::wait_for;
-    details::build(m_storage.wait_for_ctx, wait_ctx);
-}
-
 void consumer_context::set_when_any_context(const std::shared_ptr<when_any_context>& when_any_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::when_any;
     details::build(m_storage.when_any_ctx, when_any_ctx);
 }
 
-void concurrencpp::details::consumer_context::set_shared_context(const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept {
+void concurrencpp::details::consumer_context::set_shared_context(
+    const std::shared_ptr<shared_result_state_base>& shared_ctx) noexcept {
     assert(m_status == consumer_status::idle);
     m_status = consumer_status::shared;
     details::build(m_storage.shared_ctx, shared_ctx);
 }
 
-void consumer_context::resume_consumer(result_state_base& self) const {
+void consumer_context::resume_consumer(result_state_base& self) const noexcept {
     switch (m_status) {
         case consumer_status::idle: {
             return;
@@ -217,12 +208,6 @@ void consumer_context::resume_consumer(result_state_base& self) const {
             assert(static_cast<bool>(caller_handle));
             assert(!caller_handle.done());
             return caller_handle();
-        }
-
-        case consumer_status::wait_for: {
-            const auto wait_ctx = m_storage.wait_for_ctx;
-            assert(static_cast<bool>(wait_ctx));
-            return wait_ctx->release();
         }
 
         case consumer_status::when_any: {

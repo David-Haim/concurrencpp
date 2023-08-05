@@ -116,6 +116,7 @@ jobs:
           args: >
             -DBUILD_SHARED_LIBS=${{ matrix.shared }}
             -DENABLE_THREAD_SANITIZER=${{ matrix.tsan }}
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo
             ${{ ( matrix.stdlib == 'libc++' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' ) || '' }}
 
       - uses: ./.github/actions/run-tests

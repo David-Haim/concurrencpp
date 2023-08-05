@@ -43,6 +43,7 @@ set(test_sources
         source/infra/assertions.cpp
         source/infra/tester.cpp
         source/utils/object_observer.cpp
+        source/utils/wait_context.cpp
 )
 
 set(test_headers
@@ -50,6 +51,7 @@ set(test_headers
         include/infra/tester.h
         include/utils/object_observer.h
         include/utils/random.h
+        include/utils/wait_context.h
         include/utils/custom_exception.h
         include/utils/executor_shutdowner.h
         include/utils/test_generators.h
@@ -102,6 +104,7 @@ function(add_test)
                                                ${TEST_PROPERTIES})
 endfunction()
 
+add_test(NAME atomic_wait_tests PATH source/tests/atomic_wait_tests.cpp)
 add_test(NAME task_tests PATH source/tests/task_tests.cpp)
 add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
 

@@ -1,10 +1,8 @@
-#include "concurrencpp/threads/thread.h"
-
 #include "concurrencpp/platform_defs.h"
+#include "concurrencpp/threads/thread.h"
+#include "concurrencpp/runtime/constants.h"
 
 #include <atomic>
-
-#include "concurrencpp/runtime/constants.h"
 
 using concurrencpp::details::thread;
 
@@ -46,6 +44,7 @@ size_t thread::hardware_concurrency() noexcept {
 
 #ifdef CRCPP_WIN_OS
 
+#    define WIN32_LEAN_AND_MEAN
 #    include <Windows.h>
 
 void thread::set_name(std::string_view name) noexcept {
