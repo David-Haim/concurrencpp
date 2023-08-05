@@ -104,7 +104,7 @@ void concurrencpp::tests::test_atomic_wait_for_success() {
     const auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(after - modification_tp.load()).count();
 
     assert_equal(result, concurrencpp::details::atomic_wait_status::ok);
-    assert_smaller_equal(time_diff, 50);
+    assert_smaller_equal(time_diff, 210); // on github runners, thread awakening might even take up to 200 ms.. 
 
     modifier.join();
 }
