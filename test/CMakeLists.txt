@@ -104,7 +104,6 @@ function(add_test)
                                                ${TEST_PROPERTIES})
 endfunction()
 
-add_test(NAME atomic_wait_tests PATH source/tests/atomic_wait_tests.cpp)
 add_test(NAME task_tests PATH source/tests/task_tests.cpp)
 add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
 
@@ -134,9 +133,10 @@ add_test(NAME generator_tests PATH source/tests/result_tests/generator_tests.cpp
 add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
 add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)
 
-add_test(NAME async_lock_tests PATH source/tests/async_lock_tests.cpp)
-add_test(NAME scoped_async_lock_tests PATH source/tests/scoped_async_lock_tests.cpp)
-add_test(NAME async_condition_variable_tests PATH source/tests/async_condition_variable_tests.cpp)
+add_test(NAME atomic_wait_tests PATH source/tests/thread_tests/atomic_wait_tests.cpp)
+add_test(NAME async_lock_tests PATH source/tests/thread_tests/async_lock_tests.cpp)
+add_test(NAME scoped_async_lock_tests PATH source/tests/thread_tests/scoped_async_lock_tests.cpp)
+add_test(NAME async_condition_variable_tests PATH source/tests/thread_tests/async_condition_variable_tests.cpp)
 
 add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
 add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)
