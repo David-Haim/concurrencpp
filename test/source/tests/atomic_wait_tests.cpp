@@ -90,7 +90,7 @@ void concurrencpp::tests::test_atomic_wait_for_timeout_2() {
 
 void concurrencpp::tests::test_atomic_wait_for_success() {
     std::atomic_int flag {0};
-    auto modification_tp = std::chrono::high_resolution_clock::now();
+    std::atomic<std::high_resolution_clock::time_point> modification_tp { std::chrono::high_resolution_clock::now() };
 
     std::thread modifier([&] {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
