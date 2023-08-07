@@ -87,8 +87,6 @@ namespace concurrencpp {
         explicit operator bool() const noexcept;
 
         void swap(scoped_async_lock& rhs) noexcept;
-        async_lock* release() noexcept;
-        async_lock* mutex() const noexcept;
     };
 }  // namespace concurrencpp
 

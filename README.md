@@ -1808,20 +1808,6 @@ class scoped_async_lock {
         Swaps the contents of *this and rhs.
     */
     void swap(scoped_async_lock& rhs) noexcept;
-	
-    /*
-        Empties *this and returns a pointer to the previously wrapped lock.
-        After a call to this method, *this doesn't wrap any lock.			
-        The previously wrapped lock is not released, 
-        it must be released by either unlocking it manually through the returned pointer or by 
-        capturing the pointer with another scoped_async_lock which will take ownerwhip over it.
-    */
-    async_lock* release() noexcept;
-	
-    /*
-        Returns a pointer to the wrapped async_lock, or a null pointer if there is no wrapped async_lock. 
-    */
-    async_lock* mutex() const noexcept;
 };
 ```
 #### `async_lock` example:

@@ -10,7 +10,6 @@ namespace concurrencpp::tests {
     result<void> test_scoped_async_lock_constructor_impl(std::shared_ptr<executor> executor);
     void test_scoped_async_lock_constructor();
 
-    result<void> test_scoped_async_lock_destructor_impl(std::shared_ptr<executor> executor);
     void test_scoped_async_lock_destructor();
 
     void test_scoped_async_lock_lock();
@@ -18,7 +17,6 @@ namespace concurrencpp::tests {
     void test_scoped_async_lock_unlock();
 
     void test_scoped_async_lock_swap();
-    void test_scoped_async_lock_release();
 
 }  // namespace concurrencpp::tests
 
@@ -27,7 +25,6 @@ concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_construct
         scoped_async_lock sal;
         assert_false(sal.owns_lock());
         assert_false(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), nullptr);
     }
 
     {  // move constructor
@@ -35,23 +32,19 @@ concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_construct
         scoped_async_lock sal = co_await lock.lock(executor);
         assert_true(sal.owns_lock());
         assert_true(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), &lock);
 
         auto sal1 = std::move(sal);
         assert_false(sal.owns_lock());
         assert_false(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), nullptr);
 
         assert_true(sal1.owns_lock());
         assert_true(static_cast<bool>(sal1));
-        assert_equal(sal1.mutex(), &lock);
 
         // moving an unowned mutex
         scoped_async_lock empty;
         auto sal2 = std::move(empty);
         assert_false(sal2.owns_lock());
         assert_false(static_cast<bool>(sal2));
-        assert_equal(sal2.mutex(), nullptr);
     }
 
     {
@@ -59,7 +52,6 @@ concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_construct
         scoped_async_lock sal(lock, std::defer_lock);
         assert_false(sal.owns_lock());
         assert_false(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), &lock);
     }
 
     {
@@ -69,7 +61,6 @@ concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_construct
         scoped_async_lock sal(lock, std::adopt_lock);
         assert_true(sal.owns_lock());
         assert_true(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), &lock);
     }
 }
 
@@ -79,7 +70,7 @@ void concurrencpp::tests::test_scoped_async_lock_constructor() {
     test_scoped_async_lock_constructor_impl(worker).get();
 }
 
-concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_destructor_impl(std::shared_ptr<executor> executor) {
+void concurrencpp::tests::test_scoped_async_lock_destructor() {
     async_lock lock;
 
     {  // non-owning scoped_async_lock
@@ -87,16 +78,8 @@ concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_destructo
     }
 
     {  // empty scoped_async_lock
-        auto sal = co_await lock.lock(executor);
-        auto mtx = sal.release();
-        mtx->unlock();
+        scoped_async_lock sal;
     }
-}
-
-void concurrencpp::tests::test_scoped_async_lock_destructor() {
-    const auto worker = std::make_shared<concurrencpp::worker_thread_executor>();
-    executor_shutdowner es(worker);
-    test_scoped_async_lock_destructor_impl(worker);
 }
 
 void concurrencpp::tests::test_scoped_async_lock_lock() {
@@ -191,7 +174,6 @@ void concurrencpp::tests::test_scoped_async_lock_unlock() {
     sal.unlock();
     assert_false(sal.owns_lock());
     assert_false(static_cast<bool>(sal));
-    assert_equal(sal.mutex(), &lock);
 }
 
 void concurrencpp::tests::test_scoped_async_lock_swap() {
@@ -201,11 +183,9 @@ void concurrencpp::tests::test_scoped_async_lock_swap() {
 
         assert_false(sal0.owns_lock());
         assert_false(static_cast<bool>(sal0));
-        assert_equal(sal0.mutex(), nullptr);
 
         assert_false(sal1.owns_lock());
         assert_false(static_cast<bool>(sal1));
-        assert_equal(sal1.mutex(), nullptr);
     }
 
     {  // empty + non-empty
@@ -218,11 +198,9 @@ void concurrencpp::tests::test_scoped_async_lock_swap() {
 
         assert_true(sal0.owns_lock());
         assert_true(static_cast<bool>(sal0));
-        assert_equal(sal0.mutex(), &lock1);
 
         assert_false(sal1.owns_lock());
         assert_false(static_cast<bool>(sal1));
-        assert_equal(sal1.mutex(), nullptr);
     }
 
     {  // non-empty + empty
@@ -235,11 +213,9 @@ void concurrencpp::tests::test_scoped_async_lock_swap() {
 
         assert_false(sal0.owns_lock());
         assert_false(static_cast<bool>(sal0));
-        assert_equal(sal0.mutex(), nullptr);
 
         assert_true(sal1.owns_lock());
         assert_true(static_cast<bool>(sal1));
-        assert_equal(sal1.mutex(), &lock0);
     }
 
     {  // non-empty + non-empty
@@ -255,11 +231,9 @@ void concurrencpp::tests::test_scoped_async_lock_swap() {
 
         assert_true(sal0.owns_lock());
         assert_true(static_cast<bool>(sal0));
-        assert_equal(sal0.mutex(), &lock1);
 
         assert_true(sal1.owns_lock());
         assert_true(static_cast<bool>(sal1));
-        assert_equal(sal1.mutex(), &lock0);
     }
 
     {  // swap with self
@@ -272,27 +246,7 @@ void concurrencpp::tests::test_scoped_async_lock_swap() {
 
         assert_true(sal.owns_lock());
         assert_true(static_cast<bool>(sal));
-        assert_equal(sal.mutex(), &lock);
     }
-}
-
-void concurrencpp::tests::test_scoped_async_lock_release() {
-    // empty:
-    scoped_async_lock sal;
-    assert_equal(sal.release(), nullptr);
-
-    async_lock lock;
-    const auto locked = lock.try_lock().run().get();
-    assert_true(locked);
-    scoped_async_lock sal0(lock, std::adopt_lock);
-
-    const auto lock_ptr = sal0.release();
-    assert_equal(lock_ptr, &lock);
-    lock_ptr->unlock();
-
-    assert_false(sal0.owns_lock());
-    assert_false(static_cast<bool>(sal0));
-    assert_equal(sal0.mutex(), nullptr);
 }
 
 using namespace concurrencpp::tests;
@@ -306,7 +260,6 @@ int main() {
     tester.add_step("try_lock", test_scoped_async_lock_try_lock);
     tester.add_step("unlock", test_scoped_async_lock_unlock);
     tester.add_step("swap", test_scoped_async_lock_swap);
-    tester.add_step("release", test_scoped_async_lock_release);
 
     tester.launch_test();
     return 0;
