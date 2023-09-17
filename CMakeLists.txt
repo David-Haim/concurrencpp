@@ -23,6 +23,14 @@ set(concurrencpp_sources
         source/executors/thread_executor.cpp
         source/executors/thread_pool_executor.cpp
         source/executors/worker_thread_executor.cpp
+        source/io/ip.cpp
+        source/io/memory_stream.cpp
+        source/io/file_stream.cpp
+        source/io/impl/win32/utils.cpp
+        source/io/impl/win32/io_awaitable.cpp
+        source/io/impl/win32/io_engine.cpp
+        source/io/impl/win32/io_object.cpp
+        source/io/impl/win32/file_stream_state.cpp
         source/results/impl/consumer_context.cpp
         source/results/impl/result_state.cpp
         source/results/impl/shared_result_state.cpp
@@ -49,6 +57,19 @@ set(concurrencpp_headers
         include/concurrencpp/executors/thread_executor.h
         include/concurrencpp/executors/thread_pool_executor.h
         include/concurrencpp/executors/worker_thread_executor.h
+        include/concurrencpp/io/impl/common/io_cancelled.h
+        include/concurrencpp/io/constants.h
+        include/concurrencpp/io/ip.h
+        include/concurrencpp/io/memory_stream.h
+        include/concurrencpp/io/file_stream.h
+        include/concurrencpp/io/forward_declarations.h
+        include/concurrencpp/io/impl/common/file_constants.h
+        include/concurrencpp/io/impl/common/reader_writer.h
+        include/concurrencpp/io/impl/win32/io_awaitable.h
+        include/concurrencpp/io/impl/win32/file_stream_state.h
+        include/concurrencpp/io/impl/win32/io_engine.h
+        include/concurrencpp/io/impl/win32/io_object.h
+        include/concurrencpp/io/impl/win32/utils.h
         include/concurrencpp/results/impl/consumer_context.h
         include/concurrencpp/results/impl/producer_context.h
         include/concurrencpp/results/impl/result_state.h
