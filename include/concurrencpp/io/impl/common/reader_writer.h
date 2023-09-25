@@ -168,6 +168,14 @@ namespace concurrencpp::io::details {
         lazy_result<size_t> write(std::shared_ptr<executor> resume_executor, std::stop_token stop_token, const std::string& buffer) {
             return write(std::move(resume_executor), stop_token, buffer.data(), buffer.size());
         }
+
+        lazy_result<size_t> write(std::shared_ptr<executor> resume_executor, const std::string_view buffer) {
+            return write(std::move(resume_executor), buffer.data(), buffer.size());
+        }
+
+        lazy_result<size_t> write(std::shared_ptr<executor> resume_executor, std::stop_token stop_token, const std::string_view buffer) {
+            return write(std::move(resume_executor), stop_token, buffer.data(), buffer.size());
+        }
     };
 }  // namespace concurrencpp::io::details
 

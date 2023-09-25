@@ -53,7 +53,7 @@ namespace concurrencpp::details::win32 {
         const std::shared_ptr<io_object> m_state;
         const std::shared_ptr<executor> m_resume_executor;
         io_engine& m_engine;
-        details::coroutine_handle<void> m_coro_handle;
+        concurrencpp::details::coroutine_handle<void> m_coro_handle;
         std::atomic<status> m_status {status::idle};
         extended_overlapped m_overlapped;
         std::atomic<awaitable_base*> m_next {nullptr};
@@ -77,7 +77,7 @@ namespace concurrencpp::details::win32 {
         virtual void start_io() noexcept = 0;
         virtual void finish_io(DWORD bytes, DWORD error_code) noexcept = 0;
 
-        void await_suspend(details::coroutine_handle<void> coroutine_handle) noexcept;
+        void await_suspend(concurrencpp::details::coroutine_handle<void> coroutine_handle) noexcept;
 
         void set_next(awaitable_base* next) noexcept;
         awaitable_base* get_next() const noexcept;

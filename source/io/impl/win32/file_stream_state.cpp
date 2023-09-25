@@ -120,13 +120,17 @@ lazy_result<size_t> file_stream_state::read(std::shared_ptr<file_stream_state> s
         co_return 0;
     }
 
-    auto [read, ec] = co_await read_awaitable(self_ptr,
-                                              *engine,
-                                              std::move(resume_executor),
-                                              buffer,
-                                              length,
-                                              self.m_read_pos,
-                                              optional_stop_token);
+    uint32_t read, ec;
+
+    {
+        std::tie(read, ec) = co_await read_awaitable(self_ptr,
+                                                     *engine,
+                                                     std::move(resume_executor),
+                                                     buffer,
+                                                     length,
+                                                     self.m_read_pos,
+                                                     optional_stop_token);
+    }
 
     // Handles EOF - eof is not an error, in this case correct the result to be bytes and mark eof
     if (ec != 0) {
@@ -170,13 +174,16 @@ lazy_result<size_t> file_stream_state::write(std::shared_ptr<file_stream_state> 
     // todo: handle cancellation
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    auto [written, ec] = co_await write_awaitable(self_ptr,
-                                                  *engine,
-                                                  std::move(resume_executor),
-                                                  buffer,
-                                                  length,
-                                                  self.m_write_pos,
-                                                  optional_stop_token);
+    uint32_t written, ec;
+    {
+        std::tie(written, ec) = co_await write_awaitable(self_ptr,
+                                                      *engine,
+                                                      std::move(resume_executor),
+                                                      buffer,
+                                                      length,
+                                                      self.m_write_pos,
+                                                      optional_stop_token);
+    }
 
     if (ec != 0) {
         if (ec == ERROR_OPERATION_ABORTED) {

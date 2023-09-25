@@ -14,6 +14,8 @@ namespace concurrencpp {
 
         friend class io::details::reader_writer<file_stream, details::file_stream_state>;
 
+        private:
+
         void throw_if_empty(const char* error_message) const;
         static void throw_if_resume_executor_null(const std::shared_ptr<executor>& exec, const char* error_message);
 
