@@ -26,20 +26,26 @@ namespace concurrencpp::details::win32 {
         std::filesystem::path get_path() const noexcept;
         file_open_mode get_open_mode() const noexcept;
 
-        //TODO cancellable ops
+        // TODO cancellable ops
         static lazy_result<bool> eof_reached(std::shared_ptr<file_stream_state> self, std::shared_ptr<executor> resume_executor);
 
         static lazy_result<size_t> read(std::shared_ptr<file_stream_state> self_ptr,
                                         std::shared_ptr<executor> resume_executor,
+                                        std::shared_ptr<io_engine> io_engine,
                                         void* buffer,
                                         size_t buffer_length,
                                         std::stop_token* optional_stop_token = nullptr);
 
         static lazy_result<size_t> write(std::shared_ptr<file_stream_state> self_ptr,
                                          std::shared_ptr<executor> resume_executor,
+                                         std::shared_ptr<io_engine> io_engine,
                                          const void* buffer,
                                          size_t buffer_length,
                                          std::stop_token* optional_stop_token = nullptr);
+
+        static lazy_result<void> flush(std::shared_ptr<file_stream_state> self_ptr,
+                                       std::shared_ptr<concurrencpp::executor> resume_executor,
+                                       std::shared_ptr<io_engine> io_engine);
 
         static lazy_result<void> seek_read_pos(std::shared_ptr<file_stream_state> self_ptr,
                                                std::shared_ptr<executor> resume_executor,
@@ -56,9 +62,6 @@ namespace concurrencpp::details::win32 {
 
         static lazy_result<std::size_t> get_write_pos(std::shared_ptr<file_stream_state> self_ptr,
                                                       std::shared_ptr<executor> resume_executor);
-
-        static lazy_result<void> flush(std::shared_ptr<file_stream_state> self_ptr,
-                                       std::shared_ptr<concurrencpp::executor> resume_executor);
     };
 }  // namespace concurrencpp::details::win32
 

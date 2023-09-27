@@ -1,5 +1,5 @@
-#ifndef ASYNCIO_SOCKET_H
-#define ASYNCIO_SOCKET_H
+#ifndef CONCURRENCPP_IO_SOCKET_H
+#define CONCURRENCPP_IO_SOCKET_H
 
 #include "concurrencpp/io/impl/win32/socket_state.h"
 #include "concurrencpp/io/impl/common/reader_writer.h"

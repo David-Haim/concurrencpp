@@ -12,10 +12,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-/*
- * class file_stream_state
- */
-
 using concurrencpp::lazy_result;
 using concurrencpp::io_engine;
 using concurrencpp::details::win32::file_stream_state;
@@ -89,19 +85,24 @@ concurrencpp::file_open_mode file_stream_state::get_open_mode() const noexcept {
 
 lazy_result<bool> file_stream_state::eof_reached(std::shared_ptr<file_stream_state> self,
                                                  std::shared_ptr<concurrencpp::executor> resume_executor) {
+    assert(static_cast<bool>(self));
+    assert(static_cast<bool>(resume_executor));
     auto sg = co_await self->m_lock.lock(resume_executor);
     co_return self->m_eof_reached;
 }
 
 lazy_result<size_t> file_stream_state::read(std::shared_ptr<file_stream_state> self_ptr,
                                             std::shared_ptr<concurrencpp::executor> resume_executor,
+                                            std::shared_ptr<io_engine> io_engine,
                                             void* buffer,
                                             size_t buffer_length,
                                             std::stop_token* optional_stop_token) {
 
-    auto& self = *self_ptr;
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    assert(static_cast<bool>(io_engine));
 
-    const auto engine = self.get_engine(details::consts::k_file_stream_read_io_engine_shutdown_err_msg);
+    auto& self = *self_ptr;
 
     if (buffer_length == 0) {
         co_return 0;
@@ -124,7 +125,7 @@ lazy_result<size_t> file_stream_state::read(std::shared_ptr<file_stream_state> s
 
     {
         std::tie(read, ec) = co_await read_awaitable(self_ptr,
-                                                     *engine,
+                                                     *io_engine,
                                                      std::move(resume_executor),
                                                      buffer,
                                                      length,
@@ -152,13 +153,16 @@ lazy_result<size_t> file_stream_state::read(std::shared_ptr<file_stream_state> s
 
 lazy_result<size_t> file_stream_state::write(std::shared_ptr<file_stream_state> self_ptr,
                                              std::shared_ptr<concurrencpp::executor> resume_executor,
+                                             std::shared_ptr<io_engine> io_engine,
                                              const void* buffer,
                                              size_t buffer_length,
                                              std::stop_token* optional_stop_token) {
 
-    auto& self = *self_ptr;
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    assert(static_cast<bool>(io_engine));
 
-    const auto engine = self.get_engine(details::consts::k_file_stream_write_engine_shutdown_err_msg);
+    auto& self = *self_ptr;
 
     if (buffer_length == 0) {
         co_return 0;
@@ -177,7 +181,7 @@ lazy_result<size_t> file_stream_state::write(std::shared_ptr<file_stream_state> 
     uint32_t written, ec;
     {
         std::tie(written, ec) = co_await write_awaitable(self_ptr,
-                                                      *engine,
+                                                      *io_engine,
                                                       std::move(resume_executor),
                                                       buffer,
                                                       length,
@@ -204,6 +208,8 @@ lazy_result<void> file_stream_state::seek_read_pos(std::shared_ptr<file_stream_s
                                                    std::shared_ptr<concurrencpp::executor> resume_executor,
                                                    std::intptr_t pos,
                                                    seek_direction mode) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
     auto& self = *self_ptr;
     auto sg = co_await self.m_lock.lock(resume_executor);
 
@@ -275,6 +281,8 @@ lazy_result<void> file_stream_state::seek_read_pos(std::shared_ptr<file_stream_s
 
 lazy_result<std::size_t> file_stream_state::get_read_pos(std::shared_ptr<file_stream_state> self_ptr,
                                                          std::shared_ptr<concurrencpp::executor> resume_executor) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
     auto& self = *self_ptr;
     auto sg = co_await self.m_lock.lock(resume_executor);
     co_return self.m_read_pos;
@@ -284,6 +292,8 @@ lazy_result<void> file_stream_state::seek_write_pos(std::shared_ptr<file_stream_
                                                     std::shared_ptr<concurrencpp::executor> resume_executor,
                                                     std::intptr_t pos,
                                                     seek_direction mode) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
     auto& self = *self_ptr;
     auto sg = co_await self.m_lock.lock(resume_executor);
 
@@ -347,15 +357,20 @@ lazy_result<void> file_stream_state::seek_write_pos(std::shared_ptr<file_stream_
 
 lazy_result<std::size_t> file_stream_state::get_write_pos(std::shared_ptr<file_stream_state> self_ptr,
                                                           std::shared_ptr<concurrencpp::executor> resume_executor) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
     auto sg = co_await self_ptr->m_lock.lock(resume_executor);
     co_return self_ptr->m_write_pos;
 }
 
 lazy_result<void> file_stream_state::flush(std::shared_ptr<file_stream_state> self_ptr,
-                                           std::shared_ptr<concurrencpp::executor> resume_executor) {
-    auto& self = *self_ptr;
-    const auto engine = self.get_engine(details::consts::k_file_stream_flush_engine_shutdown_err_msg);
+                                           std::shared_ptr<concurrencpp::executor> resume_executor,
+                                           std::shared_ptr<io_engine> io_engine) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    assert(static_cast<bool>(io_engine));
 
+    auto& self = *self_ptr;
     //  auto sg = co_await self.m_lock.lock(engine->get_background_executor());
 
     const auto res = ::FlushFileBuffers(self.handle());

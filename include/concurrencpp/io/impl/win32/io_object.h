@@ -19,10 +19,10 @@ namespace concurrencpp::details::win32 {
 
         io_object(void* handle, handle_cleanup_fn cleanup_fn, std::shared_ptr<io_engine> engine) noexcept;
 
-        std::shared_ptr<io_engine> get_engine(const char* error_msg) const;
-
        public:
         void* handle() const noexcept;
+
+        std::shared_ptr<io_engine> get_engine(const char* error_msg) const;
     };
 }  // namespace concurrencpp::details::win32
 

@@ -412,9 +412,10 @@ void accept_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
         return resume();
     }
 
-    if (local_len == 4) {
-        assert(remote_len == 4);
+    assert(local_len >= sizeof(sockaddr));
+    auto sockaddr_ptr = static_cast<const sockaddr*>(local_address_ptr);
 
+    if (sockaddr_ptr->sa_family == AF_INET) {
         const auto local_address = static_cast<::SOCKADDR_IN*>(local_address_ptr);
         ip_v4 local_ip(local_address->sin_addr.S_un.S_addr);
         uint16_t local_port = ::ntohs(local_address->sin_port);
@@ -427,8 +428,7 @@ void accept_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
 
         m_remote_endpoint = {remote_ip, remote_port};
     } else {
-        assert(local_len == 6);
-        assert(remote_len == 6);
+        assert(sockaddr_ptr->sa_family == AF_INET6);
 
         const auto local_address = static_cast<::SOCKADDR_IN6*>(local_address_ptr);
         const auto local_scope_id = local_address->sin6_scope_id;

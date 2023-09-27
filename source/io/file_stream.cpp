@@ -1,6 +1,5 @@
 #include "concurrencpp/io/constants.h"
 #include "concurrencpp/io/file_stream.h"
-#include "concurrencpp/io/impl/win32/io_engine.h"
 #include "concurrencpp/io/impl/win32/file_stream_state.h"
 
 using concurrencpp::io_engine;
@@ -8,10 +7,6 @@ using concurrencpp::lazy_result;
 using concurrencpp::file_stream;
 using concurrencpp::file_open_mode;
 using concurrencpp::details::file_stream_state;
-
-/*
- * class file_stream
- */
 
 file_stream::file_stream(std::shared_ptr<io_engine> io_engine, std::filesystem::path file_path, file_open_mode open_mode) :
     io::details::reader_writer<file_stream, details::file_stream_state>(
@@ -25,17 +20,18 @@ void file_stream::throw_if_empty(const char* error_message) const {
 
 void file_stream::throw_if_resume_executor_null(const std::shared_ptr<executor>& exec, const char* error_message) {
     if (!static_cast<bool>(exec)) {
-        throw std::runtime_error(error_message);
+        throw std::invalid_argument(error_message);
     }
 }
 
 std::shared_ptr<file_stream_state> file_stream::create_state(std::shared_ptr<io_engine> io_engine,
                                                              std::filesystem::path file_path,
                                                              file_open_mode open_mode) {
+  
     if (!static_cast<bool>(io_engine)) {
         throw std::invalid_argument(details::consts::k_file_stream_constructor_null_io_engine_msg);
     }
-
+    
     if (file_path.empty()) {
         throw std::invalid_argument(details::consts::k_file_stream_constructor_empty_file_path_msg);
     }
@@ -114,7 +110,9 @@ lazy_result<size_t> file_stream::read_impl(std::shared_ptr<executor> resume_exec
         throw std::invalid_argument(details::consts::k_file_stream_read_invalid_buffer_err_msg);
     }
 
-    return file_stream_state::read(m_state, std::move(resume_executor), buffer, count);
+    auto engine = m_state->get_engine(details::consts::k_file_stream_read_io_engine_shutdown_err_msg);
+
+    return file_stream_state::read(m_state, std::move(resume_executor), std::move(engine), buffer, count);
 }
 
 lazy_result<size_t> file_stream::read_impl(std::shared_ptr<executor> resume_executor,
@@ -132,7 +130,9 @@ lazy_result<size_t> file_stream::read_impl(std::shared_ptr<executor> resume_exec
         throw std::invalid_argument(details::consts::k_file_stream_read_invalid_stop_token_err_msg);
     }
 
-    return file_stream_state::read(m_state, std::move(resume_executor), buffer, count, &stop_token);
+    auto engine = m_state->get_engine(details::consts::k_file_stream_read_io_engine_shutdown_err_msg);
+
+    return file_stream_state::read(m_state, std::move(resume_executor), std::move(engine), buffer, count, &stop_token);
 }
 
 lazy_result<size_t> file_stream::write_impl(std::shared_ptr<executor> resume_executor, const void* buffer, size_t count) {
@@ -143,7 +143,9 @@ lazy_result<size_t> file_stream::write_impl(std::shared_ptr<executor> resume_exe
         throw std::invalid_argument(details::consts::k_file_stream_write_invalid_buffer_err_msg);
     }
 
-    return file_stream_state::write(m_state, std::move(resume_executor), buffer, count);
+    auto engine = m_state->get_engine(details::consts::k_file_stream_write_engine_shutdown_err_msg);
+
+    return file_stream_state::write(m_state, std::move(resume_executor), std::move(engine), buffer, count);
 }
 
 lazy_result<size_t> file_stream::write_impl(std::shared_ptr<executor> resume_executor,
@@ -161,12 +163,16 @@ lazy_result<size_t> file_stream::write_impl(std::shared_ptr<executor> resume_exe
         throw std::invalid_argument(details::consts::k_file_stream_write_invalid_stop_token_err_msg);
     }
 
-    return file_stream_state::write(m_state, std::move(resume_executor), buffer, count, &stop_token);
+    auto engine = m_state->get_engine(details::consts::k_file_stream_write_engine_shutdown_err_msg);
+
+    return file_stream_state::write(m_state, std::move(resume_executor), std::move(engine), buffer, count, &stop_token);
 }
 
 lazy_result<void> file_stream::flush(std::shared_ptr<concurrencpp::executor> resume_executor) {
     throw_if_empty(details::consts::k_file_stream_empty_flush_err_msg);
     throw_if_resume_executor_null(resume_executor, details::consts::k_file_stream_flush_null_resume_executor_err_msg);
 
-    return file_stream_state::flush(m_state, std::move(resume_executor));
+    auto engine = m_state->get_engine(details::consts::k_file_stream_flush_engine_shutdown_err_msg);
+
+    return file_stream_state::flush(m_state, std::move(resume_executor), std::move(engine));
 }

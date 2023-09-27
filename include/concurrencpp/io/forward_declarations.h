@@ -4,6 +4,9 @@ namespace concurrencpp {
     class ip_v4;
     class ip_v6;
     struct ip_endpoint;
+
+    class file_stream;
+    class socket;
 }  // namespace concurrencpp
 
 namespace concurrencpp::details::win32 {
