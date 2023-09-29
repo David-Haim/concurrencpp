@@ -29,7 +29,15 @@ result<void> run_socket(std::shared_ptr<io_engine> engine, std::shared_ptr<worke
     }
 
     std::cout << req << std::endl;
+}
 
+null_result request_handler(executor_tag, std::shared_ptr<worker_thread_executor> ex, concurrencpp::socket sock) {
+    char buffer[1024];
+    std::string req;
+    auto read = co_await sock.read(ex, buffer);
+    req.append(buffer, buffer + read);
+   
+    std::cout << req << std::endl;
 }
 
 result<void> run_socket_server(std::shared_ptr<io_engine> engine, std::shared_ptr<worker_thread_executor> ex) {
@@ -40,9 +48,9 @@ result<void> run_socket_server(std::shared_ptr<io_engine> engine, std::shared_pt
     while (true) {
         auto new_sock = co_await sock.accept(ex);
         std::cout << "new socket received " << std::endl;
+
+        request_handler({}, ex, std::move(new_sock));
     }
-
-
 }
 
 int main() {
@@ -50,7 +58,7 @@ int main() {
     auto engine = std::make_shared<io_engine>();
     auto ex = runtime.make_worker_thread_executor();
 
-//    auto result = run_socket(engine, ex);
+    //    auto result = run_socket(engine, ex);
     auto result = run_socket_server(engine, ex);
 
     try {
@@ -62,4 +70,4 @@ int main() {
     engine->shutdown();
 
     return 0;
-} 
+}

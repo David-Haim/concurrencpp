@@ -6,9 +6,8 @@ namespace concurrencpp::details::consts {
         io_engine
     */
 
-    inline const char* k_io_engine_shutdown_err_msg =
-        "concurrencpp::io_engine - io engine has been shut down.";
-    
+    inline const char* k_io_engine_shutdown_err_msg = "concurrencpp::io_engine - io engine has been shut down.";
+
     /*
         memory_stream
     */
@@ -106,6 +105,127 @@ namespace concurrencpp::details::consts {
         "concurrencpp::file_stream::flush() - given resume executor is null.";
 
     inline const char* k_file_stream_flush_engine_shutdown_err_msg = "concurrencpp::file_stream_::flush() - engine has been shut down";
+
+    /*
+        socket
+    */
+
+    inline const char* k_socket_read_empty_socket_err_msg = "concurrencpp::socket::read() - socket is empty.";
+
+    inline const char* k_socket_read_null_resume_executor_err_msg = "concurrencpp::socket::read() - given resume_executor is null.";
+
+    inline const char* k_socket_read_bad_stop_token_err_msg = "concurrencpp::socket::read() - bad stop_token.";
+
+    inline const char* k_socket_read_engine_shutdown_err_msg = "concurrencpp::socket::read() - io engine has been shut down.";
+
+    inline const char* k_socket_write_empty_socket_err_msg = "concurrencpp::socket::write() - socket is empty.";
+
+    inline const char* k_socket_write_null_resume_executor_err_msg = "concurrencpp::socket::write() - resume_executor is null.";
+
+    inline const char* k_socket_write_bad_stop_token_error_msg = "concurrencpp::socket::write() - bad stop_token.";
+
+    inline const char* k_socket_write_engine_shutdown_err_msg = "concurrencpp::socket::write() - io engine has been shut down.";
+
+    inline const char* k_socket_get_address_family_empty_socket_err_msg =
+        "concurrencpp::socket::get_address_family() - socket is empty.";
+
+    inline const char* k_socket_get_socket_type_empty_socket_err_msg = "concurrencpp::socket::get_socket_type() - socket is empty.";
+
+    inline const char* k_socket_get_protocol_type_empty_socket_err_msg =
+        "concurrencpp::socket::get_protocol_type() - socket is empty.";
+
+    inline const char* k_socket_eof_reached_empty_socket_err_msg = "concurrencpp::socket::eof_reached() - socket is empty.";
+
+    inline const char* k_socket_eof_reached_null_resume_executor_err_msg =
+        "concurrencpp::socket::eof_reached() - resume_executor is null.";
+
+    inline const char* k_socket_connect_empty_socket_err_msg = "concurrencpp::socket::connect() - socket is empty.";
+
+    inline const char* k_socket_connect_null_resume_executor_err_msg =
+        "concurrencpp::socket::connect() - given resume_executor is null.";
+
+    inline const char* k_socket_connect_bad_stop_token_err_msg = "concurrencpp::socket::connect() - bad stop_token.";
+
+    inline const char* k_socket_connect_engine_shutdown_err_msg = "concurrencpp::socket::connect() - io engine has been shut down.";
+
+    inline const char* k_socket_listen_empty_socket_err_msg = "concurrencpp::socket::listen() - socket is empty.";
+
+    inline const char* k_socket_listen_null_resume_executor_err_msg = "concurrencpp::socket::listen() - resume_executor is null.";
+
+    inline const char* k_socket_accept_empty_socket_err_msg = "concurrencpp::socket::accept() - socket is empty.";
+
+    inline const char* k_socket_accept_null_resume_executor_err_msg =
+        "concurrencpp::socket::accept() - given resume_executor is null.";
+
+    inline const char* k_socket_accept_bad_stop_token_err_msg = "concurrencpp::socket::accept() - bad stop_token.";
+
+    inline const char* k_socket_accept_engine_shutdown_err_msg = "concurrencpp::socket::accept() - io engine has been shut down.";
+
+    inline const char* k_socket_bind_empty_socket_err_msg = "concurrencpp::socket::bind() - socket is empty.";
+
+    inline const char* k_socket_bind_null_resume_executor_err_msg = "concurrencpp::socket::bind() - given resume_executor is null.";
+
+    inline const char* k_socket_local_endpoint_empty_socket_err_msg = "concurrencpp::socket::local_endpoint() - socket is empty.";
+
+    inline const char* k_socket_local_endpoint_null_resume_executor_err_msg =
+        "concurrencpp::socket::local_endpoint() - given resume_executor is null.";
+
+    inline const char* k_socket_remote_endpoint_empty_socket_err_msg = "concurrencpp::socket::remote_endpoint() - socket is empty.";
+
+    inline const char* k_socket_remote_endpoint_null_resume_executor_err_msg =
+        "concurrencpp::socket::remote_endpoint() - given resume_executor is null.";
+
+    inline const char* k_socket_available_bytes_empty_socket_err_msg = "concurrencpp::socket::available_bytes() - socket is empty.";
+
+    inline const char* k_socket_available_bytes_null_resume_executor_err_msg =
+        "concurrencpp::socket::available_bytes() - given resume_executor is null.";
+
+    inline const char* k_socket_keep_alive_empty_socket_err_msg = "concurrencpp::socket::keep_alive() - socket is empty.";
+
+    inline const char* k_socket_keep_alive_null_resume_executor_err_msg =
+        "concurrencpp::socket::keep_alive() - given resume_executor is null.";
+
+    inline const char* k_socket_broadcast_enabled_empty_socket_err_msg =
+        "concurrencpp::socket::broadcast_enabled() - socket is empty.";
+
+    inline const char* k_socket_broadcast_enabled_null_resume_executor_err_msg =
+        "concurrencpp::socket::broadcast_enabled() - given resume_executor is null.";
+
+    inline const char* k_socket_reuse_port_empty_socket_err_msg = "concurrencpp::socket::reuse_port() - socket is empty.";
+
+    inline const char* k_socket_reuse_port_null_resume_executor_err_msg =
+        "concurrencpp::socket::reuse_port() - given resume_executor is null.";
+
+    inline const char* k_socket_linger_mode_empty_socket_err_msg = "concurrencpp::socket::linger_mode() - socket is empty.";
+
+    inline const char* k_socket_linger_mode_null_resume_executor_err_msg =
+        "concurrencpp::socket::linger_mode() - given resume_executor is null.";
+
+    inline const char* k_socket_no_delay_empty_socket_err_msg = "concurrencpp::socket::no_delay() - socket is empty.";
+
+    inline const char* k_socket_no_delay_null_resume_executor_err_msg =
+        "concurrencpp::socket::no_delay() - given resume_executor is null.";
+
+    inline const char* k_socket_receive_buffer_size_empty_socket_err_msg =
+        "concurrencpp::socket::receive_buffer_size() - socket is empty.";
+
+    inline const char* k_socket_receive_buffer_size_null_resume_executor_err_msg =
+        "concurrencpp::socket::receive_buffer_size() - given resume_executor is null.";
+
+    inline const char* k_socket_send_buffer_size_empty_socket_err_msg = "concurrencpp::socket::send_buffer_size() - socket is empty.";
+
+    inline const char* k_socket_send_buffer_size_null_resume_executor_err_msg =
+        "concurrencpp::socket::send_buffer_size() - given resume_executor is null.";
+
+    inline const char* k_socket_receive_timeout_empty_socket_err_msg = "concurrencpp::socket::receive_timeout() - socket is empty.";
+
+    inline const char* k_socket_receive_timeout_null_resume_executor_err_msg =
+        "concurrencpp::socket::receive_timeout() - given resume_executor is null.";
+
+    inline const char* k_socket_send_timeout_empty_socket_err_msg = "concurrencpp::socket::send_timeout() - socket is empty.";
+
+    inline const char* k_socket_send_timeout_null_resume_executor_err_msg =
+        "concurrencpp::socket::send_timeout() - given resume_executor is null.";
 
 }  // namespace concurrencpp::details::consts
 
