@@ -116,7 +116,9 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_socket_read_bad_stop_token_err_msg = "concurrencpp::socket::read() - bad stop_token.";
 
-    inline const char* k_socket_read_engine_shutdown_err_msg = "concurrencpp::socket::read() - io engine has been shut down.";
+    inline const char* k_socket_read_engine_shutdown_err_msg = "concurrencpp::socket::read() - io_engine has been shut down.";
+
+    inline const char* k_socket_read_invalid_buffer_err_msg = "concurrencpp::socket::read() - given buffer is null while count != 0.";
 
     inline const char* k_socket_write_empty_socket_err_msg = "concurrencpp::socket::write() - socket is empty.";
 
@@ -124,7 +126,10 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_socket_write_bad_stop_token_error_msg = "concurrencpp::socket::write() - bad stop_token.";
 
-    inline const char* k_socket_write_engine_shutdown_err_msg = "concurrencpp::socket::write() - io engine has been shut down.";
+    inline const char* k_socket_write_engine_shutdown_err_msg = "concurrencpp::socket::write() - io_engine has been shut down.";
+
+    inline const char* k_socket_write_invalid_buffer_err_msg =
+        "concurrencpp::socket::write() - given buffer is null while count != 0.";
 
     inline const char* k_socket_get_address_family_empty_socket_err_msg =
         "concurrencpp::socket::get_address_family() - socket is empty.";
@@ -146,7 +151,7 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_socket_connect_bad_stop_token_err_msg = "concurrencpp::socket::connect() - bad stop_token.";
 
-    inline const char* k_socket_connect_engine_shutdown_err_msg = "concurrencpp::socket::connect() - io engine has been shut down.";
+    inline const char* k_socket_connect_engine_shutdown_err_msg = "concurrencpp::socket::connect() - io_engine has been shut down.";
 
     inline const char* k_socket_listen_empty_socket_err_msg = "concurrencpp::socket::listen() - socket is empty.";
 
