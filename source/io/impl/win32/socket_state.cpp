@@ -184,7 +184,7 @@ lazy_result<size_t> socket_state::read(std::shared_ptr<socket_state> self_ptr,
 
     {  // it's important for the awaitable to be destroyed asap when io finishes for stored-stop_cb in it.
         std::tie(read, ec) =
-            co_await read_awaitable(self_ptr, *io_engine, resume_executor, buffer, buffer_length, read_pos, optional_stop_token);
+            co_await read_awaitable(*self_ptr, *io_engine, *resume_executor, buffer, buffer_length, read_pos, optional_stop_token);
     }
 
     if (ec != 0) {
@@ -217,7 +217,7 @@ lazy_result<size_t> socket_state::write(std::shared_ptr<socket_state> self_ptr,
 
     {
         std::tie(written, ec) =
-            co_await write_awaitable(self_ptr, *io_engine, resume_executor, buffer, buffer_length, write_pos, optional_stop_token);
+            co_await write_awaitable(*self_ptr, *io_engine, *resume_executor, buffer, buffer_length, write_pos, optional_stop_token);
     }
 
     if (ec != 0) {
@@ -242,7 +242,7 @@ lazy_result<void> socket_state::connect(std::shared_ptr<socket_state> self_ptr,
 
     uint32_t ec;
 
-    { ec = co_await connect_awaitable(self_ptr, *io_engine, resume_executor, remote_endpoint, optional_stop_token); }
+    { ec = co_await connect_awaitable(*self_ptr, *io_engine, *resume_executor, remote_endpoint, optional_stop_token); }
 
     if (ec != 0) {
         throw_system_error(ec);
@@ -274,7 +274,7 @@ lazy_result<concurrencpp::socket> socket_state::accept(std::shared_ptr<socket_st
 
     {
         std::tie(local_ep, remote_ep, ec) =
-            co_await accept_awaitable(self_ptr, *io_engine, resume_executor, accept_state->handle(), optional_stop_token);
+            co_await accept_awaitable(*self_ptr, *io_engine, *resume_executor, accept_state->handle(), optional_stop_token);
     }
 
     if (ec != 0) {
@@ -364,7 +364,7 @@ lazy_result<uint32_t> socket_state::send_to(std::shared_ptr<socket_state> self_p
 
     {
         std::tie(written, ec) =
-            co_await send_to_awaitable(self_ptr, *io_engine, resume_executor, buffer, buffer_length, endpoint, optional_stop_token);
+            co_await send_to_awaitable(*self_ptr, *io_engine, *resume_executor, buffer, buffer_length, endpoint, optional_stop_token);
     }
 
     if (ec != 0) {
@@ -376,7 +376,7 @@ lazy_result<uint32_t> socket_state::send_to(std::shared_ptr<socket_state> self_p
     co_return written;
 }
 
-lazy_result<socket_state::recv_from_result> socket_state::recv_from(std::shared_ptr<socket_state> self_ptr,
+lazy_result<concurrencpp::recv_from_result> socket_state::recv_from(std::shared_ptr<socket_state> self_ptr,
                                                                     std::shared_ptr<concurrencpp::executor> resume_executor,
                                                                     std::shared_ptr<io_engine> io_engine,
                                                                     void* buffer,
@@ -397,7 +397,7 @@ lazy_result<socket_state::recv_from_result> socket_state::recv_from(std::shared_
 
     {
         std::tie(read, ec, addr) =
-            co_await recv_from_awaitable(self_ptr, *io_engine, resume_executor, buffer, buffer_length, optional_stop_token);
+            co_await recv_from_awaitable(*self_ptr, *io_engine, *resume_executor, buffer, buffer_length, optional_stop_token);
     }
 
     if (ec != 0) {

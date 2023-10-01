@@ -50,8 +50,8 @@ namespace concurrencpp::details::win32 {
        protected:
         enum class status { idle, started, cancelled, finished };
 
-        const std::shared_ptr<io_object> m_state;
-        const std::shared_ptr<executor> m_resume_executor;
+        io_object& m_state;
+        executor& m_resume_executor;
         io_engine& m_engine;
         concurrencpp::details::coroutine_handle<void> m_coro_handle;
         std::atomic<status> m_status {status::idle};
@@ -67,9 +67,9 @@ namespace concurrencpp::details::win32 {
         void try_cancel() noexcept;
 
        public:
-        awaitable_base(std::shared_ptr<io_object> state,
+        awaitable_base(io_object& state,
                        io_engine& engine,
-                       std::shared_ptr<concurrencpp::executor> resume_executor,
+                       concurrencpp::executor& resume_executor,
                        std::stop_token* optional_stop_token) noexcept;
 
         virtual ~awaitable_base() noexcept = default;
@@ -95,9 +95,9 @@ namespace concurrencpp::details::win32 {
         DWORD m_error_code = 0;
 
        public:
-        read_awaitable(std::shared_ptr<io_object> state,
+        read_awaitable(io_object& state,
                        io_engine& engine,
-                       std::shared_ptr<concurrencpp::executor> resume_executor,
+                       concurrencpp::executor& resume_executor,
                        void* buffer,
                        uint32_t buffer_length,
                        size_t read_pos,
@@ -118,9 +118,9 @@ namespace concurrencpp::details::win32 {
         DWORD m_error_code = 0;
 
        public:
-        write_awaitable(std::shared_ptr<io_object> state,
+        write_awaitable(io_object& state,
                         io_engine& engine,
-                        std::shared_ptr<concurrencpp::executor> resume_executor,
+                        concurrencpp::executor& resume_executor,
                         const void* buffer,
                         uint32_t buffer_length,
                         size_t write_pos,
@@ -139,9 +139,9 @@ namespace concurrencpp::details::win32 {
         DWORD m_error_code = 0;
 
        public:
-        connect_awaitable(std::shared_ptr<io_object> state,
+        connect_awaitable(io_object& state,
                           io_engine& engine,
-                          std::shared_ptr<concurrencpp::executor> resume_executor,
+                          concurrencpp::executor& resume_executor,
                           ip_endpoint endpoint,
                           std::stop_token* optional_stop_token) noexcept;
 
@@ -161,9 +161,9 @@ namespace concurrencpp::details::win32 {
         ip_endpoint m_remote_endpoint;
 
        public:
-        accept_awaitable(std::shared_ptr<io_object> state,
+        accept_awaitable(io_object& state,
                          io_engine& engine,
-                         std::shared_ptr<concurrencpp::executor> resume_executor,
+                         concurrencpp::executor& resume_executor,
                          void* accept_socket_handle,
                          std::stop_token* optional_stop_token) noexcept;
 
@@ -182,9 +182,9 @@ namespace concurrencpp::details::win32 {
         DWORD m_error_code = 0;
 
        public:
-        send_to_awaitable(std::shared_ptr<io_object> state,
+        send_to_awaitable(io_object& state,
                           io_engine& engine,
-                          std::shared_ptr<concurrencpp::executor> resume_executor,
+                          concurrencpp::executor& resume_executor,
                           const void* buffer,
                           uint32_t buffer_length,
                           ip_endpoint endpoint,
@@ -206,9 +206,9 @@ namespace concurrencpp::details::win32 {
         DWORD m_error_code = 0;
 
        public:
-        recv_from_awaitable(std::shared_ptr<io_object> state,
+        recv_from_awaitable(io_object& state,
                             io_engine& engine,
-                            std::shared_ptr<concurrencpp::executor> resume_executor,
+                            concurrencpp::executor& resume_executor,
                             void* buffer,
                             uint32_t buffer_length,
                             std::stop_token* optional_stop_token) noexcept;

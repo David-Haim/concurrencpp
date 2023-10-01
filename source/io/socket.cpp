@@ -188,6 +188,75 @@ lazy_result<void> socket::bind(std::shared_ptr<concurrencpp::executor> resume_ex
     return socket_state::bind(m_state, std::move(resume_executor), local_endpoint);
 }
 
+lazy_result<uint32_t> socket::send_to(std::shared_ptr<executor> resume_executor, ip_endpoint ep, void* buffer, size_t count) {
+    throw_if_empty(details::consts::k_socket_send_to_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_to_null_resume_executor_err_msg);
+
+    if ((buffer == nullptr) && (count != 0)) {
+        throw std::invalid_argument(details::consts::k_socket_send_to_invalid_buffer_err_msg);
+    }
+
+    auto engine = m_state->get_engine(details::consts::k_socket_send_to_engine_shutdown_err_msg);
+
+    return socket_state::send_to(m_state, std::move(resume_executor), std::move(engine), buffer, static_cast<uint32_t>(count), ep);
+}
+
+lazy_result<uint32_t> socket::send_to(std::shared_ptr<executor> resume_executor,
+                                      std::stop_token stop_token,
+                                      ip_endpoint ep,
+                                      void* buffer,
+                                      size_t count) {
+    throw_if_empty(details::consts::k_socket_send_to_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_to_null_resume_executor_err_msg);
+    throw_if_stop_token_empty(stop_token, details::consts::k_socket_send_to_bad_stop_token_error_msg);
+
+    if ((buffer == nullptr) && (count != 0)) {
+        throw std::invalid_argument(details::consts::k_socket_send_to_invalid_buffer_err_msg);
+    }
+
+    auto engine = m_state->get_engine(details::consts::k_socket_send_to_engine_shutdown_err_msg);
+
+    return socket_state::send_to(m_state,
+                                 std::move(resume_executor),
+                                 std::move(engine),
+                                 buffer,
+                                 static_cast<uint32_t>(count),
+                                 ep,
+                                 &stop_token);
+}
+
+lazy_result<concurrencpp::recv_from_result> socket::receive_from(std::shared_ptr<executor> resume_executor,
+                                                                 void* buffer,
+                                                                 size_t count) {
+    throw_if_empty(details::consts::k_socket_receive_from_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_from_null_resume_executor_err_msg);
+
+    auto engine = m_state->get_engine(details::consts::k_socket_receive_from_engine_shutdown_err_msg);
+
+    if ((buffer == nullptr) && (count != 0)) {
+        throw std::invalid_argument(details::consts::k_socket_receive_from_invalid_buffer_err_msg);
+    }
+
+    return socket_state::recv_from(m_state, std::move(resume_executor), std::move(engine), buffer, static_cast<uint32_t>(count));
+}
+
+lazy_result<concurrencpp::recv_from_result> socket::receive_from(std::shared_ptr<executor> resume_executor,
+                                                                 std::stop_token stop_token,
+                                                                 void* buffer,
+                                                                 size_t count) {
+    throw_if_empty(details::consts::k_socket_receive_from_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_from_null_resume_executor_err_msg);
+    throw_if_stop_token_empty(stop_token, details::consts::k_socket_receive_from_bad_stop_token_err_msg);
+
+    auto engine = m_state->get_engine(details::consts::k_socket_receive_from_engine_shutdown_err_msg);
+
+    if ((buffer == nullptr) && (count != 0)) {
+        throw std::invalid_argument(details::consts::k_socket_receive_from_invalid_buffer_err_msg);
+    }
+
+    return socket_state::recv_from(m_state, std::move(resume_executor), std::move(engine), buffer, static_cast<uint32_t>(count));
+}
+
 lazy_result<std::optional<concurrencpp::ip_endpoint>> socket::local_endpoint(std::shared_ptr<concurrencpp::executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_local_endpoint_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_local_endpoint_null_resume_executor_err_msg);

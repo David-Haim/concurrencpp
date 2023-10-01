@@ -58,6 +58,21 @@ namespace concurrencpp {
 
         lazy_result<void> bind(std::shared_ptr<concurrencpp::executor> resume_executor, concurrencpp::ip_endpoint local_endpoint);
 
+        lazy_result<uint32_t> send_to(std::shared_ptr<executor> resume_executor, ip_endpoint ep, void* buffer, size_t count);
+        lazy_result<uint32_t> send_to(std::shared_ptr<executor> resume_executor,
+                                    std::stop_token stop_token,
+                                    ip_endpoint ep,
+                                    void* buffer,
+                                    size_t count);
+
+        lazy_result<concurrencpp::recv_from_result> receive_from(std::shared_ptr<executor> resume_executor,
+                                                                 void* buffer,
+                                                                 size_t count);
+        lazy_result<concurrencpp::recv_from_result> receive_from(std::shared_ptr<executor> resume_executor,
+                                                                 std::stop_token stop_token,
+                                                                 void* buffer,
+                                                                 size_t count);
+
         lazy_result<std::optional<ip_endpoint>> local_endpoint(std::shared_ptr<concurrencpp::executor> resume_executor);
         lazy_result<std::optional<ip_endpoint>> remote_endpoint(std::shared_ptr<concurrencpp::executor> resume_executor);
 

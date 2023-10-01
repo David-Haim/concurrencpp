@@ -9,6 +9,13 @@
 #include <optional>
 #include <stop_token>
 
+namespace concurrencpp {
+    struct recv_from_result {
+        ip_endpoint remote_endpoint;
+        uint32_t read = 0;
+    };
+}
+
 // TODO: move all error msgs to constants file
 namespace concurrencpp::details::win32 {
 
@@ -85,11 +92,6 @@ namespace concurrencpp::details::win32 {
                                              uint32_t buffer_length,
                                              ip_endpoint endpoint,
                                              std::stop_token* optional_stop_token = nullptr);
-
-        struct recv_from_result {
-            ip_endpoint remote_endpoint;
-            uint32_t read = 0;
-        };
 
         static lazy_result<recv_from_result> recv_from(std::shared_ptr<socket_state> self,
                                                        std::shared_ptr<concurrencpp::executor> resume_executor,

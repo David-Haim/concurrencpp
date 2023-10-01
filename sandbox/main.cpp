@@ -1,4 +1,4 @@
-#include "concurrencpp/concurrencpp.h"
+﻿#include "concurrencpp/concurrencpp.h"
 
 #include <iostream>
 #include <concurrencpp/io/impl/win32/io_engine.h>
@@ -17,7 +17,7 @@ result<void> run_socket(std::shared_ptr<io_engine> engine, std::shared_ptr<worke
     co_await sock.connect(ex, ep);
     std::cout << "socket is connected" << std::endl;
 
-    co_await sock.write(ex, "GET / HTTP/1.1\r\nHost: host:port\r\nConnection: close\r\n\r\n");
+    co_await sock.write(ex, "GET  מ / HTTP/1.1\r\nHost: host:port\r\nConnection: close\r\n\r\n");
 
     std::cout << "request was written!" << std::endl;
 

@@ -15,12 +15,12 @@ using concurrencpp::details::win32::recv_from_awaitable;
  * awaitable_base
  */
 
-awaitable_base::awaitable_base(std::shared_ptr<io_object> state,
+awaitable_base::awaitable_base(io_object& state,
                                io_engine& engine,
-                               std::shared_ptr<concurrencpp::executor> resume_executor,
+                               concurrencpp::executor& resume_executor,
                                std::stop_token* optional_stop_token) noexcept :
     m_state(state),
-    m_engine(engine), m_resume_executor(std::move(resume_executor)), m_overlapped(*this),
+    m_engine(engine), m_resume_executor(resume_executor), m_overlapped(*this),
     m_engine_stop_cb(engine.get_stop_token(), cancel_cb(*this)) {
     if (optional_stop_token != nullptr) {
         m_user_stop_cb.emplace(*optional_stop_token, cancel_cb(*this));
@@ -31,7 +31,7 @@ void awaitable_base::resume() noexcept {
     m_status.store(status::finished, std::memory_order_release);
 
     try {
-        m_resume_executor->post(details::await_via_functor {m_coro_handle, &m_interrupted});
+        m_resume_executor.post(details::await_via_functor {m_coro_handle, &m_interrupted});
     } catch (...) {
         // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
     }
@@ -51,11 +51,11 @@ awaitable_base* awaitable_base::get_next() const noexcept {
 }
 
 void* awaitable_base::handle() const noexcept {
-    return m_state->handle();
+    return m_state.handle();
 }
 
 void awaitable_base::cancel_impl() noexcept {
-    ::CancelIoEx(m_state->handle(), &m_overlapped);
+    ::CancelIoEx(m_state.handle(), &m_overlapped);
 }
 
 void awaitable_base::set_io_started() noexcept {
@@ -98,14 +98,14 @@ void awaitable_base::try_cancel() noexcept {
  * read_awaitable
  */
 
-read_awaitable::read_awaitable(std::shared_ptr<io_object> state,
+read_awaitable::read_awaitable(io_object& state,
                                io_engine& engine,
-                               std::shared_ptr<concurrencpp::executor> resume_executor,
+                               concurrencpp::executor& resume_executor,
                                void* buffer,
                                uint32_t buffer_length,
                                size_t read_pos,
                                std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token),
+    awaitable_base(state, engine, resume_executor, optional_stop_token),
     m_buffer(buffer), m_buffer_length(buffer_length) {
 
     if (read_pos != static_cast<size_t>(-1)) {
@@ -133,7 +133,7 @@ void read_awaitable::start_io() noexcept {
 
     assert(status == status::idle);
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     auto res = ::ReadFile(handle, m_buffer, static_cast<DWORD>(m_buffer_length), nullptr, &m_overlapped);
     if (res == TRUE) {
         DWORD read = 0;
@@ -164,14 +164,14 @@ void read_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
  * write_awaitable
  */
 
-write_awaitable::write_awaitable(std::shared_ptr<io_object> state,
+write_awaitable::write_awaitable(io_object& state,
                                  io_engine& engine,
-                                 std::shared_ptr<concurrencpp::executor> resume_executor,
+                                 concurrencpp::executor& resume_executor,
                                  const void* buffer,
                                  uint32_t buffer_length,
                                  size_t write_pos,
                                  std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token),
+    awaitable_base(state, engine, resume_executor, optional_stop_token),
     m_buffer(buffer), m_buffer_length(buffer_length) {
 
     if (write_pos == static_cast<size_t>(-1)) {
@@ -202,7 +202,7 @@ void write_awaitable::start_io() noexcept {
 
     assert(status == status::idle);
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     auto res = ::WriteFile(handle, m_buffer, m_buffer_length, nullptr, &m_overlapped);
     if (res == TRUE) {
         DWORD written = 0;
@@ -233,12 +233,12 @@ void write_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
  * connect_awaitable
  */
 
-connect_awaitable::connect_awaitable(std::shared_ptr<io_object> state,
+connect_awaitable::connect_awaitable(io_object& state,
                                      io_engine& engine,
-                                     std::shared_ptr<concurrencpp::executor> resume_executor,
+                                     concurrencpp::executor& resume_executor,
                                      ip_endpoint endpoint,
                                      std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token),
+    awaitable_base(state, engine, resume_executor, optional_stop_token),
     m_address() {
 
     if (endpoint.address.index() == 0) {
@@ -272,7 +272,7 @@ void connect_awaitable::start_io() noexcept {
 
     assert(status == status::idle);
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     if (m_address.ss_family == AF_INET) {
         ::sockaddr_in addr = {};
         addr.sin_family = AF_INET;
@@ -323,7 +323,7 @@ void connect_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
         return resume();
     }
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     const auto res = ::setsockopt(reinterpret_cast<SOCKET>(handle), SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0);
     if (res != 0) {
         m_error_code = ::GetLastError();
@@ -336,12 +336,12 @@ void connect_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
  * accept_awaitable
  */
 
-accept_awaitable::accept_awaitable(std::shared_ptr<io_object> state,
+accept_awaitable::accept_awaitable(io_object& state,
                                    io_engine& engine,
-                                   std::shared_ptr<concurrencpp::executor> resume_executor,
+                                   concurrencpp::executor& resume_executor,
                                    void* accept_socket_handle,
                                    std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token),
+    awaitable_base(state, engine, resume_executor, optional_stop_token),
     m_accept_socket_handle(accept_socket_handle) {}
 
 void accept_awaitable::start_io() noexcept {
@@ -356,7 +356,7 @@ void accept_awaitable::start_io() noexcept {
     assert(status == status::idle);
 
     DWORD read = 0;
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     const auto res = m_engine.get_exported_functions().AcceptEx(reinterpret_cast<SOCKET>(handle),
                                                                 reinterpret_cast<SOCKET>(m_accept_socket_handle),
                                                                 m_accept_buffer,
@@ -384,7 +384,7 @@ void accept_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
         return resume();
     }
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     const auto res = ::setsockopt(reinterpret_cast<SOCKET>(m_accept_socket_handle),
                                   SOL_SOCKET,
                                   SO_UPDATE_ACCEPT_CONTEXT,
@@ -461,14 +461,14 @@ std::tuple<concurrencpp::ip_endpoint, concurrencpp::ip_endpoint, DWORD> accept_a
  * send_to_awaitable
  */
 
-send_to_awaitable::send_to_awaitable(std::shared_ptr<io_object> state,
+send_to_awaitable::send_to_awaitable(io_object& state,
                                      io_engine& engine,
-                                     std::shared_ptr<concurrencpp::executor> resume_executor,
+                                     concurrencpp::executor& resume_executor,
                                      const void* buffer,
                                      uint32_t buffer_length,
                                      ip_endpoint endpoint,
                                      std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token) {
+    awaitable_base(state, engine, resume_executor, optional_stop_token) {
     m_buffer[0].buf = (CHAR*)buffer;
     m_buffer[0].len = buffer_length;
 
@@ -503,7 +503,7 @@ void send_to_awaitable::start_io() noexcept {
 
     assert(status == status::idle);
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     auto res = ::WSASendTo(reinterpret_cast<SOCKET>(handle),
                            m_buffer,
                            1,
@@ -542,13 +542,13 @@ void send_to_awaitable::finish_io(DWORD bytes, DWORD error_code) noexcept {
  * recv_from_awaitable
  */
 
-recv_from_awaitable::recv_from_awaitable(std::shared_ptr<io_object> state,
+recv_from_awaitable::recv_from_awaitable(io_object& state,
                                          io_engine& engine,
-                                         std::shared_ptr<concurrencpp::executor> resume_executor,
+                                         concurrencpp::executor& resume_executor,
                                          void* buffer,
                                          uint32_t buffer_length,
                                          std::stop_token* optional_stop_token) noexcept :
-    awaitable_base(std::move(state), engine, std::move(resume_executor), optional_stop_token) {
+    awaitable_base(state, engine, resume_executor, optional_stop_token) {
     m_buffer[0].buf = static_cast<char*>(buffer);
     m_buffer[0].len = buffer_length;
 }
@@ -568,7 +568,7 @@ void recv_from_awaitable::start_io() noexcept {
 
     assert(status == status::idle);
 
-    const auto handle = m_state->handle();
+    const auto handle = m_state.handle();
     auto res = ::WSARecvFrom(reinterpret_cast<SOCKET>(handle),
                              m_buffer,
                              1,

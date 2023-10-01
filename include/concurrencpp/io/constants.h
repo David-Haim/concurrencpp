@@ -232,6 +232,31 @@ namespace concurrencpp::details::consts {
     inline const char* k_socket_send_timeout_null_resume_executor_err_msg =
         "concurrencpp::socket::send_timeout() - given resume_executor is null.";
 
+    //
+
+    inline const char* k_socket_receive_from_empty_socket_err_msg = "concurrencpp::socket::receive_from() - socket is empty.";
+
+    inline const char* k_socket_receive_from_null_resume_executor_err_msg =
+        "concurrencpp::socket::receive_from() - given resume_executor is null.";
+
+    inline const char* k_socket_receive_from_bad_stop_token_err_msg = "concurrencpp::socket::receive_from() - bad stop_token.";
+
+    inline const char* k_socket_receive_from_engine_shutdown_err_msg = "concurrencpp::socket::receive_from() - io_engine has been shut down.";
+
+    inline const char* k_socket_receive_from_invalid_buffer_err_msg =
+        "concurrencpp::socket::receive_from() - given buffer is null while count != 0.";
+
+    inline const char* k_socket_send_to_empty_socket_err_msg = "concurrencpp::socket::send_to() - socket is empty.";
+
+    inline const char* k_socket_send_to_null_resume_executor_err_msg = "concurrencpp::socket::send_to() - resume_executor is null.";
+
+    inline const char* k_socket_send_to_bad_stop_token_error_msg = "concurrencpp::socket::send_to() - bad stop_token.";
+
+    inline const char* k_socket_send_to_engine_shutdown_err_msg = "concurrencpp::socket::send_to() - io_engine has been shut down.";
+
+    inline const char* k_socket_send_to_invalid_buffer_err_msg =
+        "concurrencpp::socket::send_to() - given buffer is null while count != 0.";
+
 }  // namespace concurrencpp::details::consts
 
 #endif

@@ -124,9 +124,9 @@ lazy_result<size_t> file_stream_state::read(std::shared_ptr<file_stream_state> s
     uint32_t read, ec;
 
     {
-        std::tie(read, ec) = co_await read_awaitable(self_ptr,
+        std::tie(read, ec) = co_await read_awaitable(*self_ptr,
                                                      *io_engine,
-                                                     std::move(resume_executor),
+                                                     *resume_executor,
                                                      buffer,
                                                      length,
                                                      self.m_read_pos,
@@ -180,9 +180,9 @@ lazy_result<size_t> file_stream_state::write(std::shared_ptr<file_stream_state> 
 
     uint32_t written, ec;
     {
-        std::tie(written, ec) = co_await write_awaitable(self_ptr,
+        std::tie(written, ec) = co_await write_awaitable(*self_ptr,
                                                       *io_engine,
-                                                      std::move(resume_executor),
+                                                      *resume_executor,
                                                       buffer,
                                                       length,
                                                       self.m_write_pos,
