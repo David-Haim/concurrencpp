@@ -199,9 +199,10 @@ namespace concurrencpp::details::win32 {
     struct recv_from_awaitable final : public awaitable_base {
 
        private:
-        ::SOCKADDR_STORAGE m_addr = {};
+        ::sockaddr_storage m_addr = {};
         ::WSABUF m_buffer[1];
         int m_addr_len = static_cast<int>(sizeof(m_addr));
+        DWORD m_flags = 0;
         uint32_t m_read = 0;
         DWORD m_error_code = 0;
 

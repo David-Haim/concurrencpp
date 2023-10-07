@@ -17,7 +17,7 @@ result<void> run_socket(std::shared_ptr<io_engine> engine, std::shared_ptr<worke
     co_await sock.connect(ex, ep);
     std::cout << "socket is connected" << std::endl;
 
-    co_await sock.write(ex, "GET  מ / HTTP/1.1\r\nHost: host:port\r\nConnection: close\r\n\r\n");
+    co_await sock.write(ex, "GET / HTTP/1.1\r\nHost: host:port\r\nConnection: close\r\n\r\n");
 
     std::cout << "request was written!" << std::endl;
 
@@ -53,16 +53,52 @@ result<void> run_socket_server(std::shared_ptr<io_engine> engine, std::shared_pt
     }
 }
 
+const uint16_t port = 12345;
+
+result<void> udp_reciever(std::shared_ptr<io_engine> engine, std::shared_ptr<worker_thread_executor> ex) {
+    concurrencpp::socket sock(engine, address_family::ip_v4, socket_type::datagram, protocol_type::udp);
+
+    co_await sock.bind(ex, {ip_v4::loop_back, port});
+    
+    char buffer[1024];
+    std::string req;
+    auto res = co_await sock.receive_from(ex, buffer, sizeof buffer);
+   
+//    auto res = co_await sock.read(ex, buffer, 1024);
+    req.append(buffer, buffer + res.read);
+    std::cout << "New message from " << std::get<0>(res.remote_endpoint.address).to_string() << " , " 
+        << res.remote_endpoint.port << " : " 
+        << req << std::endl;
+}
+
+result<void> udp_sender(std::shared_ptr<io_engine> engine, std::shared_ptr<worker_thread_executor> ex) {
+    concurrencpp::socket sock(engine, address_family::ip_v4, socket_type::datagram, protocol_type::udp);
+
+    co_await sock.bind(ex, {ip_v4::any, 8090});
+    ip_endpoint ep;
+    ep.address = ip_v4::loop_back;
+    ep.port = port;
+    auto res = co_await sock.send_to(ex, ep,(void*) "hello world", 11);
+    std::cout << "sent : " << res;
+}
+
+
 int main() {
     concurrencpp::runtime runtime;
     auto engine = std::make_shared<io_engine>();
     auto ex = runtime.make_worker_thread_executor();
 
     //    auto result = run_socket(engine, ex);
-    auto result = run_socket_server(engine, ex);
+//    auto result = run_socket_server(engine, ex);
 
+    auto result = udp_reciever(engine, ex);
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    auto result1 = udp_sender(engine, ex);
     try {
         result.get();
+        result1.get();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

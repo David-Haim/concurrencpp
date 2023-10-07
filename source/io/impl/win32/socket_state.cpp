@@ -105,12 +105,11 @@ std::uintptr_t socket_state::fd() const noexcept {
     return reinterpret_cast<std::uintptr_t>(handle());
 }
 
-lazy_result<bool> socket_state::eof_reached(
-    std::shared_ptr<socket_state> self,
-    std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<bool> socket_state::eof_reached(std::shared_ptr<socket_state> self,
+                                            std::shared_ptr<concurrencpp::executor> resume_executor) {
     assert(static_cast<bool>(self));
     assert(static_cast<bool>(resume_executor));
-    
+
     // TODO: cancellation
     auto sg = co_await self->m_lock.lock(resume_executor);
     co_return self->m_eof_reached;
@@ -118,7 +117,7 @@ lazy_result<bool> socket_state::eof_reached(
 
 std::optional<concurrencpp::ip_endpoint> socket_state::query_local_address() const {
     ::sockaddr_storage local_address = {};
-    auto local_address_len = static_cast<int>(sizeof (local_address));
+    auto local_address_len = static_cast<int>(sizeof(local_address));
 
     const auto res = ::getsockname(fd(), reinterpret_cast<::sockaddr*>(&local_address), &local_address_len);
     if (res != 0) {
@@ -254,9 +253,9 @@ lazy_result<void> socket_state::connect(std::shared_ptr<socket_state> self_ptr,
 }
 
 lazy_result<concurrencpp::socket> socket_state::accept(std::shared_ptr<socket_state> self_ptr,
-                                                                std::shared_ptr<concurrencpp::executor> resume_executor,
-                                                                std::shared_ptr<io_engine> io_engine,
-                                                                std::stop_token* optional_stop_token) {
+                                                       std::shared_ptr<concurrencpp::executor> resume_executor,
+                                                       std::shared_ptr<io_engine> io_engine,
+                                                       std::stop_token* optional_stop_token) {
 
     assert(static_cast<bool>(self_ptr));
     assert(static_cast<bool>(resume_executor));
@@ -283,7 +282,7 @@ lazy_result<concurrencpp::socket> socket_state::accept(std::shared_ptr<socket_st
 
     accept_state->m_local_endpoint.emplace(local_ep);
     accept_state->m_remote_endpoint.emplace(remote_ep);
- 
+
     co_return socket(std::move(accept_state));
 }
 
@@ -301,7 +300,7 @@ lazy_result<void> socket_state::bind(std::shared_ptr<socket_state> self_ptr,
     const auto addr_len = static_cast<int>(sizeof(storage));
 
     if (local_endpoint.address.index() == 0) {
-        auto ipv4_address = new (&storage) ::sockaddr_in();
+        auto ipv4_address = new (&storage)::sockaddr_in();
         ipv4_address->sin_family = AF_INET;
         ipv4_address->sin_addr.S_un.S_addr = std::get<0>(local_endpoint.address).address();
         ipv4_address->sin_port = ::htons(local_endpoint.port);
@@ -356,7 +355,7 @@ lazy_result<uint32_t> socket_state::send_to(std::shared_ptr<socket_state> self_p
 
     auto& self = *self_ptr;
 
-//    const auto engine = self.get_engine("concurrencpp::socket::send_to() - engine has been shut down.");
+    //    const auto engine = self.get_engine("concurrencpp::socket::send_to() - engine has been shut down.");
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
@@ -387,9 +386,6 @@ lazy_result<concurrencpp::recv_from_result> socket_state::recv_from(std::shared_
     assert(static_cast<bool>(io_engine));
 
     auto& self = *self_ptr;
-
-//    const auto engine = self.get_engine("concurrencpp::socket::recv_from() - engine has been shut down.");
-
     auto sg = co_await self.m_lock.lock(resume_executor);
 
     uint32_t read, ec;

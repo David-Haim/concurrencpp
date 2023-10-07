@@ -573,7 +573,7 @@ void recv_from_awaitable::start_io() noexcept {
                              m_buffer,
                              1,
                              nullptr,
-                             0,
+                             &m_flags,
                              (sockaddr*)&m_addr,
                              &m_addr_len,
                              &m_overlapped,

@@ -13,9 +13,12 @@ namespace concurrencpp::details {
     std::uint32_t ip_v4_from_str(std::string_view str);
     std::string ip_v4_to_str(std::uint32_t);
 
-    static std::pair<std::array<std::uint8_t, 16>, std::uint32_t> ip_v6_from_str(std::string_view str);
-    static std::string ip_v6_to_str(const std::uint8_t* address, std::uint32_t scope_id);
-}
+    uint32_t ip_v4_from_octets(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
+    std::array<std::byte, 4> ip_v4_to_octets(uint32_t address);
+
+    std::pair<std::array<std::uint8_t, 16>, std::uint32_t> ip_v6_from_str(std::string_view str);
+    std::string ip_v6_to_str(const std::uint8_t* address, std::uint32_t scope_id);
+}  // namespace concurrencpp::details
 
 /*
     ip_v4
@@ -35,8 +38,7 @@ ip_v4::ip_v4(std::span<const std::byte, 4> bytes) noexcept :
 ip_v4::ip_v4(uint32_t address) noexcept : m_address(address) {}
 
 uint32_t ip_v4::make_address(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) noexcept {
-    return static_cast<std::uint32_t>(b0) << 24 | static_cast<std::uint32_t>(b1) << 16 | static_cast<std::uint32_t>(b2) << 8 |
-        static_cast<std::uint32_t>(b3);
+    return details::ip_v4_from_octets(b0, b1, b2, b3);
 }
 
 ip_v4::ip_v4(std::string_view ip_string) {
@@ -44,10 +46,7 @@ ip_v4::ip_v4(std::string_view ip_string) {
 }
 
 std::array<std::byte, 4> ip_v4::bytes() const noexcept {
-    return std::array<std::byte, 4> {static_cast<std::byte>(m_address >> 24),
-                                     static_cast<std::byte>(m_address >> 16),
-                                     static_cast<std::byte>(m_address >> 8),
-                                     static_cast<std::byte>(m_address)};
+    return details::ip_v4_to_octets(m_address);
 }
 
 uint32_t ip_v4::address() const noexcept {
@@ -222,6 +221,26 @@ std::string concurrencpp::details::ip_v4_to_str(std::uint32_t ip_address) {
     const auto res = ::inet_ntop(AF_INET, &address, saddr, INET_ADDRSTRLEN);
     assert(res != nullptr);
     return saddr;
+}
+
+uint32_t concurrencpp::details::ip_v4_from_octets(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
+    sockaddr_in sock_addess = {};
+    sock_addess.sin_addr.S_un.S_un_b.s_b1 = b0;
+    sock_addess.sin_addr.S_un.S_un_b.s_b2 = b1;
+    sock_addess.sin_addr.S_un.S_un_b.s_b3 = b2;
+    sock_addess.sin_addr.S_un.S_un_b.s_b4 = b3;
+
+    return sock_addess.sin_addr.S_un.S_addr;
+}
+
+std::array<std::byte, 4> concurrencpp::details::ip_v4_to_octets(uint32_t address) {
+    sockaddr_in sock_address = {};
+    sock_address.sin_addr.S_un.S_addr = address;
+
+    return {std::byte(sock_address.sin_addr.S_un.S_un_b.s_b1),
+            std::byte(sock_address.sin_addr.S_un.S_un_b.s_b2),
+            std::byte(sock_address.sin_addr.S_un.S_un_b.s_b3),
+            std::byte(sock_address.sin_addr.S_un.S_un_b.s_b4)};
 }
 
 std::pair<std::array<std::uint8_t, 16>, std::uint32_t> concurrencpp::details::ip_v6_from_str(std::string_view ip_string) {
