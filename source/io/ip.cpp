@@ -199,11 +199,12 @@ bool ip_v6::operator!=(const ip_v6& rhs) const {
 #    pragma comment(lib, "Ntdll.lib")
 
 std::uint32_t concurrencpp::details::ip_v4_from_str(std::string_view ip_string) {
-    ::IN_ADDR address = {};
+    ::in_addr address = {};
     const auto res = ::inet_pton(AF_INET, ip_string.data(), &address);
 
     if (res == 0) {
-        throw std::invalid_argument("ip_v4::ip_v4(str) - given string is not a valid ip(v4) address.");
+        // todo: add the ip
+        throw std::invalid_argument("ip_v4::ip_v4(str) - given string is not a valid ip (v4) address.");
     }
 
     if (res == -1) {
@@ -215,7 +216,7 @@ std::uint32_t concurrencpp::details::ip_v4_from_str(std::string_view ip_string) 
 }
 
 std::string concurrencpp::details::ip_v4_to_str(std::uint32_t ip_address) {
-    ::IN_ADDR address = {};
+    ::in_addr address = {};
     address.S_un.S_addr = ip_address;
     char saddr[INET_ADDRSTRLEN];
     const auto res = ::inet_ntop(AF_INET, &address, saddr, INET_ADDRSTRLEN);
@@ -259,7 +260,7 @@ std::pair<std::array<std::uint8_t, 16>, std::uint32_t> concurrencpp::details::ip
     }
 
     if (res == STATUS_INVALID_PARAMETER) {
-        throw std::invalid_argument("ip_v6::ip_v6(str) - given string is not a valid ip(v6) address.");
+        throw std::invalid_argument("ip_v6::ip_v6(str) - given string is not a valid ip (v6) address.");
     }
 
     throw_system_error(res);
@@ -276,6 +277,7 @@ std::string concurrencpp::details::ip_v6_to_str(const std::uint8_t* address, std
 
     const auto res = ::RtlIpv6AddressToStringExA(&in_address, scope_id, 0, str_res, &length);
     assert(res == STATUS_SUCCESS);
+ // todo: maybe construct a string object: str_res , str_res + length
     return str_res;
 }
 

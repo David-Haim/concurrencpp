@@ -328,79 +328,121 @@ lazy_result<bool> socket::linger_mode(std::shared_ptr<concurrencpp::executor> re
     return socket_state::linger_mode(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::linger_mode(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable) {
+lazy_result<void> socket::linger_mode(std::shared_ptr<executor> resume_executor, bool enable) {
     throw_if_empty(details::consts::k_socket_linger_mode_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_linger_mode_null_resume_executor_err_msg);
 
     return socket_state::linger_mode(m_state, std::move(resume_executor), enable);
 }
 
-lazy_result<bool> socket::no_delay(std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<bool> socket::no_delay(std::shared_ptr<executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_no_delay_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_no_delay_null_resume_executor_err_msg);
 
     return socket_state::no_delay(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::no_delay(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable) {
+lazy_result<void> socket::no_delay(std::shared_ptr<executor> resume_executor, bool enable) {
     throw_if_empty(details::consts::k_socket_no_delay_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_no_delay_null_resume_executor_err_msg);
 
     return socket_state::no_delay(m_state, std::move(resume_executor), enable);
 }
 
-lazy_result<uint32_t> socket::receive_buffer_size(std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<uint32_t> socket::receive_buffer_size(std::shared_ptr<executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_receive_buffer_size_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_buffer_size_null_resume_executor_err_msg);
 
     return socket_state::receive_buffer_size(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::receive_buffer_size(std::shared_ptr<concurrencpp::executor> resume_executor, uint32_t size) {
+lazy_result<void> socket::receive_buffer_size(std::shared_ptr<executor> resume_executor, uint32_t size) {
     throw_if_empty(details::consts::k_socket_receive_buffer_size_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_buffer_size_null_resume_executor_err_msg);
 
     return socket_state::receive_buffer_size(m_state, std::move(resume_executor), size);
 }
 
-lazy_result<uint32_t> socket::send_buffer_size(std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<uint32_t> socket::send_buffer_size(std::shared_ptr<executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_send_buffer_size_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_buffer_size_null_resume_executor_err_msg);
 
     return socket_state::send_buffer_size(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::send_buffer_size(std::shared_ptr<concurrencpp::executor> resume_executor, uint32_t size) {
+lazy_result<void> socket::send_buffer_size(std::shared_ptr<executor> resume_executor, uint32_t size) {
     throw_if_empty(details::consts::k_socket_send_buffer_size_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_buffer_size_null_resume_executor_err_msg);
 
     return socket_state::send_buffer_size(m_state, std::move(resume_executor), size);
 }
 
-lazy_result<std::chrono::milliseconds> socket::receive_timeout(std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<std::chrono::milliseconds> socket::receive_timeout(std::shared_ptr<executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_receive_timeout_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_timeout_null_resume_executor_err_msg);
 
     return socket_state::receive_timeout(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::receive_timeout(std::shared_ptr<concurrencpp::executor> resume_executor, std::chrono::milliseconds ms) {
+lazy_result<void> socket::receive_timeout(std::shared_ptr<executor> resume_executor, std::chrono::milliseconds ms) {
     throw_if_empty(details::consts::k_socket_receive_timeout_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_receive_timeout_null_resume_executor_err_msg);
 
     return socket_state::receive_timeout(m_state, std::move(resume_executor), ms);
 }
 
-lazy_result<std::chrono::milliseconds> socket::send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor) {
+lazy_result<std::chrono::milliseconds> socket::send_timeout(std::shared_ptr<executor> resume_executor) {
     throw_if_empty(details::consts::k_socket_send_timeout_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_timeout_null_resume_executor_err_msg);
 
     return socket_state::send_timeout(m_state, std::move(resume_executor));
 }
 
-lazy_result<void> socket::send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor, std::chrono::milliseconds ms) {
+lazy_result<void> socket::send_timeout(std::shared_ptr<executor> resume_executor, std::chrono::milliseconds ms) {
     throw_if_empty(details::consts::k_socket_send_timeout_empty_socket_err_msg);
     throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_send_timeout_null_resume_executor_err_msg);
 
     return socket_state::send_timeout(m_state, std::move(resume_executor), ms);
+}
+
+lazy_result<bool> socket::dont_fragment(std::shared_ptr<executor> resume_executor) {
+    throw_if_empty(details::consts::k_socket_dont_fragment_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_dont_fragment_null_resume_executor_err_msg);
+
+    return socket_state::dont_fragment(m_state, std::move(resume_executor));
+}
+
+lazy_result<void> socket::dont_fragment(std::shared_ptr<executor> resume_executor, bool enable) {
+    throw_if_empty(details::consts::k_socket_dont_fragment_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_dont_fragment_null_resume_executor_err_msg);
+
+    return socket_state::dont_fragment(m_state, std::move(resume_executor), enable);
+}
+
+lazy_result<uint16_t> socket::ttl(std::shared_ptr<executor> resume_executor) {
+    throw_if_empty(details::consts::k_socket_ttl_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_ttl_null_resume_executor_err_msg);
+
+    return socket_state::ttl(m_state, std::move(resume_executor));
+}
+
+lazy_result<void> socket::ttl(std::shared_ptr<executor> resume_executor, uint16_t ttl) {
+    throw_if_empty(details::consts::k_socket_ttl_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_ttl_null_resume_executor_err_msg);
+
+    return socket_state::ttl(m_state, std::move(resume_executor), ttl);
+}
+
+lazy_result<bool> socket::multicast_loopback(std::shared_ptr<executor> resume_executor) {
+    throw_if_empty(details::consts::k_socket_multicast_loopback_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_multicast_loopback_null_resume_executor_err_msg);
+
+    return socket_state::multicast_loopback(m_state, std::move(resume_executor));
+}
+
+lazy_result<void> socket::multicast_loopback(std::shared_ptr<executor> resume_executor, bool enable) {
+    throw_if_empty(details::consts::k_socket_multicast_loopback_empty_socket_err_msg);
+    throw_if_resume_executor_empty(resume_executor, details::consts::k_socket_multicast_loopback_null_resume_executor_err_msg);
+
+    return socket_state::multicast_loopback(m_state, std::move(resume_executor), enable);
 }

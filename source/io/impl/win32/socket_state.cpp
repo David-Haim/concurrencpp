@@ -461,10 +461,10 @@ lazy_result<bool> socket_state::keep_alive(std::shared_ptr<socket_state> self_pt
     auto& self = *self_ptr;
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = FALSE;
+    DWORD enabled = FALSE;
     auto len = static_cast<int>(sizeof enabled);
     self.get_socket_op(SOL_SOCKET, SO_KEEPALIVE, &enabled, &len);
-    co_return enabled == TRUE;
+    co_return (enabled == TRUE);
 }
 
 lazy_result<void> socket_state::keep_alive(std::shared_ptr<socket_state> self_ptr,
@@ -476,9 +476,8 @@ lazy_result<void> socket_state::keep_alive(std::shared_ptr<socket_state> self_pt
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = enable;
-    const auto len = static_cast<int>(sizeof enabled);
-    self.set_socket_op(SOL_SOCKET, SO_KEEPALIVE, &enabled, len);
+    DWORD enabled = enable;
+    self.set_socket_op(SOL_SOCKET, SO_KEEPALIVE, &enabled, static_cast<int>(sizeof enabled));
 }
 
 lazy_result<bool> socket_state::broadcast_enabled(std::shared_ptr<socket_state> self_ptr,
@@ -492,7 +491,7 @@ lazy_result<bool> socket_state::broadcast_enabled(std::shared_ptr<socket_state> 
     BOOL enabled = FALSE;
     auto len = static_cast<int>(sizeof enabled);
     self.get_socket_op(SOL_SOCKET, SO_BROADCAST, &enabled, &len);
-    co_return enabled == TRUE;
+    co_return (enabled == TRUE);
 }
 
 lazy_result<void> socket_state::broadcast_enabled(std::shared_ptr<socket_state> self_ptr,
@@ -504,9 +503,8 @@ lazy_result<void> socket_state::broadcast_enabled(std::shared_ptr<socket_state> 
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = enable;
-    const auto len = static_cast<int>(sizeof enabled);
-    self.set_socket_op(SOL_SOCKET, SO_BROADCAST, &enabled, len);
+    DWORD enabled = enable;
+    self.set_socket_op(SOL_SOCKET, SO_BROADCAST, &enabled, static_cast<int>(sizeof enabled));
 }
 
 lazy_result<bool> socket_state::reuse_port(std::shared_ptr<socket_state> self_ptr,
@@ -517,10 +515,10 @@ lazy_result<bool> socket_state::reuse_port(std::shared_ptr<socket_state> self_pt
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = FALSE;
+    DWORD enabled = FALSE;
     auto len = static_cast<int>(sizeof enabled);
     self.get_socket_op(SOL_SOCKET, SO_REUSEADDR, &enabled, &len);
-    co_return enabled == TRUE;
+    co_return (enabled == TRUE);
 }
 
 lazy_result<void> socket_state::reuse_port(std::shared_ptr<socket_state> self_ptr,
@@ -532,9 +530,8 @@ lazy_result<void> socket_state::reuse_port(std::shared_ptr<socket_state> self_pt
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = enable;
-    const auto len = static_cast<int>(sizeof enabled);
-    self.set_socket_op(SOL_SOCKET, SO_REUSEADDR, &enabled, len);
+    DWORD enabled = enable;
+    self.set_socket_op(SOL_SOCKET, SO_REUSEADDR, &enabled, static_cast<int>(sizeof enabled));
 }
 
 lazy_result<bool> socket_state::linger_mode(std::shared_ptr<socket_state> self_ptr,
@@ -545,10 +542,10 @@ lazy_result<bool> socket_state::linger_mode(std::shared_ptr<socket_state> self_p
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = FALSE;
+    DWORD enabled = FALSE;
     auto len = static_cast<int>(sizeof enabled);
     self.get_socket_op(SOL_SOCKET, SO_LINGER, &enabled, &len);
-    co_return enabled == TRUE;
+    co_return (enabled == TRUE);
 }
 
 lazy_result<void> socket_state::linger_mode(std::shared_ptr<socket_state> self_ptr,
@@ -560,10 +557,8 @@ lazy_result<void> socket_state::linger_mode(std::shared_ptr<socket_state> self_p
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    // TODO: this is wrong, SO_LINGER != SO_DONTLINGER
-    BOOL enabled = enable;
-    const auto len = static_cast<int>(sizeof enabled);
-    self.set_socket_op(SOL_SOCKET, SO_LINGER, &enabled, len);
+    DWORD enabled = enable;
+    self.set_socket_op(SOL_SOCKET, SO_LINGER, &enabled, static_cast<int>(sizeof enabled));
 }
 
 lazy_result<bool> socket_state::no_delay(std::shared_ptr<socket_state> self_ptr,
@@ -574,10 +569,10 @@ lazy_result<bool> socket_state::no_delay(std::shared_ptr<socket_state> self_ptr,
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = FALSE;
+    DWORD enabled = FALSE;
     auto len = static_cast<int>(sizeof enabled);
     self.get_socket_op(IPPROTO_TCP, TCP_NODELAY, &enabled, &len);
-    co_return enabled == TRUE;
+    co_return (enabled == TRUE);
 }
 
 lazy_result<void> socket_state::no_delay(std::shared_ptr<socket_state> self_ptr,
@@ -589,9 +584,8 @@ lazy_result<void> socket_state::no_delay(std::shared_ptr<socket_state> self_ptr,
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    BOOL enabled = enable;
-    const auto len = static_cast<int>(sizeof enabled);
-    self.set_socket_op(IPPROTO_TCP, TCP_NODELAY, &enabled, len);
+    DWORD enabled = enable;
+    self.set_socket_op(IPPROTO_TCP, TCP_NODELAY, &enabled, static_cast<int>(sizeof enabled));
 }
 
 lazy_result<uint32_t> socket_state::receive_buffer_size(std::shared_ptr<socket_state> self_ptr,
@@ -602,7 +596,7 @@ lazy_result<uint32_t> socket_state::receive_buffer_size(std::shared_ptr<socket_s
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    int buffer_len = 0;
+    DWORD buffer_len = 0;
     auto len = static_cast<int>(sizeof buffer_len);
     self.get_socket_op(SOL_SOCKET, SO_RCVBUF, &buffer_len, &len);
     co_return buffer_len;
@@ -617,8 +611,8 @@ lazy_result<void> socket_state::receive_buffer_size(std::shared_ptr<socket_state
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    const auto len = static_cast<int>(sizeof size);
-    self.set_socket_op(SOL_SOCKET, SO_RCVBUF, &size, len);
+    static_assert(sizeof(size) >= sizeof(DWORD), "concurrencpp::socket_state::receive_buffer_size");
+    self.set_socket_op(SOL_SOCKET, SO_RCVBUF, &size, static_cast<int>(sizeof size));
 }
 
 lazy_result<uint32_t> socket_state::send_buffer_size(std::shared_ptr<socket_state> self_ptr,
@@ -629,7 +623,7 @@ lazy_result<uint32_t> socket_state::send_buffer_size(std::shared_ptr<socket_stat
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    int buffer_len = 0;
+    DWORD buffer_len = 0;
     auto len = static_cast<int>(sizeof buffer_len);
     self.get_socket_op(SOL_SOCKET, SO_SNDBUF, &buffer_len, &len);
     co_return buffer_len;
@@ -644,8 +638,8 @@ lazy_result<void> socket_state::send_buffer_size(std::shared_ptr<socket_state> s
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    const auto len = static_cast<int>(sizeof size);
-    self.set_socket_op(SOL_SOCKET, SO_SNDBUF, &size, len);
+    static_assert(sizeof(size) >= sizeof(DWORD), "concurrencpp::socket_state::send_buffer_size");
+    self.set_socket_op(SOL_SOCKET, SO_SNDBUF, &size, static_cast<int>(sizeof size));
 }
 
 lazy_result<std::chrono::milliseconds> socket_state::receive_timeout(std::shared_ptr<socket_state> self_ptr,
@@ -656,7 +650,7 @@ lazy_result<std::chrono::milliseconds> socket_state::receive_timeout(std::shared
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    int timeout = 0;
+    DWORD timeout = 0;
     auto len = static_cast<int>(sizeof timeout);
     self.get_socket_op(SOL_SOCKET, SO_RCVTIMEO, &timeout, &len);
     co_return std::chrono::milliseconds(timeout);
@@ -672,8 +666,7 @@ lazy_result<void> socket_state::receive_timeout(std::shared_ptr<socket_state> se
     auto sg = co_await self.m_lock.lock(resume_executor);
 
     DWORD timeout = ms.count();
-    const auto len = static_cast<int>(sizeof timeout);
-    self.set_socket_op(SOL_SOCKET, SO_RCVTIMEO, &timeout, len);
+    self.set_socket_op(SOL_SOCKET, SO_RCVTIMEO, &timeout, static_cast<int>(sizeof timeout));
 }
 
 lazy_result<std::chrono::milliseconds> socket_state::send_timeout(std::shared_ptr<socket_state> self_ptr,
@@ -684,7 +677,7 @@ lazy_result<std::chrono::milliseconds> socket_state::send_timeout(std::shared_pt
 
     auto sg = co_await self.m_lock.lock(resume_executor);
 
-    int timeout = 0;
+    DWORD timeout = 0;
     auto len = static_cast<int>(sizeof timeout);
     self.get_socket_op(SOL_SOCKET, SO_SNDTIMEO, &timeout, &len);
     co_return std::chrono::milliseconds(timeout);
@@ -700,6 +693,88 @@ lazy_result<void> socket_state::send_timeout(std::shared_ptr<socket_state> self_
     auto sg = co_await self.m_lock.lock(resume_executor);
 
     DWORD timeout = ms.count();
-    const auto len = static_cast<int>(sizeof timeout);
-    self.set_socket_op(SOL_SOCKET, SO_SNDTIMEO, &timeout, len);
+    self.set_socket_op(SOL_SOCKET, SO_SNDTIMEO, &timeout, static_cast<int>(sizeof timeout));
+}
+
+lazy_result<bool> socket_state::dont_fragment(std::shared_ptr<socket_state> self_ptr,
+                                              std::shared_ptr<concurrencpp::executor> resume_executor) {
+
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    DWORD enable = 0;
+    auto len = static_cast<int>(sizeof enable);
+    self.get_socket_op(IPPROTO_IP, IP_DONTFRAGMENT, &enable, &len);
+    co_return (enable == TRUE);
+}
+
+lazy_result<void> socket_state::dont_fragment(std::shared_ptr<socket_state> self_ptr,
+                                              std::shared_ptr<concurrencpp::executor> resume_executor,
+                                              bool enable) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    DWORD enabled = enable;
+    self.set_socket_op(IPPROTO_IP, IP_DONTFRAGMENT, &enable, static_cast<int>(sizeof enabled));
+}
+
+lazy_result<uint16_t> socket_state::ttl(std::shared_ptr<socket_state> self_ptr,
+                                        std::shared_ptr<concurrencpp::executor> resume_executor) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    DWORD ttl_count = 0;
+    self.set_socket_op(IPPROTO_IP, IP_TTL, &ttl_count, static_cast<int>(sizeof ttl_count));
+
+    co_return static_cast<uint16_t>(ttl_count);
+}
+
+lazy_result<void> socket_state::ttl(std::shared_ptr<socket_state> self_ptr,
+                                    std::shared_ptr<concurrencpp::executor> resume_executor,
+                                    uint16_t ttl) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    DWORD ttl_count = ttl;
+    self.set_socket_op(IPPROTO_IP, IP_TTL, &ttl_count, static_cast<int>(sizeof ttl_count));
+}
+
+lazy_result<bool> socket_state::multicast_loopback(std::shared_ptr<socket_state> self_ptr,
+                                                   std::shared_ptr<concurrencpp::executor> resume_executor) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    BOOL enabled = TRUE;
+    auto len = static_cast<int>(sizeof enabled);
+    self.get_socket_op(IPPROTO_IP, IP_MULTICAST_LOOP, &enabled, &len);
+
+    co_return (enabled == TRUE);
+}
+
+lazy_result<void> socket_state::multicast_loopback(std::shared_ptr<socket_state> self_ptr,
+                                                   std::shared_ptr<concurrencpp::executor> resume_executor,
+                                                   bool enable) {
+    assert(static_cast<bool>(self_ptr));
+    assert(static_cast<bool>(resume_executor));
+    auto& self = *self_ptr;
+
+    auto sg = co_await self.m_lock.lock(resume_executor);
+
+    BOOL enabled = enable;
+    self.set_socket_op(IPPROTO_IP, IP_MULTICAST_LOOP, &enabled, static_cast<int>(sizeof enabled));
 }

@@ -232,7 +232,20 @@ namespace concurrencpp::details::consts {
     inline const char* k_socket_send_timeout_null_resume_executor_err_msg =
         "concurrencpp::socket::send_timeout() - given resume_executor is null.";
 
-    //
+    inline const char* k_socket_dont_fragment_empty_socket_err_msg = "concurrencpp::socket::dont_fragment() - socket is empty.";
+
+    inline const char* k_socket_dont_fragment_null_resume_executor_err_msg =
+        "concurrencpp::socket::dont_fragment() - given resume_executor is null.";
+   
+    inline const char* k_socket_ttl_empty_socket_err_msg = "concurrencpp::socket::ttl() - socket is empty.";
+
+    inline const char* k_socket_ttl_null_resume_executor_err_msg =
+        "concurrencpp::socket::ttl() - given resume_executor is null.";
+
+    inline const char* k_socket_multicast_loopback_empty_socket_err_msg = "concurrencpp::socket::multicast_loopback() - socket is empty.";
+
+    inline const char* k_socket_multicast_loopback_null_resume_executor_err_msg =
+        "concurrencpp::socket::multicast_loopback() - given resume_executor is null.";
 
     inline const char* k_socket_receive_from_empty_socket_err_msg = "concurrencpp::socket::receive_from() - socket is empty.";
 

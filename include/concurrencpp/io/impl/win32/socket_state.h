@@ -14,7 +14,7 @@ namespace concurrencpp {
         ip_endpoint remote_endpoint;
         uint32_t read = 0;
     };
-}
+}  // namespace concurrencpp
 
 // TODO: move all error msgs to constants file
 namespace concurrencpp::details::win32 {
@@ -72,9 +72,9 @@ namespace concurrencpp::details::win32 {
                                          std::stop_token* optional_stop_token = nullptr);
 
         static lazy_result<concurrencpp::socket> accept(std::shared_ptr<socket_state> self,
-                                                                 std::shared_ptr<concurrencpp::executor> resume_executor,
-                                                                 std::shared_ptr<io_engine> io_engine,
-                                                                 std::stop_token* optional_stop_token = nullptr);
+                                                        std::shared_ptr<concurrencpp::executor> resume_executor,
+                                                        std::shared_ptr<io_engine> io_engine,
+                                                        std::stop_token* optional_stop_token = nullptr);
         // TODO: cancellation
         static lazy_result<void> bind(std::shared_ptr<socket_state> self,
                                       std::shared_ptr<concurrencpp::executor> resume_executor,
@@ -161,6 +161,23 @@ namespace concurrencpp::details::win32 {
         static lazy_result<void> send_timeout(std::shared_ptr<socket_state> self,
                                               std::shared_ptr<concurrencpp::executor> resume_executor,
                                               std::chrono::milliseconds ms);
+
+        static lazy_result<bool> dont_fragment(std::shared_ptr<socket_state> self,
+                                               std::shared_ptr<concurrencpp::executor> resume_executor);
+        static lazy_result<void> dont_fragment(std::shared_ptr<socket_state> self,
+                                               std::shared_ptr<concurrencpp::executor> resume_executor,
+                                               bool enable);
+
+        static lazy_result<uint16_t> ttl(std::shared_ptr<socket_state> self, std::shared_ptr<concurrencpp::executor> resume_executor);
+        static lazy_result<void> ttl(std::shared_ptr<socket_state> self,
+                                     std::shared_ptr<concurrencpp::executor> resume_executor,
+                                     uint16_t ttl);
+
+        static lazy_result<bool> multicast_loopback(std::shared_ptr<socket_state> self,
+                                                    std::shared_ptr<concurrencpp::executor> resume_executor);
+        static lazy_result<void> multicast_loopback(std::shared_ptr<socket_state> self,
+                                                    std::shared_ptr<concurrencpp::executor> resume_executor,
+                                                    bool enable);
     };
 }  // namespace concurrencpp::details::win32
 

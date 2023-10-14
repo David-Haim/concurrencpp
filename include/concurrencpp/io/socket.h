@@ -104,6 +104,15 @@ namespace concurrencpp {
 
         lazy_result<std::chrono::milliseconds> send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor);
         lazy_result<void> send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor, std::chrono::milliseconds ms);
+   
+        lazy_result<bool> dont_fragment(std::shared_ptr<concurrencpp::executor> resume_executor);
+        lazy_result<void> dont_fragment(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable);
+
+        lazy_result<uint16_t> ttl(std::shared_ptr<concurrencpp::executor> resume_executor);
+        lazy_result<void> ttl(std::shared_ptr<concurrencpp::executor> resume_executor, uint16_t ttl);
+
+        lazy_result<bool> multicast_loopback(std::shared_ptr<concurrencpp::executor> resume_executor);
+        lazy_result<void> multicast_loopback(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable);    
     };
 }  // namespace concurrencpp
 
