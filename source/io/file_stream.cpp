@@ -8,9 +8,18 @@ using concurrencpp::file_stream;
 using concurrencpp::file_open_mode;
 using concurrencpp::details::file_stream_state;
 
-file_stream::file_stream(std::shared_ptr<io_engine> io_engine, std::filesystem::path file_path, file_open_mode open_mode) :
-    io::details::reader_writer<file_stream, details::file_stream_state>(
-        create_state(std::move(io_engine), std::move(file_path), open_mode)) {}
+file_stream::file_stream(std::shared_ptr<io_engine> io_engine, std::filesystem::path file_path, file_open_mode open_mode) {
+
+    if (!static_cast<bool>(io_engine)) {
+        throw std::invalid_argument(details::consts::k_file_stream_constructor_null_io_engine_msg);
+    }
+
+    if (file_path.empty()) {
+        throw std::invalid_argument(details::consts::k_file_stream_constructor_empty_file_path_msg);
+    }
+
+    m_state = std::make_shared<file_stream_state>(std::move(file_path), open_mode, std::move(io_engine));
+}
 
 void file_stream::throw_if_empty(const char* error_message) const {
     if (!static_cast<bool>(m_state)) {
@@ -22,21 +31,6 @@ void file_stream::throw_if_resume_executor_null(const std::shared_ptr<executor>&
     if (!static_cast<bool>(exec)) {
         throw std::invalid_argument(error_message);
     }
-}
-
-std::shared_ptr<file_stream_state> file_stream::create_state(std::shared_ptr<io_engine> io_engine,
-                                                             std::filesystem::path file_path,
-                                                             file_open_mode open_mode) {
-  
-    if (!static_cast<bool>(io_engine)) {
-        throw std::invalid_argument(details::consts::k_file_stream_constructor_null_io_engine_msg);
-    }
-    
-    if (file_path.empty()) {
-        throw std::invalid_argument(details::consts::k_file_stream_constructor_empty_file_path_msg);
-    }
-
-    return std::make_shared<file_stream_state>(std::move(file_path), open_mode, std::move(io_engine));
 }
 
 void file_stream::swap(file_stream&& rhs) noexcept {

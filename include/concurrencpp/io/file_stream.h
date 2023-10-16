@@ -1,28 +1,24 @@
 #ifndef CONCURRENCPP_FILE_STREAM_H
 #define CONCURRENCPP_FILE_STREAM_H
 
+#include "concurrencpp/io/stream.h"
 #include "concurrencpp/executors/executor.h"
 #include "concurrencpp/io/forward_declarations.h"
-#include "concurrencpp/io/impl/common/reader_writer.h"
 #include "concurrencpp/io/impl/common/file_constants.h"
 
 #include <filesystem>
 
-//TODO fix flush
+// TODO fix flush
 namespace concurrencpp {
-    class file_stream : public io::details::reader_writer<file_stream, details::file_stream_state> {
+    class file_stream final : public io::stream {
 
-        friend class io::details::reader_writer<file_stream, details::file_stream_state>;
-
-        private:
+       private:
+        std::shared_ptr<details::win32::file_stream_state> m_state;
 
         void throw_if_empty(const char* error_message) const;
         static void throw_if_resume_executor_null(const std::shared_ptr<executor>& exec, const char* error_message);
 
-        static std::shared_ptr<details::file_stream_state> create_state(std::shared_ptr<io_engine> io_engine,
-                                                                        std::filesystem::path file_path,
-                                                                        file_open_mode open_mode);
-
+       protected:
         lazy_result<size_t> read_impl(std::shared_ptr<executor> resume_executor, void* buffer, size_t count);
         lazy_result<size_t> read_impl(std::shared_ptr<executor> resume_executor,
                                       std::stop_token stop_token,
@@ -31,9 +27,9 @@ namespace concurrencpp {
 
         lazy_result<size_t> write_impl(std::shared_ptr<executor> resume_executor, const void* buffer, size_t count);
         lazy_result<size_t> write_impl(std::shared_ptr<executor> resume_executor,
-                                  std::stop_token stop_token,
-                                  const void* buffer,
-                                  size_t count);
+                                       std::stop_token stop_token,
+                                       const void* buffer,
+                                       size_t count);
 
        public:
         file_stream(std::shared_ptr<io_engine> io_engine, std::filesystem::path file_path, file_open_mode open_mode);

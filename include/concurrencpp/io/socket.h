@@ -1,15 +1,15 @@
 #ifndef CONCURRENCPP_IO_SOCKET_H
 #define CONCURRENCPP_IO_SOCKET_H
 
+#include "concurrencpp/io/stream.h"
 #include "concurrencpp/io/impl/win32/socket_state.h"
-#include "concurrencpp/io/impl/common/reader_writer.h"
 #include "concurrencpp/io/impl/common/socket_constants.h"
 
 namespace concurrencpp {
-    class socket : public io::details::reader_writer<socket, details::win32::socket_state> {
+    class socket : public io::stream {
 
        private:
-        friend class io::details::reader_writer<socket, details::win32::socket_state>;
+        std::shared_ptr<details::win32::socket_state> m_state;
 
         void throw_if_empty(const char* error_msg) const;
         static void throw_if_resume_executor_empty(const std::shared_ptr<executor>& executor, const char* error_msg);
@@ -60,10 +60,10 @@ namespace concurrencpp {
 
         lazy_result<uint32_t> send_to(std::shared_ptr<executor> resume_executor, ip_endpoint ep, void* buffer, size_t count);
         lazy_result<uint32_t> send_to(std::shared_ptr<executor> resume_executor,
-                                    std::stop_token stop_token,
-                                    ip_endpoint ep,
-                                    void* buffer,
-                                    size_t count);
+                                      std::stop_token stop_token,
+                                      ip_endpoint ep,
+                                      void* buffer,
+                                      size_t count);
 
         lazy_result<concurrencpp::recv_from_result> receive_from(std::shared_ptr<executor> resume_executor,
                                                                  void* buffer,
@@ -104,7 +104,7 @@ namespace concurrencpp {
 
         lazy_result<std::chrono::milliseconds> send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor);
         lazy_result<void> send_timeout(std::shared_ptr<concurrencpp::executor> resume_executor, std::chrono::milliseconds ms);
-   
+
         lazy_result<bool> dont_fragment(std::shared_ptr<concurrencpp::executor> resume_executor);
         lazy_result<void> dont_fragment(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable);
 
@@ -112,7 +112,7 @@ namespace concurrencpp {
         lazy_result<void> ttl(std::shared_ptr<concurrencpp::executor> resume_executor, uint16_t ttl);
 
         lazy_result<bool> multicast_loopback(std::shared_ptr<concurrencpp::executor> resume_executor);
-        lazy_result<void> multicast_loopback(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable);    
+        lazy_result<void> multicast_loopback(std::shared_ptr<concurrencpp::executor> resume_executor, bool enable);
     };
 }  // namespace concurrencpp
 

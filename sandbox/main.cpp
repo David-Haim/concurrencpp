@@ -82,11 +82,17 @@ result<void> udp_sender(std::shared_ptr<io_engine> engine, std::shared_ptr<worke
     std::cout << "sent : " << res;
 }
 
+#include "concurrencpp/io/file_stream.h"
 
 int main() {
     concurrencpp::runtime runtime;
     auto engine = std::make_shared<io_engine>();
     auto ex = runtime.make_worker_thread_executor();
+
+    concurrencpp::file_stream fs(engine, R"(C:\Users\David\Desktop\langs.txt)",file_open_mode::read);
+    
+    char buff[1024];
+    fs.read(ex, buff).run().get();
 
     //    auto result = run_socket(engine, ex);
 //    auto result = run_socket_server(engine, ex);

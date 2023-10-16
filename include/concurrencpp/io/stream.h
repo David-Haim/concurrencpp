@@ -1,33 +1,35 @@
-#ifndef CONCURRENCPP_IO_READER_WRITER_H
-#define CONCURRENCPP_IO_READER_WRITER_H
+#ifndef CONCURRENCPP_IO_STREAM_H
+#define CONCURRENCPP_IO_STREAM_H
 
 #include "concurrencpp/results/lazy_result.h"
 
-#include <span>
-#include <array>
-#include <vector>
-#include <string>
 #include <stop_token>
 
-namespace concurrencpp::io::details {
-    template<class derived_type, class state_type>
-    class reader_writer {
+namespace concurrencpp::io {
+    class stream {
 
        protected:
-        std::shared_ptr<state_type> m_state;
+        virtual lazy_result<size_t> read_impl(std::shared_ptr<executor> resume_executor, void* buffer, size_t count) = 0;
+        virtual lazy_result<size_t> read_impl(std::shared_ptr<executor> resume_executor,
+                                              std::stop_token stop_token,
+                                              void* buffer,
+                                              size_t count) = 0;
+
+        virtual lazy_result<size_t> write_impl(std::shared_ptr<executor> resume_executor, const void* buffer, size_t count) = 0;
+        virtual lazy_result<size_t> write_impl(std::shared_ptr<executor> resume_executor,
+                                               std::stop_token stop_token,
+                                               const void* buffer,
+                                               size_t count) = 0;
 
        public:
-        reader_writer(std::shared_ptr<state_type> state) noexcept : m_state(std::move(state)) {}
+        virtual ~stream() noexcept = default;
 
-        /*
-            read overloads
-        */
         lazy_result<size_t> read(std::shared_ptr<executor> resume_executor, void* buffer, size_t count) {
-            return static_cast<derived_type*>(this)->read_impl(std::move(resume_executor), buffer, count);
+            return read_impl(std::move(resume_executor), buffer, count);
         }
 
         lazy_result<size_t> read(std::shared_ptr<executor> resume_executor, std::stop_token stop_token, void* buffer, size_t count) {
-            return static_cast<derived_type*>(this)->read_impl(std::move(resume_executor), stop_token, buffer, count);
+            return read_impl(std::move(resume_executor), stop_token, buffer, count);
         }
 
         template<class byte_type>
@@ -95,14 +97,14 @@ namespace concurrencpp::io::details {
         */
 
         lazy_result<size_t> write(std::shared_ptr<executor> resume_executor, const void* buffer, size_t count) {
-            return static_cast<derived_type*>(this)->write_impl(std::move(resume_executor), buffer, count);
+            return write_impl(std::move(resume_executor), buffer, count);
         }
 
         lazy_result<size_t> write(std::shared_ptr<executor> resume_executor,
                                   std::stop_token stop_token,
                                   const void* buffer,
                                   size_t count) {
-            return static_cast<derived_type*>(this)->write_impl(std::move(resume_executor), stop_token, buffer, count);
+            return write_impl(std::move(resume_executor), stop_token, buffer, count);
         }
 
         template<class byte_type>
@@ -173,10 +175,12 @@ namespace concurrencpp::io::details {
             return write(std::move(resume_executor), buffer.data(), buffer.size());
         }
 
-        lazy_result<size_t> write(std::shared_ptr<executor> resume_executor, std::stop_token stop_token, const std::string_view buffer) {
+        lazy_result<size_t> write(std::shared_ptr<executor> resume_executor,
+                                  std::stop_token stop_token,
+                                  const std::string_view buffer) {
             return write(std::move(resume_executor), stop_token, buffer.data(), buffer.size());
         }
     };
-}  // namespace concurrencpp::io::details
+}  // namespace concurrencpp::io
 
 #endif

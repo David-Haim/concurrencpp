@@ -61,14 +61,14 @@ set(concurrencpp_headers
         include/concurrencpp/executors/worker_thread_executor.h
         include/concurrencpp/io/impl/common/io_cancelled.h
         include/concurrencpp/io/constants.h
-        include/concurrencpp/io/ip.h
+        include/concurrencpp/io/stream.h
+		include/concurrencpp/io/ip.h
         include/concurrencpp/io/socket.h
         include/concurrencpp/io/memory_stream.h
         include/concurrencpp/io/file_stream.h
         include/concurrencpp/io/forward_declarations.h
         include/concurrencpp/io/impl/common/file_constants.h
         include/concurrencpp/io/impl/common/socket_constants.h
-        include/concurrencpp/io/impl/common/reader_writer.h
         include/concurrencpp/io/impl/win32/io_awaitable.h
         include/concurrencpp/io/impl/win32/file_stream_state.h
         include/concurrencpp/io/impl/win32/io_engine.h

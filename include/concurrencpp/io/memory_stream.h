@@ -11,6 +11,7 @@
 #include <cassert>
 
 namespace concurrencpp {
+    //TODO: inhearit from stream
     class memory_stream {
 
         struct free_deleter {

@@ -8,13 +8,13 @@ using concurrencpp::socket;
 using concurrencpp::lazy_result;
 using concurrencpp::details::win32::socket_state;
 
-socket::socket(std::shared_ptr<details::win32::socket_state> state) noexcept : reader_writer(std::move(state)) {}
+socket::socket(std::shared_ptr<details::win32::socket_state> state) noexcept : m_state(std::move(state)) {}
 
 socket::socket(std::shared_ptr<io_engine> engine,
                concurrencpp::io::address_family af,
                concurrencpp::io::socket_type type,
                concurrencpp::io::protocol_type protocol) :
-    reader_writer(std::make_shared<details::win32::socket_state>(engine, af, type, protocol)) {}
+    m_state(std::make_shared<details::win32::socket_state>(engine, af, type, protocol)) {}
 
 void socket::throw_if_empty(const char* error_msg) const {
     if (!static_cast<bool>(m_state)) {
