@@ -50,7 +50,10 @@ namespace concurrencpp::details::consts {
      */
 
     inline const char* k_make_exceptional_result_exception_null_error_msg =
-        "concurrencpp::make_exception_result() - given exception_ptr is null.";
+        "concurrencpp::make_exceptional_result() - given exception_ptr is null.";
+
+    inline const char* k_make_exceptional_lazy_result_exception_null_error_msg =
+        "concurrencpp::make_exceptional_lazy_result() - given exception_ptr is null.";
 
     inline const char* k_when_all_empty_result_error_msg = "concurrencpp::when_all() - one of the result objects is empty.";
 
