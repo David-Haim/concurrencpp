@@ -14,7 +14,7 @@ namespace concurrencpp::details {
     lazy_result<type> make_exceptional_lazy_result_impl(std::exception_ptr exception_ptr) {
         assert(static_cast<bool>(exception_ptr));  
         std::rethrow_exception(exception_ptr);
-        co_await std::suspend_never {};
+        co_await suspend_never {};
     }
 }  // namespace concurrencpp::details
 
@@ -80,7 +80,7 @@ namespace concurrencpp {
     template<class type, class exception_type>
     lazy_result<type> make_exceptional_lazy_result(exception_type exception) {
         throw exception;
-        co_await concurrencpp::details::suspend_never {};
+        co_await details::suspend_never {};
     }
 
     template<class type>
