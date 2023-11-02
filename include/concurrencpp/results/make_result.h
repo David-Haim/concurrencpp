@@ -80,7 +80,7 @@ namespace concurrencpp {
     template<class type, class exception_type>
     lazy_result<type> make_exceptional_lazy_result(exception_type exception) {
         throw exception;
-        co_await std::suspend_never {};
+        co_await concurrencpp::details::suspend_never {};
     }
 
     template<class type>
