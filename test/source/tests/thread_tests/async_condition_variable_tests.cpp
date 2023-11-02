@@ -6,6 +6,8 @@
 
 #include "concurrencpp/threads/constants.h"
 
+#include <algorithm>
+
 using namespace concurrencpp;
 
 namespace concurrencpp::tests {
