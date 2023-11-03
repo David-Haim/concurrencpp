@@ -74,7 +74,7 @@ namespace concurrencpp {
 
     template<class type>
     lazy_result<type&> make_ready_lazy_result(type& t) {
-        co_return t;
+        co_return std::ref(t);
     }
     
     template<class type, class exception_type>
