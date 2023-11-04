@@ -235,19 +235,19 @@
 	},
 	{
 		"os": "windows-2022",
-		"clang-version": 15,
+		"clang-version": 16,
 		"stdlib": "msvc-stl",
 		"tsan": false,
 		"shared": false,
-		"name" : "windows-2022, clang-15, msvc-stl, shared=false, tsan=false"
+		"name" : "windows-2022, clang-16, msvc-stl, shared=false, tsan=false"
 	},
 	{
 		"os": "windows-2022",
-		"clang-version": 15,
+		"clang-version": 16,
 		"stdlib": "msvc-stl",
 		"tsan": false,
 		"shared": true,
-		"name" : "windows-2022, clang-15, msvc-stl, shared=true, tsan=false"
+		"name" : "windows-2022, clang-16, msvc-stl, shared=true, tsan=false"
 	},
 	{
 		"os": "macos-12",
