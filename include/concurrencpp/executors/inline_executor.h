@@ -17,7 +17,7 @@ namespace concurrencpp {
         }
 
        public:
-        inline_executor() noexcept : executor(details::consts::k_inline_executor_name), m_abort(false) {}
+        inline_executor() : executor(details::consts::k_inline_executor_name), m_abort(false) {}
 
         void enqueue(concurrencpp::task task) override {
             throw_if_aborted();

@@ -131,7 +131,7 @@ namespace concurrencpp::details {
     };
 
     template<class type>
-    struct lazy_promise : lazy_result_state<type>, public return_value_struct<lazy_promise<type>, type> {};
+    struct lazy_promise : public lazy_result_state<type>, public return_value_struct<lazy_promise<type>, type> {};
 
     struct initialy_resumed_null_result_promise : public initialy_resumed_promise, public null_result_promise {};
 
