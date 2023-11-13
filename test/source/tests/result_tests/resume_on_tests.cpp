@@ -69,12 +69,13 @@ void concurrencpp::tests::test_resume_on_shutdown_executor_delayed() {
 void concurrencpp::tests::test_resume_on_shared_ptr() {
 
     concurrencpp::runtime runtime;
-    std::shared_ptr<concurrencpp::executor> executors[4];
+    std::shared_ptr<concurrencpp::executor> executors[5];
 
     executors[0] = runtime.thread_executor();
     executors[1] = runtime.thread_pool_executor();
-    executors[2] = runtime.make_worker_thread_executor();
+    executors[2] = runtime.background_executor();
     executors[3] = runtime.make_worker_thread_executor();
+    executors[4] = runtime.make_worker_thread_executor();
 
     std::unordered_set<size_t> set;
     resume_on_many_executors_shared(executors, set).get();
