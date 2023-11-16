@@ -10,18 +10,16 @@ using concurrencpp::details::thread_pool_worker;
 namespace concurrencpp::details {
     namespace {
         struct thread_pool_per_thread_data {
-            thread_pool_worker* this_worker;
-            size_t this_thread_index;
-            const size_t this_thread_hashed_id;
+            thread_pool_worker* this_worker = nullptr;
+            const thread_pool_executor* parent_pool = nullptr;
+            size_t this_thread_index = static_cast<size_t>(-1);
+            const size_t this_thread_hashed_id = calculate_hashed_id();
 
             static size_t calculate_hashed_id() noexcept {
                 const auto this_thread_id = thread::get_current_virtual_id();
                 const std::hash<size_t> hash;
                 return hash(this_thread_id);
             }
-
-            thread_pool_per_thread_data() noexcept :
-                this_worker(nullptr), this_thread_index(static_cast<size_t>(-1)), this_thread_hashed_id(calculate_hashed_id()) {}
         };
 
         thread_local thread_pool_per_thread_data s_tl_thread_pool_data;
@@ -365,6 +363,7 @@ bool thread_pool_worker::drain_queue() {
 
 void thread_pool_worker::work_loop() {
     s_tl_thread_pool_data.this_worker = this;
+    s_tl_thread_pool_data.parent_pool = &m_parent_pool;
     s_tl_thread_pool_data.this_thread_index = m_index;
 
     try {
@@ -556,9 +555,10 @@ void thread_pool_executor::mark_worker_active(size_t index) noexcept {
 
 void thread_pool_executor::enqueue(concurrencpp::task task) {
     const auto this_worker = details::s_tl_thread_pool_data.this_worker;
+    const auto parent_pool = details::s_tl_thread_pool_data.parent_pool;
     const auto this_worker_index = details::s_tl_thread_pool_data.this_thread_index;
 
-    if (this_worker != nullptr && this_worker->appears_empty()) {
+    if ((this_worker != nullptr) && (this == parent_pool) && (this_worker->appears_empty())) {
         return this_worker->enqueue_local(task);
     }
 
@@ -567,7 +567,7 @@ void thread_pool_executor::enqueue(concurrencpp::task task) {
         return m_workers[idle_worker_pos].enqueue_foreign(task);
     }
 
-    if (this_worker != nullptr) {
+    if ((this_worker != nullptr) && (this == parent_pool)) {
         return this_worker->enqueue_local(task);
     }
 
@@ -576,8 +576,11 @@ void thread_pool_executor::enqueue(concurrencpp::task task) {
 }
 
 void thread_pool_executor::enqueue(std::span<concurrencpp::task> tasks) {
-    if (details::s_tl_thread_pool_data.this_worker != nullptr) {
-        return details::s_tl_thread_pool_data.this_worker->enqueue_local(tasks);
+    const auto this_worker = details::s_tl_thread_pool_data.this_worker;
+    const auto parent_pool = details::s_tl_thread_pool_data.parent_pool;
+
+    if ((this_worker != nullptr) && (this == parent_pool)) {
+        return this_worker->enqueue_local(tasks);
     }
 
     if (tasks.size() < m_workers.size()) {
