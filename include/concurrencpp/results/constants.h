@@ -8,12 +8,14 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_result_promise_set_result_error_msg = "concurrencpp::result_promise::set_result() - empty result_promise.";
 
-    inline const char* k_result_promise_set_exception_error_msg = "concurrencpp::result_promise::set_exception() - empty result_promise.";
+    inline const char* k_result_promise_set_exception_error_msg =
+        "concurrencpp::result_promise::set_exception() - empty result_promise.";
 
     inline const char* k_result_promise_set_exception_null_exception_error_msg =
         "concurrencpp::result_promise::set_exception() - exception pointer is null.";
 
-    inline const char* k_result_promise_set_from_function_error_msg = "concurrencpp::result_promise::set_from_function() - empty result_promise.";
+    inline const char* k_result_promise_set_from_function_error_msg =
+        "concurrencpp::result_promise::set_from_function() - empty result_promise.";
 
     inline const char* k_result_promise_get_result_error_msg = "concurrencpp::result_promise::get_result() - empty result_promise.";
 
@@ -47,7 +49,11 @@ namespace concurrencpp::details::consts {
      * when_xxx
      */
 
-    inline const char* k_make_exceptional_result_exception_null_error_msg = "concurrencpp::make_exception_result() - given exception_ptr is null.";
+    inline const char* k_make_exceptional_result_exception_null_error_msg =
+        "concurrencpp::make_exceptional_result() - given exception_ptr is null.";
+
+    inline const char* k_make_exceptional_lazy_result_exception_null_error_msg =
+        "concurrencpp::make_exceptional_lazy_result() - given exception_ptr is null.";
 
     inline const char* k_when_all_empty_result_error_msg = "concurrencpp::when_all() - one of the result objects is empty.";
 
@@ -73,7 +79,8 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_shared_result_wait_until_error_msg = "concurrencpp::shared_result::wait_until() - result is empty.";
 
-    inline const char* k_shared_result_operator_co_await_error_msg = "concurrencpp::shared_result::operator co_await() - result is empty.";
+    inline const char* k_shared_result_operator_co_await_error_msg =
+        "concurrencpp::shared_result::operator co_await() - result is empty.";
 
     inline const char* k_shared_result_resolve_error_msg = "concurrencpp::shared_result::resolve() - result is empty.";
 
@@ -83,7 +90,8 @@ namespace concurrencpp::details::consts {
 
     inline const char* k_empty_lazy_result_status_err_msg = "concurrencpp::lazy_result::status - result is empty.";
 
-    inline const char* k_empty_lazy_result_operator_co_await_err_msg = "concurrencpp::lazy_result::operator co_await - result is empty.";
+    inline const char* k_empty_lazy_result_operator_co_await_err_msg =
+        "concurrencpp::lazy_result::operator co_await - result is empty.";
 
     inline const char* k_empty_lazy_result_resolve_err_msg = "concurrencpp::lazy_result::resolve - result is empty.";
 

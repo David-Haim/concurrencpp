@@ -217,12 +217,3 @@ void scoped_async_lock::swap(scoped_async_lock& rhs) noexcept {
     std::swap(m_lock, rhs.m_lock);
     std::swap(m_owns, rhs.m_owns);
 }
-
-async_lock* scoped_async_lock::release() noexcept {
-    m_owns = false;
-    return std::exchange(m_lock, nullptr);
-}
-
-async_lock* scoped_async_lock::mutex() const noexcept {
-    return m_lock;
-}

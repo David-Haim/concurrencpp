@@ -57,7 +57,7 @@ namespace concurrencpp::details {
             template<class promise_type>
             void await_suspend(coroutine_handle<promise_type> handle) {
                 try {
-                    handle.promise().m_initial_executor.post(await_via_functor {handle, &m_interrupted});                
+                    handle.promise().m_initial_executor.post(await_via_functor {handle, &m_interrupted});
                 } catch (...) {
                     // do nothing. ~await_via_functor will resume the coroutine and throw an exception.
                 }
@@ -131,7 +131,7 @@ namespace concurrencpp::details {
     };
 
     template<class type>
-    struct lazy_promise : lazy_result_state<type>, public return_value_struct<lazy_promise<type>, type> {};
+    struct lazy_promise : public lazy_result_state<type>, public return_value_struct<lazy_promise<type>, type> {};
 
     struct initialy_resumed_null_result_promise : public initialy_resumed_promise, public null_result_promise {};
 

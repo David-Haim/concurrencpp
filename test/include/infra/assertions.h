@@ -32,6 +32,16 @@ namespace concurrencpp::tests::details {
     std::string to_string(std::tuple<> tp);
     std::string to_string(std::thread::id id);
 
+    template<class enum_type>
+    typename std::enable_if_t<std::is_enum_v<enum_type>, std::string> to_string(enum_type enum_value) {
+        return std::to_string(static_cast<std::int64_t>(enum_value));
+    }
+
+    template<class type>
+    typename std::enable_if_t<!std::is_enum_v<type>, std::string> to_string(const type&) {
+        return "{object}";
+    }
+
     template<class type>
     std::string to_string(const type* value) {
         return std::string("T* (") + to_string(reinterpret_cast<intptr_t>(value)) + ")";

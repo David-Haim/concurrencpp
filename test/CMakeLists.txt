@@ -43,6 +43,7 @@ set(test_sources
         source/infra/assertions.cpp
         source/infra/tester.cpp
         source/utils/object_observer.cpp
+        source/utils/wait_context.cpp
 )
 
 set(test_headers
@@ -50,6 +51,7 @@ set(test_headers
         include/infra/tester.h
         include/utils/object_observer.h
         include/utils/random.h
+        include/utils/wait_context.h
         include/utils/custom_exception.h
         include/utils/executor_shutdowner.h
         include/utils/test_generators.h
@@ -131,9 +133,10 @@ add_test(NAME generator_tests PATH source/tests/result_tests/generator_tests.cpp
 add_test(NAME coroutine_promise_tests PATH source/tests/coroutine_tests/coroutine_promise_tests.cpp)
 add_test(NAME coroutine_tests PATH source/tests/coroutine_tests/coroutine_tests.cpp)
 
-add_test(NAME async_lock_tests PATH source/tests/async_lock_tests.cpp)
-add_test(NAME scoped_async_lock_tests PATH source/tests/scoped_async_lock_tests.cpp)
-add_test(NAME async_condition_variable_tests PATH source/tests/async_condition_variable_tests.cpp)
+add_test(NAME atomic_wait_tests PATH source/tests/thread_tests/atomic_wait_tests.cpp)
+add_test(NAME async_lock_tests PATH source/tests/thread_tests/async_lock_tests.cpp)
+add_test(NAME scoped_async_lock_tests PATH source/tests/thread_tests/scoped_async_lock_tests.cpp)
+add_test(NAME async_condition_variable_tests PATH source/tests/thread_tests/async_condition_variable_tests.cpp)
 
 add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
 add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)

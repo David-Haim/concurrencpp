@@ -6,6 +6,8 @@
 
 #include "concurrencpp/threads/constants.h"
 
+#include <algorithm>
+
 namespace concurrencpp::tests {
     void test_async_lock_lock_null_resume_executor();
     void test_async_lock_lock_resumption();

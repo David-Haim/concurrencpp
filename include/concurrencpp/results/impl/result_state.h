@@ -1,6 +1,7 @@
 #ifndef CONCURRENCPP_RESULT_STATE_H
 #define CONCURRENCPP_RESULT_STATE_H
 
+#include "concurrencpp/threads/atomic_wait.h"
 #include "concurrencpp/results/impl/consumer_context.h"
 #include "concurrencpp/results/impl/producer_context.h"
 #include "concurrencpp/platform_defs.h"
@@ -14,19 +15,20 @@ namespace concurrencpp::details {
     class CRCPP_API result_state_base {
 
        public:
-        enum class pc_state { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
+        enum class pc_status : int32_t { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
 
        protected:
-        std::atomic<pc_state> m_pc_state {pc_state::idle};
+        std::atomic<pc_status> m_pc_status {pc_status::idle};
         consumer_context m_consumer;
         coroutine_handle<void> m_done_handle;
 
         void assert_done() const noexcept;
 
        public:
-        void wait();
+        void wait() noexcept;
+        pc_status wait_for(std::chrono::milliseconds ms) noexcept;
         bool await(coroutine_handle<void> caller_handle) noexcept;
-        pc_state when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept;
+        pc_status when_any(const std::shared_ptr<when_any_context>& when_any_state) noexcept;
 
         void share(const std::shared_ptr<shared_result_state_base>& shared_result_state) noexcept;
 
@@ -80,10 +82,10 @@ namespace concurrencpp::details {
 
         // Consumer-side functions
         result_status status() const noexcept {
-            const auto state = m_pc_state.load(std::memory_order_acquire);
-            assert(state != pc_state::consumer_set);
+            const auto status = m_pc_status.load(std::memory_order_acquire);
+            assert(status != pc_status::consumer_set);
 
-            if (state == pc_state::idle) {
+            if (status == pc_status::idle) {
                 return result_status::idle;
             }
 
@@ -91,58 +93,13 @@ namespace concurrencpp::details {
         }
 
         template<class duration_unit, class ratio>
-        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) {
-            const auto state_0 = m_pc_state.load(std::memory_order_acquire);
-            if (state_0 == pc_state::producer_done) {
+        result_status wait_for(std::chrono::duration<duration_unit, ratio> duration) noexcept {
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            const auto status = result_state_base::wait_for(ms);
+            if (status == pc_status::producer_done) {
                 return m_producer.status();
             }
 
-            const auto wait_ctx = std::make_shared<std::binary_semaphore>(0);
-            m_consumer.set_wait_for_context(wait_ctx);
-            
-            std::atomic_thread_fence(std::memory_order_release);
-
-            auto expected_idle_state = pc_state::idle;
-            const auto idle_0 = m_pc_state.compare_exchange_strong(expected_idle_state,
-                                                                   pc_state::consumer_set,
-                                                                   std::memory_order_acq_rel,
-                                                                   std::memory_order_acquire);
-
-            if (!idle_0) {
-                assert_done();
-                return m_producer.status();
-            }
-
-            if (wait_ctx->try_acquire_for(duration + std::chrono::milliseconds(1))) {
-                // counting_semaphore isn't required to synchronize non atomic data, 
-                // we'll synchronize it manually using m_pc_state::load(memory_order_acquire)
-                const auto status = m_pc_state.load(std::memory_order_acquire);
-                (void)status;
-                assert_done();
-                return m_producer.status();
-            }
-
-            /*
-                now we need to rewind what we've done: the producer might try to
-                access the consumer context while we rewind the consumer context back to
-                nothing. first we'll cas the status back to idle. if we failed - the
-                producer has set its result, then there's no point in continue rewinding
-                - we just return the status of the result. if we managed to rewind the
-                status back to idle, then the consumer is "protected" because the
-                producer will not try to access the consumer if the flag doesn't say so.
-            */
-            auto expected_consumer_state = pc_state::consumer_set;
-            const auto idle_1 = m_pc_state.compare_exchange_strong(expected_consumer_state,
-                                                                   pc_state::idle,
-                                                                   std::memory_order_acq_rel,
-                                                                   std::memory_order_acquire);
-
-            if (!idle_1) {
-                assert_done();
-                return m_producer.status();
-            }
-
-            m_consumer.clear();
             return result_status::idle;
         }
 
@@ -168,7 +125,7 @@ namespace concurrencpp::details {
         }
 
         template<class callable_type>
-        void from_callable(callable_type&& callable) {
+        void from_callable(callable_type&& callable) noexcept {
             using is_void = std::is_same<type, void>;
 
             try {
@@ -178,26 +135,26 @@ namespace concurrencpp::details {
             }
         }
 
-        void complete_producer(coroutine_handle<void> done_handle = {}) {
+        void complete_producer(coroutine_handle<void> done_handle = {}) noexcept {
             m_done_handle = done_handle;
 
-            const auto state_before = this->m_pc_state.exchange(pc_state::producer_done, std::memory_order_acq_rel);
-            assert(state_before != pc_state::producer_done);
+            const auto status = m_pc_status.exchange(pc_status::producer_done, std::memory_order_acq_rel);
+            assert(status != pc_status::producer_done);
 
-            switch (state_before) {
-                case pc_state::consumer_set: {
+            switch (status) {
+                case pc_status::consumer_set: {
                     return m_consumer.resume_consumer(*this);
                 }
 
-                case pc_state::idle: {
+                case pc_status::idle: {
                     return;
                 }
 
-                case pc_state::consumer_waiting: {
-                    return m_pc_state.notify_one();
+                case pc_status::consumer_waiting: {
+                    return atomic_notify_all(m_pc_status);
                 }
 
-                case pc_state::consumer_done: {
+                case pc_status::consumer_done: {
                     return delete_self(this);
                 }
 
@@ -210,19 +167,14 @@ namespace concurrencpp::details {
         }
 
         void complete_consumer() noexcept {
-            const auto pc_state = this->m_pc_state.load(std::memory_order_acquire);
-            if (pc_state == pc_state::producer_done) {
+            const auto status = m_pc_status.exchange(pc_status::consumer_done, std::memory_order_acq_rel);
+            assert(status != pc_status::consumer_set);
+
+            if (status == pc_status::producer_done) {
                 return delete_self(this);
             }
 
-            const auto pc_state1 = this->m_pc_state.exchange(pc_state::consumer_done, std::memory_order_acq_rel);
-            assert(pc_state1 != pc_state::consumer_set);
-
-            if (pc_state1 == pc_state::producer_done) {
-                return delete_self(this);
-            }
-
-            assert(pc_state1 == pc_state::idle);
+            assert(status == pc_status::idle);
         }
 
         void complete_joined_consumer() noexcept {
