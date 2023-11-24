@@ -4,6 +4,7 @@
 #include "concurrencpp/errors.h"
 #include "concurrencpp/utils/bind.h"
 #include "concurrencpp/results/constants.h"
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/results/result_awaitable.h"
 #include "concurrencpp/results/impl/result_state.h"
 
@@ -23,13 +24,9 @@ namespace concurrencpp {
        private:
         details::consumer_result_state_ptr<type> m_state;
 
-        void throw_if_empty(const char* message) const {
-            if (static_cast<bool>(!m_state)) {
-                throw errors::empty_result(message);
-            }
-        }
-
        public:
+        static constexpr const char* k_class_name = "result";
+
         result() noexcept = default;
         result(result&& rhs) noexcept = default;
 
@@ -52,29 +49,29 @@ namespace concurrencpp {
         }
 
         result_status status() const {
-            throw_if_empty(details::consts::k_result_status_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "status");
             return m_state->status();
         }
 
         void wait() const {
-            throw_if_empty(details::consts::k_result_wait_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "wait");
             m_state->wait();
         }
 
         template<class duration_type, class ratio_type>
         result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) const {
-            throw_if_empty(details::consts::k_result_wait_for_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "wait_all");
             return m_state->wait_for(duration);
         }
 
         template<class clock_type, class duration_type>
         result_status wait_until(std::chrono::time_point<clock_type, duration_type> timeout_time) const {
-            throw_if_empty(details::consts::k_result_wait_until_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "wait_until");
             return m_state->wait_until(timeout_time);
         }
 
         type get() {
-            throw_if_empty(details::consts::k_result_get_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "get");
             m_state->wait();
 
             details::joined_consumer_result_state_ptr<type> state(m_state.release());
@@ -82,12 +79,12 @@ namespace concurrencpp {
         }
 
         auto operator co_await() {
-            throw_if_empty(details::consts::k_result_operator_co_await_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "operator co_await");
             return awaitable<type> {std::move(m_state)};
         }
 
         auto resolve() {
-            throw_if_empty(details::consts::k_result_resolve_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "resolve");
             return resolve_awaitable<type> {std::move(m_state)};
         }
     };
@@ -106,12 +103,6 @@ namespace concurrencpp {
         details::producer_result_state_ptr<type> m_producer_state;
         details::consumer_result_state_ptr<type> m_consumer_state;
 
-        void throw_if_empty(const char* message) const {
-            if (!static_cast<bool>(m_producer_state)) {
-                throw errors::empty_result_promise(message);
-            }
-        }
-
         void break_task_if_needed() noexcept {
             if (!static_cast<bool>(m_producer_state)) {
                 return;
@@ -127,6 +118,8 @@ namespace concurrencpp {
         }
 
        public:
+        static constexpr const char* k_class_name = "result_promise";
+
         result_promise() {
             m_producer_state.reset(new details::result_state<type>());
             m_consumer_state.reset(m_producer_state.get());
@@ -161,18 +154,18 @@ namespace concurrencpp {
             constexpr auto is_constructable = std::is_constructible_v<type, argument_types...> || std::is_same_v<void, type>;
             static_assert(is_constructable, "result_promise::set_result() - <<type>> is not constructable from <<arguments...>>");
 
-            throw_if_empty(details::consts::k_result_promise_set_result_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result_promise>(m_producer_state, k_class_name, "set_result");
 
             m_producer_state->set_result(std::forward<argument_types>(arguments)...);
             m_producer_state.reset();  // publishes the result
         }
 
         void set_exception(std::exception_ptr exception_ptr) {
-            throw_if_empty(details::consts::k_result_promise_set_exception_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result_promise>(m_producer_state,
+                                                                                       k_class_name,
+                                                                                       "set_exception");
 
-            if (!static_cast<bool>(exception_ptr)) {
-                throw std::invalid_argument(details::consts::k_result_promise_set_exception_null_exception_error_msg);
-            }
+            details::throw_helper::throw_if_null_argument(exception_ptr, k_class_name, "exception_ptr");
 
             m_producer_state->set_exception(exception_ptr);
             m_producer_state.reset();  // publishes the result
@@ -186,14 +179,16 @@ namespace concurrencpp {
                 is_invokable,
                 "result_promise::set_from_function() - function(args...) is not invokable or its return type can't be used to construct <<type>>");
 
-            throw_if_empty(details::consts::k_result_promise_set_from_function_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result_promise>(m_producer_state,
+                                                                                       k_class_name,
+                                                                                       "set_from_function");
             m_producer_state->from_callable(
                 details::bind(std::forward<callable_type>(callable), std::forward<argument_types>(args)...));
             m_producer_state.reset();  // publishes the result
         }
 
         result<type> get_result() {
-            throw_if_empty(details::consts::k_result_get_error_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result_promise>(m_producer_state, k_class_name, "get_result");
 
             if (!static_cast<bool>(m_consumer_state)) {
                 throw errors::result_already_retrieved(details::consts::k_result_promise_get_result_already_retrieved_error_msg);

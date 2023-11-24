@@ -6,18 +6,8 @@ namespace concurrencpp::details::consts {
      * result_promise
      */
 
-    inline const char* k_result_promise_set_result_error_msg = "concurrencpp::result_promise::set_result() - empty result_promise.";
-
-    inline const char* k_result_promise_set_exception_error_msg =
-        "concurrencpp::result_promise::set_exception() - empty result_promise.";
-
     inline const char* k_result_promise_set_exception_null_exception_error_msg =
         "concurrencpp::result_promise::set_exception() - exception pointer is null.";
-
-    inline const char* k_result_promise_set_from_function_error_msg =
-        "concurrencpp::result_promise::set_from_function() - empty result_promise.";
-
-    inline const char* k_result_promise_get_result_error_msg = "concurrencpp::result_promise::get_result() - empty result_promise.";
 
     inline const char* k_result_promise_get_result_already_retrieved_error_msg =
         "concurrencpp::result_promise::get_result() - result was already retrieved.";
@@ -25,24 +15,7 @@ namespace concurrencpp::details::consts {
     /*
      * result
      */
-
-    inline const char* k_result_status_error_msg = "concurrencpp::result::status() - result is empty.";
-
-    inline const char* k_result_get_error_msg = "concurrencpp::result::get() - result is empty.";
-
-    inline const char* k_result_wait_error_msg = "concurrencpp::result::wait() - result is empty.";
-
-    inline const char* k_result_wait_for_error_msg = "concurrencpp::result::wait_for() - result is empty.";
-
-    inline const char* k_result_wait_until_error_msg = "concurrencpp::result::wait_until() - result is empty.";
-
-    inline const char* k_result_operator_co_await_error_msg = "concurrencpp::result::operator co_await() - result is empty.";
-
-    inline const char* k_result_resolve_error_msg = "concurrencpp::result::resolve() - result is empty.";
-
-    inline const char* k_executor_exception_error_msg =
-        "concurrencpp::concurrencpp::result - an exception was thrown while trying to enqueue result continuation.";
-
+    
     inline const char* k_broken_task_exception_error_msg = "concurrencpp::result - associated task was interrupted abnormally";
 
     /*
