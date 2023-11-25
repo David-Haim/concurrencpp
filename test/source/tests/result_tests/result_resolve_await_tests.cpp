@@ -7,6 +7,8 @@
 #include "utils/test_ready_result.h"
 #include "utils/executor_shutdowner.h"
 
+using concurrencpp::details::throw_helper;
+
 namespace concurrencpp::tests {
     template<class type>
     result<void> test_result_resolve_impl_result_ready_value();
@@ -128,11 +130,14 @@ template<class type>
 void concurrencpp::tests::test_result_resolve_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                result<type>().resolve();
-            },
-            concurrencpp::details::consts::k_result_resolve_error_msg);
+        const auto test_case = [] {
+            result<type>().resolve();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name, "resolve");
+
+        assert_throws(test_case, expected_exception);
     }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();
@@ -226,11 +231,15 @@ template<class type>
 void concurrencpp::tests::test_result_await_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                result<type>().operator co_await();
-            },
-            concurrencpp::details::consts::k_result_operator_co_await_error_msg);
+        const auto test_case = [] {
+            result<type>().operator co_await();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name,
+                                                                                          "operator co_await");
+
+        assert_throws(test_case, expected_exception);
     }
 
     auto thread_executor = std::make_shared<concurrencpp::thread_executor>();

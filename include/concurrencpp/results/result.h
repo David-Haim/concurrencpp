@@ -60,7 +60,7 @@ namespace concurrencpp {
 
         template<class duration_type, class ratio_type>
         result_status wait_for(std::chrono::duration<duration_type, ratio_type> duration) const {
-            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "wait_all");
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "wait_for");
             return m_state->wait_for(duration);
         }
 
@@ -165,7 +165,7 @@ namespace concurrencpp {
                                                                                        k_class_name,
                                                                                        "set_exception");
 
-            details::throw_helper::throw_if_null_argument(exception_ptr, k_class_name, "exception_ptr");
+            details::throw_helper::throw_if_null_argument(exception_ptr, k_class_name, "set_exception", "exception_ptr");
 
             m_producer_state->set_exception(exception_ptr);
             m_producer_state.reset();  // publishes the result

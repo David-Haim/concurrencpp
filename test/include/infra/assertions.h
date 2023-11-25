@@ -113,6 +113,7 @@ namespace concurrencpp::tests {
         assert_false(true);
     }
 
+    //TODO: maybe remove this
     template<class exception_type, class task_type>
     void assert_throws_with_error_message(task_type&& task, std::string_view error_msg) {
         try {
@@ -139,6 +140,20 @@ namespace concurrencpp::tests {
 
         assert_false(true);
     }
+
+    template<class task_type, class exception_type>
+    void assert_throws(task_type&& task, const exception_type& ex) {
+        try {
+            task();
+        } catch (const exception_type& e) {
+            assert_equal(std::string_view(ex.what()), std::string_view(e.what()));
+            return;
+        } catch (...) {
+        }
+
+        assert_false(true);
+    }
+
 
 }  // namespace concurrencpp::tests
 

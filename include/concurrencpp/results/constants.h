@@ -6,9 +6,6 @@ namespace concurrencpp::details::consts {
      * result_promise
      */
 
-    inline const char* k_result_promise_set_exception_null_exception_error_msg =
-        "concurrencpp::result_promise::set_exception() - exception pointer is null.";
-
     inline const char* k_result_promise_get_result_already_retrieved_error_msg =
         "concurrencpp::result_promise::get_result() - result was already retrieved.";
 
