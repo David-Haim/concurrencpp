@@ -6,8 +6,6 @@
 #include "utils/test_generators.h"
 #include "utils/test_ready_result.h"
 
-using concurrencpp::details::throw_helper;
-
 namespace concurrencpp::tests {
     template<class type>
     void test_result_constructor_impl();
@@ -50,6 +48,8 @@ namespace concurrencpp::tests {
 
 using concurrencpp::result;
 using concurrencpp::result_promise;
+using concurrencpp::details::throw_helper;
+
 using namespace std::chrono;
 using namespace concurrencpp::tests;
 

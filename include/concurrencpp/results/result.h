@@ -172,7 +172,7 @@ namespace concurrencpp {
         }
 
         template<class callable_type, class... argument_types>
-        void set_from_function(callable_type&& callable, argument_types&&... args) noexcept {
+        void set_from_function(callable_type&& callable, argument_types&&... args) {
             constexpr auto is_invokable = std::is_invocable_r_v<type, callable_type, argument_types...>;
 
             static_assert(
