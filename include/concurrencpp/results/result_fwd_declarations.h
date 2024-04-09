@@ -30,7 +30,7 @@ namespace concurrencpp {
 
     struct null_result {};
 
-    enum class result_status : int32_t { idle, value, exception };
+    enum class result_status : uint32_t { idle, value, exception };
 }  // namespace concurrencpp
 
 namespace concurrencpp::details {

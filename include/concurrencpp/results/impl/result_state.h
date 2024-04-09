@@ -15,7 +15,7 @@ namespace concurrencpp::details {
     class CRCPP_API result_state_base {
 
        public:
-        enum class pc_status : int32_t { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
+        enum class pc_status : uint32_t { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
 
        protected:
         std::atomic<pc_status> m_pc_status {pc_status::idle};
