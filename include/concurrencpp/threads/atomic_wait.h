@@ -92,7 +92,7 @@ namespace concurrencpp::details {
 namespace concurrencpp::details {
     class waiting_bucket;
 
-    using comp_fn = bool (&)(void*, const uint32_t, std::memory_order) noexcept;
+    using comp_fn = bool (*)(void*, const uint32_t, std::memory_order) noexcept;
 
     class wait_table {
 
