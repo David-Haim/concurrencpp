@@ -187,7 +187,7 @@ namespace concurrencpp::details {
                     return;
                 }
 
-                waiting_node node(&atom);
+                waiting_node node(atom);
                 insert_node(lock, node);
                 node.wait(lock);
 
@@ -222,7 +222,7 @@ namespace concurrencpp::details {
                     return atomic_wait_status::ok;
                 }
 
-                waiting_node node(&atom);
+                waiting_node node(atom);
                 insert_node(lock, node);
                 node.wait_until(lock, later);
 
@@ -268,7 +268,7 @@ namespace concurrencpp::details {
     */
 
     size_t wait_table::index_for(const void* atom) const noexcept {
-        return std::hash<void*>()(&atom) % size;
+        return std::hash<void*>()(atom) % size;
     }
 
     wait_table::wait_table() : size(37) {
