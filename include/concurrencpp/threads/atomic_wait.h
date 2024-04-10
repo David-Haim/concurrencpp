@@ -120,7 +120,7 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
-        auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) {
+        auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
             const auto original_old = static_cast<type>(old_);
 
@@ -136,7 +136,7 @@ namespace concurrencpp::details {
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
 
-        auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) {
+        auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
             const auto original_old = static_cast<type>(old_);
 
