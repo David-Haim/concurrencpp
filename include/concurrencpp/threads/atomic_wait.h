@@ -120,6 +120,11 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
+        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
+        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
+        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
+
+
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
             const auto original_old = static_cast<type>(old_);
@@ -127,7 +132,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait(&atom, old, order, comp);
+        wait_table::instance().wait(&atom, static_cast<uint32_t>(old), order, comp);
     }
 
     template<class type>
@@ -135,6 +140,9 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
+        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
+        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
+        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
@@ -143,7 +151,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait_for(&atom, old, ms, order, comp);
+        wait_table::instance().wait_for(&atom, static_cast<uint32_t>(old), ms, order, comp);
     }
 
     template<class type>
