@@ -22,6 +22,9 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept;
+
+    template<class type>
+    void atomic_notify_all(std::atomic<type>& atom) noexcept;
 }  // namespace concurrencpp::details
 
 #if !defined(CRCPP_MAC_OS)
@@ -124,7 +127,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait(atom, old, order, static_cast<comp_fn>(comp));
+        wait_table::instance().wait(&atom, old, order, static_cast<comp_fn>(comp));
     }
 
     template<class type>
@@ -140,7 +143,12 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait_for(atom, old, ms, order, static_cast<comp_fn>(comp));
+        wait_table::instance().wait_for(&atom, old, ms, order, static_cast<comp_fn>(comp));
+    }
+
+    template<class type>
+    void atomic_notify_all(std::atomic<type>& atom) noexcept {
+        wait_table::instance().notify_all(&atom);
     }
 
 }  // namespace concurrencpp::details
