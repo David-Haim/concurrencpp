@@ -268,7 +268,7 @@ namespace concurrencpp::details {
     */
 
     size_t wait_table::index_for(const void* atom) const noexcept {
-        return std::hash<void*>()(atom) % size;
+        return std::hash<const void*>()(atom) % size;
     }
 
     wait_table::wait_table() : size(37) {
