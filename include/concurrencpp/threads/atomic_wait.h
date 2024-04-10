@@ -151,7 +151,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait_for(&atom, static_cast<uint32_t>(old), ms, order, comp);
+        return wait_table::instance().wait_for(&atom, static_cast<uint32_t>(old), ms, order, comp);
     }
 
     template<class type>
