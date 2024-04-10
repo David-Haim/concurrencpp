@@ -119,7 +119,7 @@ namespace concurrencpp::details {
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
-            const auto original_old = static_cast<type>(old);
+            const auto original_old = static_cast<type>(old_);
 
             return original_atom.load(order_) == original_old;
         };
@@ -135,7 +135,7 @@ namespace concurrencpp::details {
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
-            const auto original_old = static_cast<type>(old);
+            const auto original_old = static_cast<type>(old_);
 
             return original_atom.load(order_) == original_old;
         };
