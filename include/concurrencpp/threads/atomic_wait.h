@@ -127,7 +127,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait(&atom, old, order, static_cast<comp_fn>(comp));
+        wait_table::instance().wait(&atom, old, order, comp);
     }
 
     template<class type>
@@ -143,7 +143,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait_for(&atom, old, ms, order, static_cast<comp_fn>(comp));
+        wait_table::instance().wait_for(&atom, old, ms, order, comp);
     }
 
     template<class type>
