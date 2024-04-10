@@ -94,7 +94,7 @@ namespace concurrencpp::details {
 
     using comp_fn = bool (*)(void*, const uint32_t, std::memory_order) noexcept;
 
-    class wait_table {
+    class CRCPP_API wait_table {
 
        private:
         std::unique_ptr<waiting_bucket[]> buckets;
