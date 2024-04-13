@@ -61,7 +61,7 @@ namespace concurrencpp::details {
 #else
 
 #    include <mutex>
-#    include <vector>
+#    include <thread>
 #    include <memory>
 #    include <condition_variable>
 
@@ -126,7 +126,10 @@ namespace concurrencpp::details {
        private:
         std::mutex m_lock;
         waiting_node* m_head = nullptr;
-        size_t size = 0;  // TODO: make debug only
+
+#    if defined(CRCPP_DEBUG_MODE)
+        size_t size = 0;
+#    endif
 
         void insert_node(std::unique_lock<std::mutex>& lock, waiting_node& new_node) noexcept {
             assert(lock.owns_lock());
@@ -134,7 +137,9 @@ namespace concurrencpp::details {
             assert(new_node.prev == nullptr);
             assert(new_node.address() != nullptr);
 
+#    if defined(CRCPP_DEBUG_MODE)
             ++size;
+#    endif
 
             if (m_head == nullptr) {
                 m_head = &new_node;
@@ -150,9 +155,11 @@ namespace concurrencpp::details {
 
         void remove_node(std::unique_lock<std::mutex>& lock, waiting_node& old_node) noexcept {
             assert(lock.owns_lock());
-            assert(size != 0);
 
+#    if defined(CRCPP_DEBUG_MODE)
+            assert(size != 0);
             --size;
+#    endif
 
             if (&old_node == m_head) {
                 m_head = m_head->next;
@@ -267,44 +274,88 @@ namespace concurrencpp::details {
         atomic_wait_table
     */
 
-    size_t atomic_wait_table::index_for(const void* atom) const noexcept {
-        return std::hash<const void*>()(atom) % size;
+    size_t atomic_wait_table::calc_table_size() noexcept {
+        const auto hc = std::thread::hardware_concurrency();
+        if (hc == 0) {
+            return 37;  // heuristic. most modern CPUs has less than 64 cores, and 37 is a prime number
+        }
+
+        auto is_prime = [](size_t n) {
+            if (n <= 1) {
+                return false;
+            }
+
+            if (n <= 3) {
+                return true;
+            }
+            if (n % 2 == 0 || n % 3 == 0) {
+                return false;
+            }
+
+            for (size_t i = 5; i * i <= n; i += 6) {
+                if (n % i == 0 || n % (i + 2) == 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        auto next_prime = [is_prime](size_t n) -> size_t {
+            if (n <= 1) {
+                return 2;
+            }
+
+            size_t prime = n;
+
+            while (!is_prime(prime)) {
+                prime++;
+            }
+
+            return prime;
+        };
+
+        const auto padded_hc = hc * 2;
+        return next_prime(padded_hc);
     }
 
-    atomic_wait_table::atomic_wait_table() : size(37) {
-        buckets = std::make_unique<atomic_wait_bucket[]>(37);
+    size_t atomic_wait_table::index_for(const void* atom) const noexcept {
+        return std::hash<const void*>()(atom) % m_size;
+    }
+
+    atomic_wait_table::atomic_wait_table() : m_size(calc_table_size()) {
+        m_buckets = std::make_unique<atomic_wait_bucket[]>(m_size);
     }
 
     void atomic_wait_table::wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp) {
         const auto index = index_for(atom);
-        buckets[index].wait(atom, old, order, comp);
+        m_buckets[index].wait(atom, old, order, comp);
     }
 
     atomic_wait_status atomic_wait_table::wait_for(void* atom,
-                                            const uint32_t old,
-                                            std::chrono::milliseconds ms,
-                                            std::memory_order order,
-                                            comp_fn comp) {
+                                                   const uint32_t old,
+                                                   std::chrono::milliseconds ms,
+                                                   std::memory_order order,
+                                                   comp_fn comp) {
 
         const auto index = index_for(atom);
-        return buckets[index].wait_for(atom, old, ms, order, comp);
+        return m_buckets[index].wait_for(atom, old, ms, order, comp);
     }
 
     void atomic_wait_table::notify_one(const void* atom) noexcept {
         const auto index = index_for(atom);
-        buckets[index].notify_one(atom);
+        m_buckets[index].notify_one(atom);
     }
 
     void atomic_wait_table::notify_all(const void* atom) noexcept {
         const auto index = index_for(atom);
-        buckets[index].notify_all(atom);
+        m_buckets[index].notify_all(atom);
     }
 
     atomic_wait_table& atomic_wait_table::instance() {
         static atomic_wait_table s_wait_table;
         return s_wait_table;
     }
-
 }  // namespace concurrencpp::details
 
 #endif

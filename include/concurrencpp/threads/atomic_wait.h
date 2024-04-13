@@ -104,8 +104,9 @@ namespace concurrencpp::details {
 
        private:
         std::unique_ptr<atomic_wait_bucket[]> buckets;
-        const size_t size;
+        const size_t m_size;
 
+        static size_t calc_table_size() noexcept;
         size_t index_for(const void* atom) const noexcept;
 
        public:
