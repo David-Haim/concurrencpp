@@ -103,7 +103,7 @@ namespace concurrencpp::details {
     class CRCPP_API atomic_wait_table {
 
        private:
-        std::unique_ptr<atomic_wait_bucket[]> buckets;
+        std::unique_ptr<atomic_wait_bucket[]> m_buckets;
         const size_t m_size;
 
         static size_t calc_table_size() noexcept;
