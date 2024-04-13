@@ -121,7 +121,7 @@ namespace concurrencpp::details {
         }
     };
 
-    class waiting_bucket {
+    class atomic_wait_bucket {
 
        private:
         std::mutex m_lock;
@@ -264,23 +264,23 @@ namespace concurrencpp::details {
     };
 
     /*
-        wait_table
+        atomic_wait_table
     */
 
-    size_t wait_table::index_for(const void* atom) const noexcept {
+    size_t atomic_wait_table::index_for(const void* atom) const noexcept {
         return std::hash<const void*>()(atom) % size;
     }
 
-    wait_table::wait_table() : size(37) {
-        buckets = std::make_unique<waiting_bucket[]>(37);
+    atomic_wait_table::atomic_wait_table() : size(37) {
+        buckets = std::make_unique<atomic_wait_bucket[]>(37);
     }
 
-    void wait_table::wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp) {
+    void atomic_wait_table::wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp) {
         const auto index = index_for(atom);
         buckets[index].wait(atom, old, order, comp);
     }
 
-    atomic_wait_status wait_table::wait_for(void* atom,
+    atomic_wait_status atomic_wait_table::wait_for(void* atom,
                                             const uint32_t old,
                                             std::chrono::milliseconds ms,
                                             std::memory_order order,
@@ -290,18 +290,18 @@ namespace concurrencpp::details {
         return buckets[index].wait_for(atom, old, ms, order, comp);
     }
 
-    void wait_table::notify_one(const void* atom) noexcept {
+    void atomic_wait_table::notify_one(const void* atom) noexcept {
         const auto index = index_for(atom);
         buckets[index].notify_one(atom);
     }
 
-    void wait_table::notify_all(const void* atom) noexcept {
+    void atomic_wait_table::notify_all(const void* atom) noexcept {
         const auto index = index_for(atom);
         buckets[index].notify_all(atom);
     }
 
-    wait_table& wait_table::instance() {
-        static wait_table s_wait_table;
+    atomic_wait_table& atomic_wait_table::instance() {
+        static atomic_wait_table s_wait_table;
         return s_wait_table;
     }
 

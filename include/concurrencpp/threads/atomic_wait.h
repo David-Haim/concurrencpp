@@ -25,6 +25,16 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_notify_all(std::atomic<type>& atom) noexcept;
+
+    template<class type>
+    void assert_type_waitable() noexcept {
+        static_assert(std::is_integral_v<type> || std::is_enum_v<type>,
+                      "atomic_wait/atomic_notify - <<type>> must be integeral or enumeration type");
+        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait/atomic_notify - <<type>> must be 4 bytes.");
+        static_assert(std::is_standard_layout_v<std::atomic<type>>,
+                      "atomic_wait/atomic_notify - std::atom<type> is not standard-layout");
+        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait/atomic_notify - std::atom<type> is not lock free");
+    }
 }  // namespace concurrencpp::details
 
 #if !defined(CRCPP_MAC_OS)
@@ -36,9 +46,7 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
-        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
-        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
-        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
+        assert_type_waitable<type>();
 
         while (true) {
             const auto val = atom.load(order);
@@ -55,9 +63,7 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
-        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
-        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
-        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
+        assert_type_waitable<type>();
 
         const auto deadline = std::chrono::system_clock::now() + ms;
 
@@ -90,20 +96,20 @@ namespace concurrencpp::details {
 #else
 
 namespace concurrencpp::details {
-    class waiting_bucket;
+    class atomic_wait_bucket;
 
     using comp_fn = bool (*)(void*, const uint32_t, std::memory_order) noexcept;
 
-    class CRCPP_API wait_table {
+    class CRCPP_API atomic_wait_table {
 
        private:
-        std::unique_ptr<waiting_bucket[]> buckets;
+        std::unique_ptr<atomic_wait_bucket[]> buckets;
         const size_t size;
 
         size_t index_for(const void* atom) const noexcept;
 
        public:
-        wait_table();
+        atomic_wait_table();
 
         void wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp);
         atomic_wait_status wait_for(void* atom,
@@ -120,10 +126,7 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
-        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
-        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
-        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
-
+        assert_type_waitable<type>();
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
@@ -140,9 +143,7 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
-        static_assert(std::is_standard_layout_v<std::atomic<type>>, "atomic_wait - std::atom<type> is not standard-layout");
-        static_assert(std::atomic<type>::is_always_lock_free, "atomic_wait - std::atom<type> is not lock free");
-        static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait - <<type>> must be 4 bytes.");
+        assert_type_waitable<type>();
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
