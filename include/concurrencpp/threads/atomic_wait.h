@@ -121,7 +121,7 @@ namespace concurrencpp::details {
         void notify_one(const void* atom) noexcept;
         void notify_all(const void* atom) noexcept;
 
-        static wait_table& instance();
+        static atomic_wait_table& instance();
     };
 
     template<class type>
@@ -135,7 +135,7 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        wait_table::instance().wait(&atom, static_cast<uint32_t>(old), order, comp);
+        atomic_wait_table::instance().wait(&atom, static_cast<uint32_t>(old), order, comp);
     }
 
     template<class type>
@@ -152,12 +152,12 @@ namespace concurrencpp::details {
             return original_atom.load(order_) == original_old;
         };
 
-        return wait_table::instance().wait_for(&atom, static_cast<uint32_t>(old), ms, order, comp);
+        return atomic_wait_table::instance().wait_for(&atom, static_cast<uint32_t>(old), ms, order, comp);
     }
 
     template<class type>
     void atomic_notify_all(std::atomic<type>& atom) noexcept {
-        wait_table::instance().notify_all(&atom);
+        atomic_wait_table::instance().notify_all(&atom);
     }
 
 }  // namespace concurrencpp::details
