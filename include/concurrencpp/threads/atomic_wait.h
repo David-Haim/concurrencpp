@@ -27,7 +27,7 @@ namespace concurrencpp::details {
     void atomic_notify_all(std::atomic<type>& atom) noexcept;
 
     template<class type>
-    void assert_type_waitable() noexcept {
+    void assert_atomic_type_waitable() noexcept {
         static_assert(std::is_integral_v<type> || std::is_enum_v<type>,
                       "atomic_wait/atomic_notify - <<type>> must be integeral or enumeration type");
         static_assert(sizeof(type) == sizeof(uint32_t), "atomic_wait/atomic_notify - <<type>> must be 4 bytes.");
@@ -46,7 +46,7 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
-        assert_type_waitable<type>();
+        assert_atomic_type_waitable<type>();
 
         while (true) {
             const auto val = atom.load(order);
@@ -63,7 +63,7 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
-        assert_type_waitable<type>();
+        assert_atomic_type_waitable<type>();
 
         const auto deadline = std::chrono::system_clock::now() + ms;
 
@@ -98,7 +98,7 @@ namespace concurrencpp::details {
 namespace concurrencpp::details {
     class atomic_wait_bucket;
 
-    using comp_fn = bool (*)(void*, const uint32_t, std::memory_order) noexcept;
+    using atomic_comp_fn = bool (*)(void*, const uint32_t, std::memory_order) noexcept;
 
     class CRCPP_API atomic_wait_table {
 
@@ -112,12 +112,12 @@ namespace concurrencpp::details {
        public:
         atomic_wait_table();
 
-        void wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp);
+        void wait(void* atom, const uint32_t old, std::memory_order order, atomic_comp_fn comp);
         atomic_wait_status wait_for(void* atom,
                                     const uint32_t old,
                                     std::chrono::milliseconds ms,
                                     std::memory_order order,
-                                    comp_fn comp);
+                                    atomic_comp_fn comp);
 
         void notify_one(const void* atom) noexcept;
         void notify_all(const void* atom) noexcept;
@@ -127,7 +127,7 @@ namespace concurrencpp::details {
 
     template<class type>
     void atomic_wait(std::atomic<type>& atom, type old, std::memory_order order) noexcept {
-        assert_type_waitable<type>();
+        assert_atomic_type_waitable<type>();
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);
@@ -144,7 +144,7 @@ namespace concurrencpp::details {
                                        type old,
                                        std::chrono::milliseconds ms,
                                        std::memory_order order) noexcept {
-        assert_type_waitable<type>();
+        assert_atomic_type_waitable<type>();
 
         auto comp = [](void* atom_, const uint32_t old_, std::memory_order order_) noexcept -> bool {
             auto& original_atom = *static_cast<std::atomic<type>*>(atom_);

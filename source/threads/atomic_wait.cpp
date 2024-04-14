@@ -33,7 +33,7 @@ namespace concurrencpp::details {
 #    include <sys/syscall.h>
 
 namespace concurrencpp::details {
-    int futex(void* addr, uint32_t op, int32_t old, const timespec* ts) noexcept {
+    int futex(void* addr, int32_t op, int32_t old, const timespec* ts) noexcept {
         return ::syscall(SYS_futex, addr, op, old, ts, nullptr, 0);
     }
 
@@ -183,7 +183,7 @@ namespace concurrencpp::details {
         }
 
        public:
-        void wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp) {
+        void wait(void* atom, const uint32_t old, std::memory_order order, atomic_comp_fn comp) {
             while (true) {
                 if (!comp(atom, old, order)) {
                     return;
@@ -207,7 +207,7 @@ namespace concurrencpp::details {
                                     const uint32_t old,
                                     std::chrono::milliseconds ms,
                                     std::memory_order order,
-                                    comp_fn comp) {
+                                    atomic_comp_fn comp) {
 
             const auto later = std::chrono::system_clock::now() + ms;
 
@@ -277,10 +277,10 @@ namespace concurrencpp::details {
     size_t atomic_wait_table::calc_table_size() noexcept {
         const auto hc = std::thread::hardware_concurrency();
         if (hc == 0) {
-            return 37;  // heuristic. most modern CPUs has less than 64 cores, and 37 is a prime number
+            return 37;  // heuristic. most modern CPUs have less than 64 cores, and 37 is a prime number
         }
 
-        auto is_prime = [](size_t n) {
+        auto is_prime = [](size_t n) noexcept {
             if (n <= 1) {
                 return false;
             }
@@ -301,7 +301,7 @@ namespace concurrencpp::details {
             return true;
         };
 
-        auto next_prime = [is_prime](size_t n) -> size_t {
+        auto next_prime = [is_prime](size_t n) noexcept -> size_t {
             if (n <= 1) {
                 return 2;
             }
@@ -327,7 +327,7 @@ namespace concurrencpp::details {
         m_buckets = std::make_unique<atomic_wait_bucket[]>(m_size);
     }
 
-    void atomic_wait_table::wait(void* atom, const uint32_t old, std::memory_order order, comp_fn comp) {
+    void atomic_wait_table::wait(void* atom, const uint32_t old, std::memory_order order, atomic_comp_fn comp) {
         const auto index = index_for(atom);
         m_buckets[index].wait(atom, old, order, comp);
     }
@@ -336,7 +336,7 @@ namespace concurrencpp::details {
                                                    const uint32_t old,
                                                    std::chrono::milliseconds ms,
                                                    std::memory_order order,
-                                                   comp_fn comp) {
+                                                   atomic_comp_fn comp) {
 
         const auto index = index_for(atom);
         return m_buckets[index].wait_for(atom, old, ms, order, comp);
