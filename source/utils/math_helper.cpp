@@ -1,5 +1,4 @@
-#include "math.h"
-#include "concurrencpp/utils/math.h"
+#include "concurrencpp/utils/math_helper.h"
 
 using concurrencpp::details::math_helper;
 
