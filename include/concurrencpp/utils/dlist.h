@@ -19,7 +19,7 @@ namespace concurrencpp::details {
 
             if (m_head != nullptr) {
                 m_head->prev = &new_node;
-                new_node->next = m_head;
+                new_node.next = m_head;
             }
 
             m_head = &new_node;
@@ -47,11 +47,13 @@ namespace concurrencpp::details {
         template<class functor_type>
         void for_each(functor_type f) {
             auto cursor = m_head;
-            while (m_head != nullptr) {
+            while (cursor != nullptr) {
                 bool should_continue_iteration = f(*cursor); 
                 if (!should_continue_iteration) {
                     return;
                 }
+
+                cursor = cursor->next;
             }
         }
 

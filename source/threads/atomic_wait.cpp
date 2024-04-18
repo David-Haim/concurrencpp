@@ -143,7 +143,7 @@ namespace concurrencpp::details {
                 }
 
                 waiting_node node(atom);
-                m_nodes.push_front(new_node);
+                m_nodes.push_front(node);
                 node.wait(lock);
 
                 assert(lock.owns_lock());
@@ -178,7 +178,7 @@ namespace concurrencpp::details {
                 }
 
                 waiting_node node(atom);
-                m_nodes.remove_node(old_node);
+                m_nodes.remove_node(node);
                 node.wait_until(lock, later);
 
                 assert(lock.owns_lock());
@@ -191,7 +191,7 @@ namespace concurrencpp::details {
         void notify_one(const void* atom) noexcept {
             std::unique_lock<std::mutex> lock(m_lock);
 
-            m_nodes.for_each([&lock, atom](wait_node& node) noexcept -> bool {
+            m_nodes.for_each([&lock, atom](waiting_node& node) noexcept -> bool {
                 if (node.address() == atom) {
                     node.notify_one(lock);
                     return false;
@@ -204,9 +204,7 @@ namespace concurrencpp::details {
         void notify_all(const void* atom) noexcept {
             std::unique_lock<std::mutex> lock(m_lock);
 
-            std::unique_lock<std::mutex> lock(m_lock);
-
-            m_nodes.for_each([&lock, atom](wait_node& node) noexcept -> bool {
+            m_nodes.for_each([&lock, atom](waiting_node& node) noexcept -> bool {
                 if (node.address() == atom) {
                     node.notify_one(lock);
                 }
