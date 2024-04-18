@@ -178,11 +178,11 @@ namespace concurrencpp::details {
                 }
 
                 waiting_node node(atom);
-                m_nodes.remove_node(node);
+                m_nodes.push_front(node);
                 node.wait_until(lock, later);
 
                 assert(lock.owns_lock());
-                remove_node(lock, node);
+                m_nodes.remove_node(node);
             }
 
             return atomic_wait_status::timeout;
