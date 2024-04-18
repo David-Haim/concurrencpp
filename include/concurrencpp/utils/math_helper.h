@@ -1,6 +1,8 @@
 #ifndef CONCURRENCPP_MATH_H
 #define CONCURRENCPP_MATH_H
 
+#include <cstdint>
+
 namespace concurrencpp::details {
     struct math_helper {
         static bool is_prime(size_t n) noexcept;
