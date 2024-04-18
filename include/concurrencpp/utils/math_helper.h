@@ -1,7 +1,7 @@
 #ifndef CONCURRENCPP_MATH_H
 #define CONCURRENCPP_MATH_H
 
-#include <cstdint>
+#include <cstddef>
 
 namespace concurrencpp::details {
     struct math_helper {

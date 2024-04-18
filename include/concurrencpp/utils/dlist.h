@@ -43,6 +43,18 @@ namespace concurrencpp::details {
         bool empty() const noexcept {
             return m_head != nullptr;
         }
+
+        template<class functor_type>
+        void for_each(functor_type f) {
+            auto cursor = m_head;
+            while (m_head != nullptr) {
+                bool should_continue_iteration = f(*cursor); 
+                if (!should_continue_iteration) {
+                    return;
+                }
+            }
+        }
+
     };
 }  // namespace concurrencpp::details
 

@@ -191,30 +191,28 @@ namespace concurrencpp::details {
         void notify_one(const void* atom) noexcept {
             std::unique_lock<std::mutex> lock(m_lock);
 
-            auto cursor = m_head;
-            while (cursor != nullptr) {
-                auto next = cursor->next;
-                if (cursor->address() == atom) {
-                    cursor->notify_one(lock);
-                    return;
+            m_nodes.for_each([&lock, atom](wait_node& node) noexcept -> bool {
+                if (node.address() == atom) {
+                    node.notify_one(lock);
+                    return false;
                 }
 
-                cursor = next;
-            }
+                return true;
+            });
         }
 
         void notify_all(const void* atom) noexcept {
             std::unique_lock<std::mutex> lock(m_lock);
 
-            auto cursor = m_head;
-            while (cursor != nullptr) {
-                auto next = cursor->next;
-                if (cursor->address() == atom) {
-                    cursor->notify_one(lock);
+            std::unique_lock<std::mutex> lock(m_lock);
+
+            m_nodes.for_each([&lock, atom](wait_node& node) noexcept -> bool {
+                if (node.address() == atom) {
+                    node.notify_one(lock);
                 }
 
-                cursor = next;
-            }
+                return true;
+            });
         }
     };
 
