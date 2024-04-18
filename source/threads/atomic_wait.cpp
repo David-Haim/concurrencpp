@@ -65,8 +65,8 @@ namespace concurrencpp::details {
 #    include <memory>
 #    include <condition_variable>
 
-#    include "concurrencpp/utils/math.h"
 #    include "concurrencpp/utils/dlist.h"
+#    include "concurrencpp/utils/math_helper.h"
 
 namespace concurrencpp::details {
 
