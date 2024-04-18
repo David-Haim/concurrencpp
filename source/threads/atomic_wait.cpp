@@ -65,6 +65,9 @@ namespace concurrencpp::details {
 #    include <memory>
 #    include <condition_variable>
 
+#    include "concurrencpp/utils/math.h"
+#    include "concurrencpp/utils/dlist.h"
+
 namespace concurrencpp::details {
 
     struct waiting_node {
@@ -125,62 +128,7 @@ namespace concurrencpp::details {
 
        private:
         std::mutex m_lock;
-        waiting_node* m_head = nullptr;
-
-#    if defined(CRCPP_DEBUG_MODE)
-        size_t size = 0;
-#    endif
-
-        void insert_node(std::unique_lock<std::mutex>& lock, waiting_node& new_node) noexcept {
-            assert(lock.owns_lock());
-            assert(new_node.next == nullptr);
-            assert(new_node.prev == nullptr);
-            assert(new_node.address() != nullptr);
-
-#    if defined(CRCPP_DEBUG_MODE)
-            ++size;
-#    endif
-
-            if (m_head == nullptr) {
-                m_head = &new_node;
-                return;
-            }
-
-            new_node.next = m_head;
-
-            assert(m_head->prev == nullptr);
-            m_head->prev = &new_node;
-            m_head = &new_node;
-        }
-
-        void remove_node(std::unique_lock<std::mutex>& lock, waiting_node& old_node) noexcept {
-            assert(lock.owns_lock());
-
-#    if defined(CRCPP_DEBUG_MODE)
-            assert(size != 0);
-            --size;
-#    endif
-
-            if (&old_node == m_head) {
-                m_head = m_head->next;
-
-                if (m_head != nullptr) {
-                    m_head->prev = nullptr;
-                }
-
-                return;
-            }
-
-            auto prev_node = old_node.prev;
-            assert(prev_node != nullptr);
-
-            auto next_node = old_node.next;
-            prev_node->next = next_node;
-
-            if (next_node != nullptr) {
-                next_node->prev = prev_node;
-            }
-        }
+        dlist<waiting_node> m_nodes;
 
        public:
         void wait(void* atom, const uint32_t old, std::memory_order order, atomic_comp_fn comp) {
@@ -195,7 +143,7 @@ namespace concurrencpp::details {
                 }
 
                 waiting_node node(atom);
-                insert_node(lock, node);
+                m_nodes.push_front(new_node);
                 node.wait(lock);
 
                 assert(lock.owns_lock());
@@ -230,7 +178,7 @@ namespace concurrencpp::details {
                 }
 
                 waiting_node node(atom);
-                insert_node(lock, node);
+                m_nodes.remove_node(old_node);
                 node.wait_until(lock, later);
 
                 assert(lock.owns_lock());
@@ -279,44 +227,9 @@ namespace concurrencpp::details {
         if (hc == 0) {
             return 37;  // heuristic. most modern CPUs have less than 64 cores, and 37 is a prime number
         }
-
-        auto is_prime = [](size_t n) noexcept {
-            if (n <= 1) {
-                return false;
-            }
-
-            if (n <= 3) {
-                return true;
-            }
-            if (n % 2 == 0 || n % 3 == 0) {
-                return false;
-            }
-
-            for (size_t i = 5; i * i <= n; i += 6) {
-                if (n % i == 0 || n % (i + 2) == 0) {
-                    return false;
-                }
-            }
-
-            return true;
-        };
-
-        auto next_prime = [is_prime](size_t n) noexcept -> size_t {
-            if (n <= 1) {
-                return 2;
-            }
-
-            size_t prime = n;
-
-            while (!is_prime(prime)) {
-                prime++;
-            }
-
-            return prime;
-        };
-
+        
         const auto padded_hc = hc * 2;
-        return next_prime(padded_hc);
+        return math_helper::next_prime(padded_hc);
     }
 
     size_t atomic_wait_table::index_for(const void* atom) const noexcept {
