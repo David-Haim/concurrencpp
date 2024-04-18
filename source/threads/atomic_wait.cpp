@@ -147,7 +147,7 @@ namespace concurrencpp::details {
                 node.wait(lock);
 
                 assert(lock.owns_lock());
-                m_nodes.remove_node(lock, node);
+                m_nodes.remove_node(node);
             }
         }
 
