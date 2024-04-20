@@ -48,7 +48,7 @@ namespace concurrencpp::details {
         void for_each(functor_type f) {
             auto cursor = m_head;
             while (cursor != nullptr) {
-                bool should_continue_iteration = f(*cursor); 
+                const bool should_continue_iteration = f(*cursor); 
                 if (!should_continue_iteration) {
                     return;
                 }
@@ -56,7 +56,6 @@ namespace concurrencpp::details {
                 cursor = cursor->next;
             }
         }
-
     };
 }  // namespace concurrencpp::details
 

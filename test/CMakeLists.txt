@@ -104,10 +104,12 @@ function(add_test)
                                                ${TEST_PROPERTIES})
 endfunction()
 
-add_test(NAME task_tests PATH source/tests/task_tests.cpp)
-add_test(NAME atomic_wait_tests PATH source/tests/thread_tests/atomic_wait_tests.cpp)
-add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
 
+add_test(NAME math_helper_tests PATH source/tests/util_tests/math_helper_tests.cpp)
+
+add_test(NAME atomic_wait_tests PATH source/tests/thread_tests/atomic_wait_tests.cpp)
+
+add_test(NAME task_tests PATH source/tests/task_tests.cpp)
 add_test(NAME inline_executor_tests PATH source/tests/executor_tests/inline_executor_tests.cpp)
 add_test(NAME manual_executor_tests PATH source/tests/executor_tests/manual_executor_tests.cpp)
 add_test(NAME thread_executor_tests PATH source/tests/executor_tests/thread_executor_tests.cpp)
@@ -140,6 +142,8 @@ add_test(NAME async_condition_variable_tests PATH source/tests/thread_tests/asyn
 
 add_test(NAME timer_queue_tests PATH source/tests/timer_tests/timer_queue_tests.cpp)
 add_test(NAME timer_tests PATH source/tests/timer_tests/timer_tests.cpp)
+
+add_test(NAME runtime_tests PATH source/tests/runtime_tests.cpp)
 
 if(NOT ENABLE_THREAD_SANITIZER)
   return()

@@ -3,8 +3,6 @@
 #include "infra/tester.h"
 #include "infra/assertions.h"
 
-#include <iostream>
-
 namespace concurrencpp::tests {
     void test_atomic_wait();
 
