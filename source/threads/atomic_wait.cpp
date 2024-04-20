@@ -19,6 +19,10 @@ namespace concurrencpp::details {
         ::WaitOnAddress(atom, &old, sizeof(old), static_cast<DWORD>(ms.count()));
     }
 
+    void atomic_notify_one_native(void* atom) noexcept {
+        ::WakeByAddressSingle(atom);
+    }
+
     void atomic_notify_all_native(void* atom) noexcept {
         ::WakeByAddressAll(atom);
     }
@@ -33,8 +37,8 @@ namespace concurrencpp::details {
 #    include <sys/syscall.h>
 
 namespace concurrencpp::details {
-    int futex(void* addr, int32_t op, int32_t old, const timespec* ts) noexcept {
-        return ::syscall(SYS_futex, addr, op, old, ts, nullptr, 0);
+    int futex(void* addr, int32_t op, uint32_t val, const timespec* ts) noexcept {
+        return ::syscall(SYS_futex, addr, op, val, ts, nullptr, 0);
     }
 
     timespec ms_to_time_spec(size_t ms) noexcept {
@@ -51,6 +55,10 @@ namespace concurrencpp::details {
     void atomic_wait_for_native(void* atom, uint32_t old, std::chrono::milliseconds ms) noexcept {
         auto spec = ms_to_time_spec(ms.count());
         futex(atom, FUTEX_WAIT_PRIVATE, old, &spec);
+    }
+
+    void atomic_notify_one_native(void* atom) noexcept {
+        futex(atom, FUTEX_WAKE_PRIVATE, 1, nullptr);
     }
 
     void atomic_notify_all_native(void* atom) noexcept {
@@ -82,21 +90,9 @@ namespace concurrencpp::details {
        public:
         waiting_node(const void* address) noexcept : m_address(address) {}
 
-        void set_notified(std::unique_lock<std::mutex>& lock) noexcept {
-            assert(lock.owns_lock());
-            m_notified = true;
-        }
-
         void notify_one(std::unique_lock<std::mutex>& lock) noexcept {
             assert(lock.owns_lock());
-            set_notified(lock);
-
-            m_cv.notify_one();
-        }
-
-        void notify_all(std::unique_lock<std::mutex>& lock) noexcept {
-            assert(lock.owns_lock());
-            set_notified(lock);
+            m_notified = true;
 
             m_cv.notify_one();
         }
@@ -233,6 +229,7 @@ namespace concurrencpp::details {
     }
 
     atomic_wait_table::atomic_wait_table() : m_size(calc_table_size()) {
+        assert(m_size != 0);
         m_buckets = std::make_unique<atomic_wait_bucket[]>(m_size);
     }
 
