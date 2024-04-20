@@ -57,7 +57,7 @@ void concurrencpp::tests::test_math_helper_next_prime() {
 }
 
 int main() {
-    tester tester("atomic_wait test");
+    tester tester("math_helper test");
 
     tester.add_step("is_prime", test_math_helper_is_prime);
     tester.add_step("next_prime", test_math_helper_next_prime);
