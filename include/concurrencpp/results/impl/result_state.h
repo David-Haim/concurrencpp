@@ -42,6 +42,8 @@ namespace concurrencpp::details {
         producer_context<type> m_producer;
 
         static void delete_self(result_state<type>* state) noexcept {
+            assert(state != nullptr);
+
             auto done_handle = state->m_done_handle;
             if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());

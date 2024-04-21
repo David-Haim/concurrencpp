@@ -1,9 +1,6 @@
 #ifndef CONCURRENCPP_ATOMIC_WAIT_H
 #define CONCURRENCPP_ATOMIC_WAIT_H
 
-#include "concurrencpp/platform_defs.h"
-
-#include <thread>
 #include <atomic>
 #include <chrono>
 #include <type_traits>
@@ -103,6 +100,10 @@ namespace concurrencpp::details {
 }  // namespace concurrencpp::details
 
 #else
+
+#    include "concurrencpp/platform_defs.h"
+
+#include <memory>
 
 namespace concurrencpp::details {
     class atomic_wait_bucket;
