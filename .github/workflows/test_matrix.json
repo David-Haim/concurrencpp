@@ -285,5 +285,13 @@
 		"tsan": false,
 		"shared": true,
 		"name" : "macos-12, gcc-13, libstdc++-13, shared=true, tsan=false"
+	},
+	{
+		"os": "macos-12",
+		"gcc-version": 13,
+		"stdlib": "libstdc++",
+		"tsan": true,
+		"shared": false,
+		"name" : "macos-12, gcc-13, libstdc++-13, shared=false, tsan=true"
 	}
 ]
