@@ -54,6 +54,8 @@ namespace concurrencpp::tests {
     void test_lazy_result_assignment_operator();
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 namespace concurrencpp::tests {
     template<class type>
     lazy_result<type> sync_lazy_coro() {
@@ -141,11 +143,17 @@ void concurrencpp::tests::test_lazy_result_destructor() {
 
 template<class type>
 concurrencpp::result<void> concurrencpp::tests::test_lazy_result_status_impl() {
-    assert_throws_with_error_message<errors::empty_result>(
-        [] {
+    // empty result throws
+    {
+        const auto test_case = [] {
             lazy_result<type>().status();
-        },
-        concurrencpp::details::consts::k_empty_lazy_result_status_err_msg);
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name, "status");
+
+        assert_throws(test_case, expected_exception);
+    }
 
     // value
     {
@@ -243,11 +251,17 @@ namespace concurrencpp::tests {
 
 template<class type>
 void concurrencpp::tests::test_lazy_result_resolve_impl() {
-    assert_throws_with_error_message<errors::empty_result>(
-        [] {
+    // empty result throws
+    {
+        const auto test_case = [] {
             lazy_result<type>().resolve();
-        },
-        concurrencpp::details::consts::k_empty_lazy_result_resolve_err_msg);
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(lazy_result<type>::k_class_name, "resolve");
+
+        assert_throws(test_case, expected_exception);
+    }
 
     auto ex = std::make_shared<thread_executor>();
     executor_shutdowner es(ex);
@@ -344,11 +358,17 @@ namespace concurrencpp::tests {
 
 template<class type>
 void concurrencpp::tests::test_lazy_result_co_await_operator_impl() {
-    assert_throws_with_error_message<errors::empty_result>(
-        [] {
+    // empty result throws
+    {
+        const auto test_case = [] {
             lazy_result<type>().operator co_await();
-        },
-        concurrencpp::details::consts::k_empty_lazy_result_operator_co_await_err_msg);
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name, "operator co_await");
+
+        assert_throws(test_case, expected_exception);
+    }
 
     runtime runtime;
     test_lazy_result_co_await_non_ready_coro_val<type>(runtime.thread_executor()).get();
@@ -367,11 +387,17 @@ void concurrencpp::tests::test_lazy_result_co_await_operator() {
 
 template<class type>
 void concurrencpp::tests::test_lazy_result_run_impl(std::shared_ptr<thread_executor> ex) {
-    assert_throws_with_error_message<errors::empty_result>(
-        [] {
+    // empty result throws
+    {
+        const auto test_case = [] {
             lazy_result<type>().run();
-        },
-        concurrencpp::details::consts::k_empty_lazy_result_run_err_msg);
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(lazy_result<type>::k_class_name, "run");
+
+        assert_throws(test_case, expected_exception);
+    }
 
     auto started = false;
     auto lazy = async_lazy_coro_val<type>(started, ex);

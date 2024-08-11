@@ -13,18 +13,14 @@ namespace concurrencpp {
        private:
         details::coroutine_handle<details::lazy_result_state<type>> m_state;
 
-        void throw_if_empty(const char* err_msg) const {
-            if (!static_cast<bool>(m_state)) {
-                throw errors::empty_result(err_msg);
-            }
-        }
-
         result<type> run_impl() {
             lazy_result self(std::move(*this));
             co_return co_await self;
         }
 
        public:
+        static constexpr const char* k_class_name = "lazy_result";
+
         lazy_result() noexcept = default;
 
         lazy_result(lazy_result&& rhs) noexcept : m_state(std::exchange(rhs.m_state, {})) {}
@@ -55,22 +51,22 @@ namespace concurrencpp {
         }
 
         result_status status() const {
-            throw_if_empty(details::consts::k_empty_lazy_result_status_err_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "status");
             return m_state.promise().status();
         }
 
         auto operator co_await() {
-            throw_if_empty(details::consts::k_empty_lazy_result_operator_co_await_err_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "operator co_await");
             return lazy_awaitable<type> {std::exchange(m_state, {})};
         }
 
         auto resolve() {
-            throw_if_empty(details::consts::k_empty_lazy_result_resolve_err_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "resolve");
             return lazy_resolve_awaitable<type> {std::exchange(m_state, {})};
         }
 
         result<type> run() {
-            throw_if_empty(details::consts::k_empty_lazy_result_run_err_msg);
+            details::throw_helper::throw_if_empty_object<errors::empty_result>(m_state, k_class_name, "run");
             return run_impl();
         }
     };

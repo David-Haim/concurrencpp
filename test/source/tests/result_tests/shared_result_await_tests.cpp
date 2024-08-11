@@ -16,6 +16,7 @@ namespace concurrencpp::tests {
 
 using concurrencpp::result;
 using concurrencpp::details::thread;
+using concurrencpp::details::throw_helper;
 
 /*
  *  In this test suit, we need to check all the possible scenarios that "await" can have.
@@ -190,11 +191,15 @@ template<class type>
 void concurrencpp::tests::test_shared_result_await_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                shared_result<type>().operator co_await();
-            },
-            concurrencpp::details::consts::k_shared_result_operator_co_await_error_msg);
+        const auto test_case = [] {
+            shared_result<type>().operator co_await();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name,
+                                                                                          "operator co_await");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // await can be called multiple times

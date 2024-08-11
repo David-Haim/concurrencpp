@@ -60,6 +60,8 @@ namespace concurrencpp::tests {
 
 using concurrencpp::result;
 using concurrencpp::result_promise;
+using concurrencpp::details::throw_helper;
+
 using namespace std::chrono;
 using namespace concurrencpp::tests;
 
@@ -100,11 +102,14 @@ template<class type>
 void concurrencpp::tests::test_shared_result_status_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                shared_result<type>().status();
-            },
-            concurrencpp::details::consts::k_shared_result_status_error_msg);
+        const auto test_case = [] {
+            shared_result<type>().status();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name, "status");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // idle result
@@ -158,11 +163,15 @@ template<class type>
 void concurrencpp::tests::test_shared_result_get_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                shared_result<type>().get();
-            },
-            concurrencpp::details::consts::k_shared_result_get_error_msg);
+
+        const auto test_case = [] {
+            shared_result<type>().get();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name, "get");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // get blocks until value is present
@@ -294,11 +303,14 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                shared_result<type>().wait();
-            },
-            concurrencpp::details::consts::k_shared_result_wait_error_msg);
+        const auto test_case = [] {
+            shared_result<type>().wait();
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name, "wait");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // wait blocks until value is present
@@ -415,11 +427,15 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_for_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                shared_result<type>().wait_for(seconds(1));
-            },
-            concurrencpp::details::consts::k_shared_result_wait_for_error_msg);
+        const auto test_case = [] {
+            shared_result<type>().wait_for(seconds(1));
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name,
+                                                                                          "wait_for");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // if the result is ready by value, don't block and return status::value
@@ -553,12 +569,17 @@ template<class type>
 void concurrencpp::tests::test_shared_result_wait_until_impl() {
     // empty result throws
     {
-        assert_throws_with_error_message<concurrencpp::errors::empty_result>(
-            [] {
-                const auto later = high_resolution_clock::now() + seconds(10);
-                shared_result<type>().wait_until(later);
-            },
-            concurrencpp::details::consts::k_shared_result_wait_until_error_msg);
+
+        const auto test_case = [] {
+            const auto later = high_resolution_clock::now() + seconds(10);
+            shared_result<type>().wait_until(later);
+        };
+
+        const auto expected_exception =
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(shared_result<type>::k_class_name,
+                                                                                          "wait_until");
+
+        assert_throws(test_case, expected_exception);
     }
 
     // if time_point <= now, the function is equivalent to result::status

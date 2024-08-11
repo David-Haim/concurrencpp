@@ -36,38 +36,6 @@ namespace concurrencpp::details::consts {
     inline const char* k_when_any_null_resume_executor_error_msg = "concurrencpp::when_any() - given resume_executor is null.";
 
     /*
-     * shared_result
-     */
-
-    inline const char* k_shared_result_status_error_msg = "concurrencpp::shared_result::status() - result is empty.";
-
-    inline const char* k_shared_result_get_error_msg = "concurrencpp::shared_result::get() - result is empty.";
-
-    inline const char* k_shared_result_wait_error_msg = "concurrencpp::shared_result::wait() - result is empty.";
-
-    inline const char* k_shared_result_wait_for_error_msg = "concurrencpp::shared_result::wait_for() - result is empty.";
-
-    inline const char* k_shared_result_wait_until_error_msg = "concurrencpp::shared_result::wait_until() - result is empty.";
-
-    inline const char* k_shared_result_operator_co_await_error_msg =
-        "concurrencpp::shared_result::operator co_await() - result is empty.";
-
-    inline const char* k_shared_result_resolve_error_msg = "concurrencpp::shared_result::resolve() - result is empty.";
-
-    /*
-     * lazy_result
-     */
-
-    inline const char* k_empty_lazy_result_status_err_msg = "concurrencpp::lazy_result::status - result is empty.";
-
-    inline const char* k_empty_lazy_result_operator_co_await_err_msg =
-        "concurrencpp::lazy_result::operator co_await - result is empty.";
-
-    inline const char* k_empty_lazy_result_resolve_err_msg = "concurrencpp::lazy_result::resolve - result is empty.";
-
-    inline const char* k_empty_lazy_result_run_err_msg = "concurrencpp::lazy_result::run - result is empty.";
-
-    /*
      * resume_on
      */
 

@@ -145,7 +145,6 @@ template<class type>
 void concurrencpp::tests::test_result_get_impl() {
     // empty result throws
     {
-
         const auto test_case = [] {
             result<type>().get();
         };
