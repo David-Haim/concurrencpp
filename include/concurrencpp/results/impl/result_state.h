@@ -15,7 +15,7 @@ namespace concurrencpp::details {
     class CRCPP_API result_state_base {
 
        public:
-        enum class pc_status : int32_t { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
+        enum class pc_status : uint32_t { idle, consumer_set, consumer_waiting, consumer_done, producer_done };
 
        protected:
         std::atomic<pc_status> m_pc_status {pc_status::idle};
@@ -42,6 +42,8 @@ namespace concurrencpp::details {
         producer_context<type> m_producer;
 
         static void delete_self(result_state<type>* state) noexcept {
+            assert(state != nullptr);
+
             auto done_handle = state->m_done_handle;
             if (static_cast<bool>(done_handle)) {
                 assert(done_handle.done());
@@ -151,7 +153,7 @@ namespace concurrencpp::details {
                 }
 
                 case pc_status::consumer_waiting: {
-                    return atomic_notify_all(m_pc_status);
+                    return atomic_notify_one(m_pc_status);
                 }
 
                 case pc_status::consumer_done: {

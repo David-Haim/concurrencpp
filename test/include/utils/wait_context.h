@@ -7,7 +7,7 @@ namespace concurrencpp::tests {
     class wait_context {
 
        private:
-        std::atomic_int m_ready {0};
+        std::atomic_uint32_t m_ready {0};
 
        public:
         void wait();
