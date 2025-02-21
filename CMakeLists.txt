@@ -98,6 +98,8 @@ set_target_properties(concurrencpp PROPERTIES
         SOVERSION "${PROJECT_VERSION_MAJOR}"
 )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "d")
+
 target_coroutine_options(concurrencpp)
 
 target_compile_definitions(concurrencpp

@@ -47,11 +47,17 @@ size_t thread::hardware_concurrency() noexcept {
 #ifdef CRCPP_WIN_OS
 
 #    include <Windows.h>
+#    include <VersionHelpers.h>
 
 void thread::set_name(std::string_view name) noexcept {
-    const std::wstring utf16_name(name.begin(),
-                                  name.end());  // concurrencpp strings are always ASCII (english only)
-    ::SetThreadDescription(::GetCurrentThread(), utf16_name.data());
+    if (IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN10), LOBYTE(_WIN32_WINNT_WIN10), 14393)) {
+        // Windows 10 1607 or greater, use SetThreadDescription
+        const std::wstring utf16_name(name.begin(),
+                                      name.end());  // concurrencpp strings are always ASCII (english only)
+        ::SetThreadDescription(::GetCurrentThread(), utf16_name.c_str());
+    } else {
+        // Windows version is less than Windows 10, do nothing
+    }
 }
 
 #elif defined(CRCPP_MINGW_OS)

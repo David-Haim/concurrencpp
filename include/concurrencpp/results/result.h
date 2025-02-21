@@ -11,7 +11,7 @@
 
 namespace concurrencpp {
     template<class type>
-    class result {
+    class [[nodiscard]] result {
 
         static constexpr auto valid_result_type_v = std::is_same_v<type, void> || std::is_nothrow_move_constructible_v<type>;
 

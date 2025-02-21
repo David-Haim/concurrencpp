@@ -5,6 +5,7 @@
 #include "concurrencpp/results/impl/result_state.h"
 
 #include <atomic>
+#include <chrono>
 #include <semaphore>
 
 #include <cassert>

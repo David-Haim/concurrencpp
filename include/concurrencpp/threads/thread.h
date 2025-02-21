@@ -4,6 +4,7 @@
 #include "concurrencpp/platform_defs.h"
 
 #include <functional>
+#include <string>
 #include <string_view>
 #include <thread>
 
