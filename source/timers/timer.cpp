@@ -47,22 +47,22 @@ void timer::throw_if_empty(const char* error_message) const {
 }
 
 std::chrono::milliseconds timer::get_due_time() const {
-    throw_if_empty(details::consts::k_timer_empty_get_due_time_err_msg);
+    details::throw_helper::throw_if_empty_object<errors::empty_timer>(m_state, k_class_name, "get_due_time");
     return std::chrono::milliseconds(m_state->get_due_time());
 }
 
 std::chrono::milliseconds timer::get_frequency() const {
-    throw_if_empty(details::consts::k_timer_empty_get_frequency_err_msg);
+    details::throw_helper::throw_if_empty_object<errors::empty_timer>(m_state, k_class_name, "get_frequency");
     return std::chrono::milliseconds(m_state->get_frequency());
 }
 
 std::shared_ptr<concurrencpp::executor> timer::get_executor() const {
-    throw_if_empty(details::consts::k_timer_empty_get_executor_err_msg);
+    details::throw_helper::throw_if_empty_object<errors::empty_timer>(m_state, k_class_name, "get_executor");
     return m_state->get_executor();
 }
 
 std::weak_ptr<concurrencpp::timer_queue> timer::get_timer_queue() const {
-    throw_if_empty(details::consts::k_timer_empty_get_timer_queue_err_msg);
+    details::throw_helper::throw_if_empty_object<errors::empty_timer>(m_state, k_class_name, "get_timer_queue");
     return m_state->get_timer_queue();
 }
 
@@ -84,7 +84,7 @@ void timer::cancel() {
 }
 
 void timer::set_frequency(std::chrono::milliseconds new_frequency) {
-    throw_if_empty(details::consts::k_timer_empty_set_frequency_err_msg);
+    details::throw_helper::throw_if_empty_object<errors::empty_timer>(m_state, k_class_name, "set_frequency");
     return m_state->set_new_frequency(new_frequency.count());
 }
 

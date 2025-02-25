@@ -150,7 +150,7 @@ concurrencpp::result<void> concurrencpp::tests::test_lazy_result_status_impl() {
         };
 
         const auto expected_exception =
-            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name, "status");
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(lazy_result<type>::k_class_name, "status");
 
         assert_throws(test_case, expected_exception);
     }
@@ -365,7 +365,7 @@ void concurrencpp::tests::test_lazy_result_co_await_operator_impl() {
         };
 
         const auto expected_exception =
-            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(result<type>::k_class_name, "operator co_await");
+            throw_helper::make_empty_object_exception<concurrencpp::errors::empty_result>(lazy_result<type>::k_class_name, "operator co_await");
 
         assert_throws(test_case, expected_exception);
     }

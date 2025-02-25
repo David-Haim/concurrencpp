@@ -25,7 +25,7 @@ namespace concurrencpp {
         details::consumer_result_state_ptr<type> m_state;
 
        public:
-        static constexpr const char* k_class_name = "result";
+        static constexpr std::string_view k_class_name = "result";
 
         result() noexcept = default;
         result(result&& rhs) noexcept = default;

@@ -14,12 +14,10 @@ using namespace std::chrono;
 
 using concurrencpp::timer;
 using concurrencpp::timer_queue;
-using concurrencpp::details::timer_request;
 using concurrencpp::details::timer_state_base;
 
 using timer_ptr = timer_queue::timer_ptr;
 using time_point = timer_queue::time_point;
-using request_queue = timer_queue::request_queue;
 
 namespace concurrencpp::details {
     namespace {
@@ -57,19 +55,6 @@ namespace concurrencpp::details {
                 m_iterator_mapper.erase(timer_it);
             }
 
-            void process_request_queue(request_queue& queue) {
-                for (auto& request : queue) {
-                    auto& timer_ptr = request.first;
-                    const auto opt = request.second;
-
-                    if (opt == timer_request::add) {
-                        add_timer_internal(std::move(timer_ptr));
-                    } else {
-                        remove_timer_internal(std::move(timer_ptr));
-                    }
-                }
-            }
-
             void reset_containers_memory() noexcept {
                 assert(empty());
                 timer_set timers;
@@ -84,8 +69,14 @@ namespace concurrencpp::details {
                 return m_timers.empty();
             }
 
-            ::time_point process_timers(request_queue& queue) {
-                process_request_queue(queue);
+            ::time_point process_timers(std::vector<timer_ptr> add_timer_queue, std::vector<timer_ptr> remove_timer_queue) {
+                for (auto& timer : add_timer_queue) {
+                    add_timer_internal(std::move(timer));
+                }
+
+                for (auto& timer : remove_timer_queue) {
+                    remove_timer_internal(std::move(timer));
+                }
 
                 const auto now = high_resolution_clock::now();
 
@@ -148,9 +139,8 @@ namespace concurrencpp::details {
 timer_queue::timer_queue(milliseconds max_waiting_time,
                          const std::function<void(std::string_view thread_name)>& thread_started_callback,
                          const std::function<void(std::string_view thread_name)>& thread_terminated_callback) :
-    m_atomic_abort(false), m_abort(false), m_idle(true),
-    m_max_waiting_time(max_waiting_time),
-    m_thread_started_callback(thread_started_callback),
+    m_atomic_abort(false),
+    m_abort(false), m_idle(true), m_max_waiting_time(max_waiting_time), m_thread_started_callback(thread_started_callback),
     m_thread_terminated_callback(thread_terminated_callback) {}
 
 timer_queue::~timer_queue() noexcept {
@@ -160,7 +150,7 @@ timer_queue::~timer_queue() noexcept {
 
 void timer_queue::add_internal_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
     assert(lock.owns_lock());
-    m_request_queue.emplace_back(std::move(new_timer), timer_request::add);
+    m_add_timer_queue.emplace_back(std::move(new_timer));
     lock.unlock();
 
     m_condition.notify_one();
@@ -169,7 +159,7 @@ void timer_queue::add_internal_timer(std::unique_lock<std::mutex>& lock, timer_p
 void timer_queue::remove_internal_timer(timer_ptr existing_timer) {
     {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
-        m_request_queue.emplace_back(std::move(existing_timer), timer_request::remove);
+        m_remove_timer_queue.emplace_back(std::move(existing_timer));
     }
 
     m_condition.notify_one();
@@ -198,7 +188,7 @@ void timer_queue::work_loop() {
         std::unique_lock<decltype(m_lock)> lock(m_lock);
         if (internal_state.empty()) {
             const auto res = m_condition.wait_for(lock, m_max_waiting_time, [this] {
-                return !m_request_queue.empty() || m_abort;
+                return !m_add_timer_queue.empty() || !m_remove_timer_queue.empty() || m_abort;
             });
 
             if (!res) {
@@ -209,7 +199,7 @@ void timer_queue::work_loop() {
 
         } else {
             m_condition.wait_until(lock, next_deadline, [this] {
-                return !m_request_queue.empty() || m_abort;
+                return !m_add_timer_queue.empty() || !m_remove_timer_queue.empty() || m_abort;
             });
         }
 
@@ -217,10 +207,11 @@ void timer_queue::work_loop() {
             return;
         }
 
-        auto request_queue = std::move(m_request_queue);
+        auto add_timer_queue = std::move(m_add_timer_queue);
+        auto remove_timer_queue = std::move(m_remove_timer_queue);
         lock.unlock();
 
-        next_deadline = internal_state.process_timers(request_queue);
+        next_deadline = internal_state.process_timers(std::move(add_timer_queue), std::move(remove_timer_queue));
         const auto now = clock_type::now();
         if (next_deadline <= now) {
             continue;
@@ -245,7 +236,8 @@ void timer_queue::shutdown() {
         return;  // nothing to shut down
     }
 
-    m_request_queue.clear();
+    auto add_timer_queue = std::move(m_add_timer_queue);
+    auto remove_timer_queue = std::move(m_remove_timer_queue);
     lock.unlock();
 
     m_condition.notify_all();
@@ -315,9 +307,7 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
 
 concurrencpp::lazy_result<void> timer_queue::make_delay_object(std::chrono::milliseconds due_time,
                                                                std::shared_ptr<executor> executor) {
-    if (!static_cast<bool>(executor)) {
-        throw std::invalid_argument(details::consts::k_timer_queue_make_delay_object_executor_null_err_msg);
-    }
+    details::throw_helper::throw_if_null_argument(executor, k_class_name, "make_delay_object", "executor");
 
     return make_delay_object_impl(due_time, shared_from_this(), std::move(executor));
 }

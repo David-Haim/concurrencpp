@@ -13,7 +13,7 @@ namespace concurrencpp {
         std::shared_ptr<details::shared_result_state<type>> m_state;
 
        public:
-        static constexpr const char* k_class_name = "shared_result";
+        static constexpr std::string_view k_class_name = "shared_result";
 
         shared_result() noexcept = default;
         ~shared_result() noexcept = default;

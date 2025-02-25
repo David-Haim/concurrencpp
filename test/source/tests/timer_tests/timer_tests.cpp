@@ -46,10 +46,15 @@ namespace concurrencpp::tests {
     void test_timer_assignment_operator_non_empty_to_empty();
     void test_timer_assignment_operator_assign_to_self();
     void test_timer_assignment_operator();
+
+    void test_timer_getters();
 }  // namespace concurrencpp::tests
 
 using namespace std::chrono;
+
 using concurrencpp::timer;
+using concurrencpp::details::throw_helper;
+
 using time_point = std::chrono::time_point<high_resolution_clock>;
 
 namespace concurrencpp::tests {
@@ -532,10 +537,15 @@ void concurrencpp::tests::test_timer_set_frequency_after_due_time() {
 
 void concurrencpp::tests::test_timer_set_frequency() {
     // empty timer throws
-    assert_throws<concurrencpp::errors::empty_timer>([] {
-        timer timer;
-        timer.set_frequency(200ms);
-    });
+    const auto expected_exception =
+        throw_helper::make_empty_object_exception<concurrencpp::errors::empty_timer>(timer::k_class_name, "set_frequency");
+
+    assert_throws(
+        [] {
+            timer timer;
+            timer.set_frequency(200ms);
+        },
+        expected_exception);
 
     test_timer_set_frequency_before_due_time();
     test_timer_set_frequency_after_due_time();
@@ -658,6 +668,46 @@ void concurrencpp::tests::test_timer_assignment_operator() {
     test_timer_assignment_operator_assign_to_self();
 }
 
+void concurrencpp::tests::test_timer_getters() {
+    timer t;
+
+    const auto get_due_time_exception =
+        throw_helper::make_empty_object_exception<concurrencpp::errors::empty_timer>(timer::k_class_name, "get_due_time");
+
+    assert_throws(
+        [&t] {
+            t.get_due_time();
+        },
+        get_due_time_exception);
+
+    const auto get_executor_exception =
+        throw_helper::make_empty_object_exception<concurrencpp::errors::empty_timer>(timer::k_class_name, "get_executor");
+
+    assert_throws(
+        [&t] {
+            t.get_executor();
+        },
+        get_executor_exception);
+
+    const auto get_frequency_exception =
+        throw_helper::make_empty_object_exception<concurrencpp::errors::empty_timer>(timer::k_class_name, "get_frequency");
+
+    assert_throws(
+        [&t] {
+            t.get_frequency();
+        },
+        get_frequency_exception);
+
+    const auto get_timer_queue_exception =
+        throw_helper::make_empty_object_exception<concurrencpp::errors::empty_timer>(timer::k_class_name, "get_timer_queue");
+
+    assert_throws(
+        [&t] {
+            t.get_timer_queue();
+        },
+        get_timer_queue_exception);
+}
+
 using namespace concurrencpp::tests;
 
 int main() {
@@ -671,6 +721,7 @@ int main() {
     test.add_step("oneshot_timer", test_timer_oneshot_timer);
     test.add_step("delay_object", test_timer_delay_object);
     test.add_step("operator =", test_timer_assignment_operator);
+    test.add_step("getters", test_timer_getters);
 
     test.launch_test();
     return 0;

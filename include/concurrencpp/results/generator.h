@@ -2,6 +2,7 @@
 #define CONCURRENCPP_GENERATOR_H
 
 #include "concurrencpp/results/constants.h"
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/results/impl/generator_state.h"
 
 namespace concurrencpp {
@@ -18,6 +19,8 @@ namespace concurrencpp {
         details::coroutine_handle<promise_type> m_coro_handle;
 
        public:
+        static constexpr std::string_view k_class_name = "generator";
+
         generator(details::coroutine_handle<promise_type> handle) noexcept : m_coro_handle(handle) {}
 
         generator(generator&& rhs) noexcept : m_coro_handle(std::exchange(rhs.m_coro_handle, {})) {}
@@ -38,9 +41,7 @@ namespace concurrencpp {
         }
 
         iterator begin() {
-            if (!static_cast<bool>(m_coro_handle)) {
-                throw errors::empty_generator(details::consts::k_empty_generator_begin_err_msg);
-            }
+            details::throw_helper::throw_if_empty_object<errors::empty_generator>(m_coro_handle, k_class_name, "begin");
 
             assert(!m_coro_handle.done());
             m_coro_handle.resume();

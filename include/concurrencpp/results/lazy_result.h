@@ -19,7 +19,7 @@ namespace concurrencpp {
         }
 
        public:
-        static constexpr const char* k_class_name = "lazy_result";
+        static constexpr std::string_view k_class_name = "lazy_result";
 
         lazy_result() noexcept = default;
 

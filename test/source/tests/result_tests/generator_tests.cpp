@@ -28,6 +28,8 @@ namespace concurrencpp::tests {
     void test_generator_iterator_comparison_operators();
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 void concurrencpp::tests::test_generator_move_constructor() {
     auto gen0 = []() -> generator<int> {
         co_yield 1;
@@ -70,11 +72,14 @@ void concurrencpp::tests::test_generator_begin() {
     }();
 
     auto gen2(std::move(gen1));
-    assert_throws_with_error_message<errors::empty_generator>(
+    auto generator_empty_exception =
+        throw_helper::make_empty_object_exception<errors::empty_generator>(generator<int>::k_class_name, "begin");
+
+    assert_throws(
         [&gen1] {
             gen1.begin();
         },
-        concurrencpp::details::consts::k_empty_generator_begin_err_msg);
+        generator_empty_exception);
 }
 
 template<class type>

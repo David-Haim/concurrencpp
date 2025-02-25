@@ -119,6 +119,8 @@ namespace concurrencpp {
         void throw_if_empty(const char* error_message) const;
 
        public:
+        static constexpr std::string_view k_class_name = "timer";
+
         timer() noexcept = default;
         ~timer() noexcept;
 
