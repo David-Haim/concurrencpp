@@ -1,8 +1,8 @@
 #ifndef CONCURRENCPP_WHEN_RESULT_H
 #define CONCURRENCPP_WHEN_RESULT_H
 
-#include "concurrencpp/errors.h"
 #include "concurrencpp/results/resume_on.h"
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/results/lazy_result.h"
 
 #include <tuple>
@@ -13,17 +13,14 @@ namespace concurrencpp::details {
     class when_result_helper {
 
        private:
-        static void throw_if_empty_impl(const char* error_message) noexcept {
-            (void)error_message;
+        static void throw_if_empty_impl(const char* method_name) noexcept {
+            (void)method_name;
         }
 
         template<class type, class... result_types>
-        static void throw_if_empty_impl(const char* error_message, const result<type>& result, result_types&&... results) {
-            if (!static_cast<bool>(result)) {
-                throw errors::empty_result(error_message);
-            }
-
-            throw_if_empty_impl(error_message, std::forward<result_types>(results)...);
+        static void throw_if_empty_impl(const char* method_name, const result<type>& result, result_types&&... results) {
+            throw_helper::throw_if_null_argument(result, "", method_name, "result");
+            throw_if_empty_impl(method_name, std::forward<result_types>(results)...);
         }
 
         template<class type>
@@ -63,16 +60,14 @@ namespace concurrencpp::details {
         }
 
         template<class... result_types>
-        static void throw_if_empty_tuple(const char* error_message, result_types&&... results) {
-            throw_if_empty_impl(error_message, std::forward<result_types>(results)...);
+        static void throw_if_empty_tuple(const char* method_name, result_types&&... results) {
+            throw_if_empty_impl(method_name, std::forward<result_types>(results)...);
         }
 
         template<class iterator_type>
-        static void throw_if_empty_range(const char* error_message, iterator_type begin, iterator_type end) {
+        static void throw_if_empty_range(const char* method_name, iterator_type begin, iterator_type end) {
             for (; begin != end; ++begin) {
-                if (!static_cast<bool>((*begin))) {
-                    throw errors::empty_result(error_message);
-                }
+                throw_helper::throw_if_null_argument(*begin, "", method_name, "result");
             }
         }
 
@@ -182,9 +177,7 @@ namespace concurrencpp::details {
 namespace concurrencpp {
     template<class executor_type>
     lazy_result<std::tuple<>> when_all(std::shared_ptr<executor_type> resume_executor) {
-        if (!static_cast<bool>(resume_executor)) {
-            throw std::invalid_argument(details::consts::k_when_all_null_resume_executor_error_msg);
-        }
+        details::throw_helper::throw_if_null_argument(resume_executor, "", "when_all", "resume_executor");
 
         auto make_lazy_result = []() -> lazy_result<std::tuple<>> {
             co_return std::tuple<> {};
@@ -196,12 +189,8 @@ namespace concurrencpp {
     template<class executor_type, class... result_types>
     lazy_result<std::tuple<typename std::decay<result_types>::type...>> when_all(std::shared_ptr<executor_type> resume_executor,
                                                                                  result_types&&... results) {
-        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_all_empty_result_error_msg,
-                                                          std::forward<result_types>(results)...);
-
-        if (!static_cast<bool>(resume_executor)) {
-            throw std::invalid_argument(details::consts::k_when_all_null_resume_executor_error_msg);
-        }
+        details::when_result_helper::throw_if_empty_tuple("when_all", std::forward<result_types>(results)...);
+        details::throw_helper::throw_if_null_argument(resume_executor, "", "when_all", "resume_executor");
 
         return details::when_all_impl(resume_executor, std::make_tuple(std::forward<result_types>(results)...));
     }
@@ -209,11 +198,8 @@ namespace concurrencpp {
     template<class executor_type, class iterator_type>
     lazy_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>
     when_all(std::shared_ptr<executor_type> resume_executor, iterator_type begin, iterator_type end) {
-        details::when_result_helper::throw_if_empty_range(details::consts::k_when_all_empty_result_error_msg, begin, end);
-
-        if (!static_cast<bool>(resume_executor)) {
-            throw std::invalid_argument(details::consts::k_when_all_null_resume_executor_error_msg);
-        }
+        details::when_result_helper::throw_if_empty_range("when_all", begin, end);
+        details::throw_helper::throw_if_null_argument(resume_executor, "", "when_all", "resume_executor");
 
         using type = typename std::iterator_traits<iterator_type>::value_type;
 
@@ -244,12 +230,8 @@ namespace concurrencpp {
     lazy_result<when_any_result<std::tuple<result_types...>>> when_any(std::shared_ptr<executor_type> resume_executor,
                                                                        result_types&&... results) {
         static_assert(sizeof...(result_types) != 0, "concurrencpp::when_any() - the function must accept at least one result object.");
-        details::when_result_helper::throw_if_empty_tuple(details::consts::k_when_any_empty_result_error_msg,
-                                                          std::forward<result_types>(results)...);
-
-        if (!static_cast<bool>(resume_executor)) {
-            throw std::invalid_argument(details::consts::k_when_any_null_resume_executor_error_msg);
-        }
+        details::when_result_helper::throw_if_empty_tuple("when_any", std::forward<result_types>(results)...);
+        details::throw_helper::throw_if_null_argument(resume_executor, "", "when_any", "resume_executor");
 
         return details::when_any_impl(resume_executor, std::make_tuple(std::forward<result_types>(results)...));
     }
@@ -257,15 +239,12 @@ namespace concurrencpp {
     template<class executor_type, class iterator_type>
     lazy_result<when_any_result<std::vector<typename std::iterator_traits<iterator_type>::value_type>>>
     when_any(std::shared_ptr<executor_type> resume_executor, iterator_type begin, iterator_type end) {
-        details::when_result_helper::throw_if_empty_range(details::consts::k_when_any_empty_result_error_msg, begin, end);
-
         if (begin == end) {
             throw std::invalid_argument(details::consts::k_when_any_empty_range_error_msg);
         }
 
-        if (!static_cast<bool>(resume_executor)) {
-            throw std::invalid_argument(details::consts::k_when_any_null_resume_executor_error_msg);
-        }
+        details::when_result_helper::throw_if_empty_range("when_any", begin, end);
+        details::throw_helper::throw_if_null_argument(resume_executor, "", "when_any", "resume_executor");
 
         using type = typename std::iterator_traits<iterator_type>::value_type;
 

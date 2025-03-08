@@ -1,6 +1,5 @@
 #include "concurrencpp/timers/timer.h"
 #include "concurrencpp/timers/timer_queue.h"
-#include "concurrencpp/timers/constants.h"
 
 #include "concurrencpp/errors.h"
 #include "concurrencpp/results/result.h"

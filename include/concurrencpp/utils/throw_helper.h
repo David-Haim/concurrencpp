@@ -25,7 +25,6 @@ namespace concurrencpp::details {
             }
         }
 
-        template<class state_type>
         [[noreturn]] static void throw_worker_shutdown_exception(std::string_view class_name, const char* method) {
             throw make_worker_shutdown_exception(class_name, method);
         }
@@ -46,17 +45,21 @@ namespace concurrencpp::details {
                                                                    const char* method,
                                                                    const char* arg_name) {
             char buffer[256];
-            std::snprintf(buffer,
-                          std::size(buffer),
-                          "concurrencpp::%s::%s() - given %s is null or empty.",
-                          class_name.data(),
-                          method,
-                          class_name.data());
+            if (class_name.empty()) {
+                std::snprintf(buffer, std::size(buffer), "concurrencpp::%s() - given %s is null or empty.", method, arg_name);
+            } else {
+                std::snprintf(buffer,
+                              std::size(buffer),
+                              "concurrencpp::%s::%s() - given %s is null or empty.",
+                              class_name.data(),
+                              method,
+                              arg_name);
+            }
+
             return std::invalid_argument(buffer);
         }
 
-        static errors::runtime_shutdown make_worker_shutdown_exception(std::string_view class_name,
-                                                                   const char* method) {
+        static errors::runtime_shutdown make_worker_shutdown_exception(std::string_view class_name, const char* method) {
             char buffer[256];
             std::snprintf(buffer,
                           std::size(buffer),

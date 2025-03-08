@@ -2,7 +2,6 @@
 #define CONCURRENCPP_TIMER_QUEUE_H
 
 #include "timer.h"
-#include "constants.h"
 #include "concurrencpp/errors.h"
 #include "concurrencpp/utils/bind.h"
 #include "concurrencpp/threads/thread.h"
@@ -44,18 +43,20 @@ namespace concurrencpp {
         void add_internal_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer);
         void remove_internal_timer(timer_ptr existing_timer);
 
-        void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer);
+        void add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer, const char* calling_method);
 
         lazy_result<void> make_delay_object_impl(std::chrono::milliseconds due_time,
                                                  std::shared_ptr<concurrencpp::timer_queue> self,
                                                  std::shared_ptr<concurrencpp::executor> executor);
 
         template<class callable_type>
-        timer_ptr make_timer_impl(size_t due_time,
+        timer_ptr make_timer_impl(const char* calling_method,
+                                  size_t due_time,
                                   size_t frequency,
                                   std::shared_ptr<concurrencpp::executor> executor,
                                   bool is_oneshot,
                                   callable_type&& callable) {
+            assert(calling_method != nullptr);
             assert(static_cast<bool>(executor));
 
             using decayed_type = typename std::decay_t<callable_type>;
@@ -68,7 +69,7 @@ namespace concurrencpp {
                                                                                     std::forward<callable_type>(callable));
             {
                 std::unique_lock<std::mutex> lock(m_lock);
-                add_timer(lock, timer_state);
+                add_timer(lock, timer_state, calling_method);
             }
 
             return timer_state;
@@ -95,7 +96,8 @@ namespace concurrencpp {
                          argumet_types&&... arguments) {
             details::throw_helper::throw_if_null_argument(executor, k_class_name, "make_timer", "executor");
 
-            return make_timer_impl(due_time.count(),
+            return make_timer_impl("make_timer",
+                                   due_time.count(),
                                    frequency.count(),
                                    std::move(executor),
                                    false,
@@ -109,7 +111,8 @@ namespace concurrencpp {
                                   argumet_types&&... arguments) {
             details::throw_helper::throw_if_null_argument(executor, k_class_name, "make_one_shot_timer", "executor");
 
-            return make_timer_impl(due_time.count(),
+            return make_timer_impl("make_one_shot_timer",
+                                   due_time.count(),
                                    0,
                                    std::move(executor),
                                    true,

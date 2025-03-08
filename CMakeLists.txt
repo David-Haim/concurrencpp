@@ -79,7 +79,6 @@ set(concurrencpp_headers
         include/concurrencpp/threads/async_condition_variable.h
         include/concurrencpp/threads/thread.h
         include/concurrencpp/threads/cache_line.h
-        include/concurrencpp/timers/constants.h
         include/concurrencpp/timers/timer.h
         include/concurrencpp/timers/timer_queue.h
         include/concurrencpp/utils/bind.h

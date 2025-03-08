@@ -165,11 +165,11 @@ void timer_queue::remove_internal_timer(timer_ptr existing_timer) {
     m_condition.notify_one();
 }
 
-void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer) {
+void timer_queue::add_timer(std::unique_lock<std::mutex>& lock, timer_ptr new_timer, const char* calling_method) {
     assert(lock.owns_lock());
 
     if (m_abort) {
-        throw errors::runtime_shutdown(details::consts::k_timer_queue_shutdown_err_msg);
+        details::throw_helper::throw_worker_shutdown_exception(k_class_name, calling_method);
     }
 
     auto old_thread = ensure_worker_thread(lock);
@@ -284,7 +284,8 @@ concurrencpp::lazy_result<void> timer_queue::make_delay_object_impl(std::chrono:
 
         void await_suspend(details::coroutine_handle<void> coro_handle) noexcept {
             try {
-                m_parent_queue.make_timer_impl(m_due_time_ms,
+                m_parent_queue.make_timer_impl("make_delay_object",
+                                               m_due_time_ms,
                                                0,
                                                std::move(m_executor),
                                                true,

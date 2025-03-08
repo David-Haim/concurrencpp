@@ -42,6 +42,8 @@ namespace concurrencpp::tests {
     void test_when_any_tuple();
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 template<class type>
 void concurrencpp::tests::test_when_any_vector_empty_result(std::shared_ptr<worker_thread_executor> resume_executor) {
     constexpr size_t task_count = 63;
@@ -55,11 +57,13 @@ void concurrencpp::tests::test_when_any_vector_empty_result(std::shared_ptr<work
     // place an empty result in the end of the array
     results.emplace_back();
 
-    assert_throws_with_error_message<errors::empty_result>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "when_any", "result");
+
+    assert_throws(
         [&] {
             concurrencpp::when_any(resume_executor, results.begin(), results.end());
         },
-        concurrencpp::details::consts::k_when_any_empty_result_error_msg);
+        expected_error);
 
     const auto all_valid = std::all_of(results.begin(), results.begin() + task_count, [](const auto& result) {
         return static_cast<bool>(result);
@@ -89,12 +93,14 @@ void concurrencpp::tests::test_when_any_vector_null_resume_executor() {
         results.emplace_back(rp.get_result());
     }
 
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "when_any", "resume_executor");
+
     // with results
-    assert_throws_with_error_message<std::invalid_argument>(
+    assert_throws(
         [&] {
             when_any(std::shared_ptr<worker_thread_executor> {}, results.begin(), results.end());
         },
-        concurrencpp::details::consts::k_when_any_null_resume_executor_error_msg);
+        expected_error);
 }
 
 template<class type>
@@ -227,7 +233,9 @@ void concurrencpp::tests::test_when_any_tuple_empty_result(std::shared_ptr<worke
 
     result<std::string&> str_ref_res;
 
-    assert_throws_with_error_message<errors::empty_result>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "when_any", "result");
+
+    assert_throws(
         [&] {
             when_any(resume_executor,
                      std::move(int_res),
@@ -236,7 +244,7 @@ void concurrencpp::tests::test_when_any_tuple_empty_result(std::shared_ptr<worke
                      std::move(int_ref_res),
                      std::move(str_ref_res));
         },
-        concurrencpp::details::consts::k_when_any_empty_result_error_msg);
+        expected_error);
 
     // all pre-operation results are still valid
     assert_true(static_cast<bool>(int_res));
@@ -255,12 +263,14 @@ void concurrencpp::tests::test_when_any_tuple_null_resume_executor() {
     result_promise<void> rp_void;
     auto void_res = rp_void.get_result();
 
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "when_any", "resume_executor");
+
     // with results
-    assert_throws_with_error_message<std::invalid_argument>(
+    assert_throws(
         [&] {
             when_any(std::shared_ptr<worker_thread_executor> {}, std::move(int_res), std::move(str_res), std::move(void_res));
         },
-        concurrencpp::details::consts::k_when_any_null_resume_executor_error_msg);
+        expected_error);
 }
 
 concurrencpp::result<void> concurrencpp::tests::test_when_any_tuple_impl(std::shared_ptr<worker_thread_executor> resume_executor,
