@@ -24,9 +24,7 @@ namespace concurrencpp::details {
             "concurrencpp::initialy_rescheduled_promise<<executor_type>> - <<executor_type>> isn't driven from concurrencpp::executor.");
 
         static executor_type& to_ref(executor_type* executor_ptr) {
-            if (executor_ptr == nullptr) {
-                throw std::invalid_argument(consts::k_parallel_coroutine_null_exception_err_msg);
-            }
+            throw_helper::throw_if_null_argument(executor_ptr, "", "parallel-coroutine", "executor");
 
             return *executor_ptr;
         }

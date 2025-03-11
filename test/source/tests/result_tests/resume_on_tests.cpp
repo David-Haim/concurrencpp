@@ -36,12 +36,15 @@ namespace concurrencpp::tests {
     }
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 void concurrencpp::tests::test_resume_on_null_executor() {
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "resume_on", "executor");
+    assert_throws(
         [] {
             resume_on_1_executor({}).get();
         },
-        concurrencpp::details::consts::k_resume_on_null_exception_err_msg);
+        expected_error);
 }
 
 void concurrencpp::tests::test_resume_on_shutdown_executor() {

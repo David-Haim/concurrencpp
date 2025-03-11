@@ -44,10 +44,7 @@ namespace concurrencpp {
     auto resume_on(std::shared_ptr<executor_type> executor) {
         static_assert(std::is_base_of_v<concurrencpp::executor, executor_type>,
                       "concurrencpp::resume_on() - given executor does not derive from concurrencpp::executor");
-
-        if (!static_cast<bool>(executor)) {
-            throw std::invalid_argument(details::consts::k_resume_on_null_exception_err_msg);
-        }
+        details::throw_helper::throw_if_null_argument(executor, "", "resume_on", "executor");
 
         return details::resume_on_awaitable<executor_type>(*executor);
     }

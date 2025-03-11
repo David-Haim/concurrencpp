@@ -27,6 +27,7 @@ namespace concurrencpp::tests {
     void test_lazy_result_promise();
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
 using worker_ptr = std::shared_ptr<concurrencpp::worker_thread_executor>;
 
 namespace concurrencpp::tests {
@@ -274,11 +275,13 @@ namespace concurrencpp::tests {
 
 void concurrencpp::tests::test_initialy_rescheduled_null_result_promise() {
     // null resume executor
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "parallel-coroutine", "executor");
+
+    assert_throws(
         [] {
             null_executor_null_result_coro({}, {});
         },
-        concurrencpp::details::consts::k_parallel_coroutine_null_exception_err_msg);
+        expected_error);
 
     test_initialy_rescheduled_null_result_promise_value();
     test_initialy_rescheduled_null_result_promise_exception();
@@ -382,11 +385,13 @@ namespace concurrencpp::tests {
 
 void concurrencpp::tests::test_initialy_rescheduled_result_promise() {
     // null resume executor
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "parallel-coroutine", "executor");
+
+    assert_throws(
         [] {
             null_executor_result_coro({}, {});
         },
-        concurrencpp::details::consts::k_parallel_coroutine_null_exception_err_msg);
+        expected_error);
 
     test_initialy_rescheduled_result_promise_value();
     test_initialy_rescheduled_result_promise_exception();

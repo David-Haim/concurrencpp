@@ -24,6 +24,8 @@ namespace concurrencpp::tests {
 
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 template<class type>
 void concurrencpp::tests::test_make_ready_result_impl() {
     result<type> result;
@@ -47,12 +49,14 @@ void concurrencpp::tests::test_make_ready_result() {
 
 template<class type>
 void concurrencpp::tests::test_make_exceptional_result_impl() {
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "make_exceptional_result", "exception_ptr");
+
     // empty exception_ptr makes make_exceptional_result throw.
-    assert_throws_with_error_message<std::invalid_argument>(
+    assert_throws(
         [] {
             make_exceptional_result<type>({});
         },
-        concurrencpp::details::consts::k_make_exceptional_result_exception_null_error_msg);
+        expected_error);
 
     const size_t id = 123456789;
     auto res0 = make_exceptional_result<type>(custom_exception(id));
@@ -94,11 +98,13 @@ void concurrencpp::tests::test_make_ready_lazy_result() {
 template<class type>
 void concurrencpp::tests::test_make_exceptional_lazy_result_impl() {
     // empty exception_ptr makes make_exceptional_result throw.
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error = throw_helper::make_empty_argument_exception("", "make_exceptional_lazy_result", "exception_ptr");
+
+    assert_throws(
         [] {
             make_exceptional_lazy_result<type>({});
         },
-        concurrencpp::details::consts::k_make_exceptional_lazy_result_exception_null_error_msg);
+        expected_error);
 
     const size_t id = 123456789;
     auto res0 = make_exceptional_lazy_result<type>(custom_exception(id)).run();

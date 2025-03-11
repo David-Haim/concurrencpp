@@ -12,7 +12,7 @@ namespace concurrencpp::details {
 
     template<class type>
     lazy_result<type> make_exceptional_lazy_result_impl(std::exception_ptr exception_ptr) {
-        assert(static_cast<bool>(exception_ptr));  
+        assert(static_cast<bool>(exception_ptr));
         std::rethrow_exception(exception_ptr);
         co_await suspend_never {};
     }
@@ -38,9 +38,7 @@ namespace concurrencpp {
 
     template<class type>
     result<type> make_exceptional_result(std::exception_ptr exception_ptr) {
-        if (!static_cast<bool>(exception_ptr)) {
-            throw std::invalid_argument(details::consts::k_make_exceptional_result_exception_null_error_msg);
-        }
+        details::throw_helper::throw_if_null_argument(exception_ptr, "", "make_exceptional_result", "exception_ptr");
 
         details::producer_result_state_ptr<type> promise(new details::result_state<type>());
         details::consumer_result_state_ptr<type> state_ptr(promise.get());
@@ -76,7 +74,7 @@ namespace concurrencpp {
     lazy_result<type&> make_ready_lazy_result(type& t) {
         co_return std::ref(t);
     }
-    
+
     template<class type, class exception_type>
     lazy_result<type> make_exceptional_lazy_result(exception_type exception) {
         throw exception;
@@ -85,10 +83,7 @@ namespace concurrencpp {
 
     template<class type>
     lazy_result<type> make_exceptional_lazy_result(std::exception_ptr exception_ptr) {
-        if (!static_cast<bool>(exception_ptr)) {
-            throw std::invalid_argument(details::consts::k_make_exceptional_lazy_result_exception_null_error_msg);
-        }
-    
+        details::throw_helper::throw_if_null_argument(exception_ptr, "", "make_exceptional_lazy_result", "exception_ptr");
         return details::make_exceptional_lazy_result_impl<type>(exception_ptr);
     }
 }  // namespace concurrencpp
