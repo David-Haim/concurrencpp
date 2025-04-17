@@ -47,6 +47,7 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;
+using concurrencpp::details::throw_helper;
 
 void concurrencpp::tests::test_worker_thread_executor_name() {
     auto executor = std::make_shared<worker_thread_executor>();
@@ -62,15 +63,19 @@ void concurrencpp::tests::test_worker_thread_executor_shutdown_method_access() {
     executor->shutdown();
     assert_true(executor->shutdown_requested());
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        executor->enqueue(concurrencpp::task {});
-    });
+    assert_throws(
+        [executor] {
+            executor->enqueue(concurrencpp::task {});
+        },
+        throw_helper::make_worker_shutdown_exception("worker_thread_executor", "enqueue"));
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        concurrencpp::task array[4];
-        std::span<concurrencpp::task> span = array;
-        executor->enqueue(span);
-    });
+    assert_throws(
+        [executor] {
+            concurrencpp::task array[4];
+            std::span<concurrencpp::task> span = array;
+            executor->enqueue(span);
+        },
+        throw_helper::make_worker_shutdown_exception("worker_thread_executor", "enqueue"));
 }
 
 void concurrencpp::tests::test_worker_thread_executor_shutdown_thread_join() {

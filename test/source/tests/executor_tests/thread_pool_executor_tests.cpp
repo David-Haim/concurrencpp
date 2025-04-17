@@ -31,7 +31,7 @@ namespace concurrencpp::tests {
     void test_thread_pool_executor_bulk_post_foreign();
     void test_thread_pool_executor_bulk_post_inline();
     void test_thread_pool_executor_bulk_post();
-
+    
     void test_thread_pool_executor_bulk_submit_exception();
     void test_thread_pool_executor_bulk_submit_foreign();
     void test_thread_pool_executor_bulk_submit_inline();
@@ -44,6 +44,7 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;
+using concurrencpp::details::throw_helper;
 
 void concurrencpp::tests::test_thread_pool_executor_name() {
     const auto name = "abcde12345&*(";
@@ -87,15 +88,19 @@ void concurrencpp::tests::test_thread_pool_executor_shutdown_method_access() {
     executor->shutdown();
     assert_true(executor->shutdown_requested());
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        executor->enqueue(concurrencpp::task {});
-    });
+    assert_throws(
+        [executor] {
+            executor->enqueue(concurrencpp::task {});
+        },
+        throw_helper::make_worker_shutdown_exception("threadpool", "enqueue"));
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        concurrencpp::task array[4];
-        std::span<concurrencpp::task> span = array;
-        executor->enqueue(span);
-    });
+    assert_throws(
+        [executor] {
+            concurrencpp::task array[4];
+            std::span<concurrencpp::task> span = array;
+            executor->enqueue(span);
+        },
+        throw_helper::make_worker_shutdown_exception("threadpool", "enqueue"));
 }
 
 void concurrencpp::tests::test_thread_pool_executor_shutdown_method_more_than_once() {

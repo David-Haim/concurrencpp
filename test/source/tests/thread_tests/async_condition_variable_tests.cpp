@@ -34,7 +34,7 @@ void tests::test_async_condition_variable_await_null_resume_executor() {
     auto scoped_lock = lock.lock(executor).run().get();
 
     const auto expected_error =
-        throw_helper::make_empty_argument_exception(scoped_async_lock::k_class_name, "async_condition_variable", "resume_executor");
+        throw_helper::make_empty_argument_exception(async_condition_variable::k_class_name, "await", "resume_executor");
 
     assert_throws(
         [&] {
@@ -91,7 +91,7 @@ void tests::test_async_condition_variable_await_pred_null_resume_executor() {
     auto scoped_lock = lock.lock(executor).run().get();
 
     const auto expected_error =
-        throw_helper::make_empty_argument_exception(scoped_async_lock::k_class_name, "async_condition_variable", "resume_executor");
+        throw_helper::make_empty_argument_exception(async_condition_variable::k_class_name, "await", "resume_executor");
 
     assert_throws(
         [&] {

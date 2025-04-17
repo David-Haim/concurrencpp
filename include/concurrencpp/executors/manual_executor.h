@@ -62,7 +62,7 @@ namespace concurrencpp {
 
         template<class clock_type, class duration_type>
         bool loop_once_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
-            return loop_until_impl(1, to_system_time_point(timeout_time));
+            return loop_until_impl(1, to_system_time_point(timeout_time), "loop_once_until");
         }
 
         size_t loop(size_t max_count);
@@ -70,7 +70,7 @@ namespace concurrencpp {
 
         template<class clock_type, class duration_type>
         size_t loop_until(size_t max_count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
-            return loop_until_impl(max_count, to_system_time_point(timeout_time));
+            return loop_until_impl(max_count, to_system_time_point(timeout_time), "loop_until");
         }
 
         void wait_for_task();
@@ -78,7 +78,7 @@ namespace concurrencpp {
 
         template<class clock_type, class duration_type>
         bool wait_for_task_until(std::chrono::time_point<clock_type, duration_type> timeout_time) {
-            return wait_for_tasks_impl(1, to_system_time_point(timeout_time)) == 1;
+            return wait_for_tasks_impl(1, to_system_time_point(timeout_time), "wait_for_task_until") == 1;
         }
 
         void wait_for_tasks(size_t count);
@@ -86,7 +86,7 @@ namespace concurrencpp {
 
         template<class clock_type, class duration_type>
         size_t wait_for_tasks_until(size_t count, std::chrono::time_point<clock_type, duration_type> timeout_time) {
-            return wait_for_tasks_impl(count, to_system_time_point(timeout_time));
+            return wait_for_tasks_impl(count, to_system_time_point(timeout_time), "wait_for_tasks_until");
         }
     };
 }  // namespace concurrencpp

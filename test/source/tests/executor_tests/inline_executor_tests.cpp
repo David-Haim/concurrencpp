@@ -41,6 +41,7 @@ namespace concurrencpp::tests {
 }  // namespace concurrencpp::tests
 
 using concurrencpp::details::thread;
+using concurrencpp::details::throw_helper;
 
 void concurrencpp::tests::test_inline_executor_name() {
     auto executor = std::make_shared<inline_executor>();
@@ -59,15 +60,19 @@ void concurrencpp::tests::test_inline_executor_shutdown() {
     // it's ok to shut down an executor more than once
     executor->shutdown();
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        executor->enqueue(concurrencpp::task {});
-    });
+    assert_throws(
+        [executor] {
+            executor->enqueue(concurrencpp::task {});
+        },
+        throw_helper::make_worker_shutdown_exception("inline_executor", "enqueue"));
 
-    assert_throws<concurrencpp::errors::runtime_shutdown>([executor] {
-        concurrencpp::task array[4];
-        std::span<concurrencpp::task> span = array;
-        executor->enqueue(span);
-    });
+    assert_throws(
+        [executor] {
+            concurrencpp::task array[4];
+            std::span<concurrencpp::task> span = array;
+            executor->enqueue(span);
+        },
+        throw_helper::make_worker_shutdown_exception("inline_executor", "enqueue"));
 }
 
 void concurrencpp::tests::test_inline_executor_max_concurrency_level() {
