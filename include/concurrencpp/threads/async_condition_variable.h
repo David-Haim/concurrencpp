@@ -56,6 +56,8 @@ namespace concurrencpp {
         lazy_result<void> await_impl(std::shared_ptr<executor> resume_executor, scoped_async_lock& lock);
 
        public:
+        static constexpr std::string_view k_class_name = "async_condition_variable";
+
         async_condition_variable() noexcept = default;
         ~async_condition_variable() noexcept;
 

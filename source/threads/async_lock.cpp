@@ -89,10 +89,7 @@ concurrencpp::lazy_result<scoped_async_lock> async_lock::lock_impl(std::shared_p
 }
 
 concurrencpp::lazy_result<scoped_async_lock> async_lock::lock(std::shared_ptr<executor> resume_executor) {
-    if (!static_cast<bool>(resume_executor)) {
-        throw std::invalid_argument(details::consts::k_async_lock_null_resume_executor_err_msg);
-    }
-
+    details::throw_helper::throw_if_null_argument(resume_executor, k_class_name, "lock", "resume_executor");
     return lock_impl(std::move(resume_executor), true);
 }
 
@@ -160,9 +157,7 @@ scoped_async_lock::~scoped_async_lock() noexcept {
 }
 
 concurrencpp::lazy_result<void> scoped_async_lock::lock(std::shared_ptr<executor> resume_executor) {
-    if (!static_cast<bool>(resume_executor)) {
-        throw std::invalid_argument(details::consts::k_scoped_async_lock_null_resume_executor_err_msg);
-    }
+    details::throw_helper::throw_if_null_argument(resume_executor, k_class_name, "lock", "resume_executor");
 
     if (m_lock == nullptr) {
         throw std::system_error(static_cast<int>(std::errc::operation_not_permitted),

@@ -8,6 +8,8 @@
 
 using namespace concurrencpp;
 
+using concurrencpp::details::throw_helper;
+
 namespace concurrencpp::tests {
     void test_async_condition_variable_await_null_resume_executor();
     void test_async_condition_variable_await_unlocked_scoped_async_lock();
@@ -31,11 +33,14 @@ void tests::test_async_condition_variable_await_null_resume_executor() {
 
     auto scoped_lock = lock.lock(executor).run().get();
 
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error =
+        throw_helper::make_empty_argument_exception(scoped_async_lock::k_class_name, "async_condition_variable", "resume_executor");
+
+    assert_throws(
         [&] {
             cv.await({}, scoped_lock).run().get();
         },
-        concurrencpp::details::consts::k_async_condition_variable_await_invalid_resume_executor_err_msg);
+        expected_error);
 }
 
 void tests::test_async_condition_variable_await_unlocked_scoped_async_lock() {
@@ -85,13 +90,16 @@ void tests::test_async_condition_variable_await_pred_null_resume_executor() {
 
     auto scoped_lock = lock.lock(executor).run().get();
 
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error =
+        throw_helper::make_empty_argument_exception(scoped_async_lock::k_class_name, "async_condition_variable", "resume_executor");
+
+    assert_throws(
         [&] {
             cv.await({}, scoped_lock, [] {
                 return true;
             });
         },
-        concurrencpp::details::consts::k_async_condition_variable_await_invalid_resume_executor_err_msg);
+        expected_error);
 }
 
 void tests::test_async_condition_variable_await_pred_unlocked_scoped_async_lock() {

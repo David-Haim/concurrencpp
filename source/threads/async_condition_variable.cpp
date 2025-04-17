@@ -1,5 +1,6 @@
 #include "concurrencpp/results/resume_on.h"
 #include "concurrencpp/threads/constants.h"
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/threads/async_condition_variable.h"
 
 using concurrencpp::executor;
@@ -42,9 +43,7 @@ async_condition_variable::~async_condition_variable() noexcept {
 }
 
 void async_condition_variable::verify_await_params(const std::shared_ptr<executor>& resume_executor, const scoped_async_lock& lock) {
-    if (!static_cast<bool>(resume_executor)) {
-        throw std::invalid_argument(details::consts::k_async_condition_variable_await_invalid_resume_executor_err_msg);
-    }
+    details::throw_helper::throw_if_null_argument(resume_executor, k_class_name, "await", "resume_executor");
 
     if (!lock.owns_lock()) {
         throw std::invalid_argument(details::consts::k_async_condition_variable_await_lock_unlocked_err_msg);

@@ -20,6 +20,8 @@ namespace concurrencpp::tests {
 
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 concurrencpp::result<void> concurrencpp::tests::test_scoped_async_lock_constructor_impl(std::shared_ptr<executor> executor) {
     {  // default constructor
         scoped_async_lock sal;
@@ -87,13 +89,16 @@ void concurrencpp::tests::test_scoped_async_lock_lock() {
     executor_shutdowner es(executor);
 
     {  // null resume_executor
-        assert_throws_contains_error_message<std::invalid_argument>(
+        const auto expected_error =
+            throw_helper::make_empty_argument_exception(scoped_async_lock::k_class_name, "lock", "resume_executor");
+
+        assert_throws(
             [] {
                 async_lock lock;
                 scoped_async_lock sal(lock, std::defer_lock);
                 sal.lock(std::shared_ptr<concurrencpp::executor>()).run().get();
             },
-            concurrencpp::details::consts::k_scoped_async_lock_null_resume_executor_err_msg);
+            expected_error);
     }
 
     {  // empty scoped_async_lock

@@ -49,13 +49,17 @@ namespace concurrencpp::tests {
     }
 }  // namespace concurrencpp::tests
 
+using concurrencpp::details::throw_helper;
+
 void concurrencpp::tests::test_async_lock_lock_null_resume_executor() {
-    assert_throws_with_error_message<std::invalid_argument>(
+    const auto expected_error = throw_helper::make_empty_argument_exception(async_lock::k_class_name, "lock", "resume_executor");
+    
+    assert_throws(
         [] {
             async_lock lock;
             lock.lock(std::shared_ptr<concurrencpp::inline_executor> {});
         },
-        concurrencpp::details::consts::k_async_lock_null_resume_executor_err_msg);
+        expected_error);
 }
 
 void concurrencpp::tests::test_async_lock_lock_resumption() {

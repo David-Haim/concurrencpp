@@ -57,6 +57,8 @@ namespace concurrencpp {
         lazy_result<scoped_async_lock> lock_impl(std::shared_ptr<executor> resume_executor, bool with_raii_guard);
 
        public:
+        static constexpr std::string_view k_class_name = "async_lock";
+
         ~async_lock() noexcept;
 
         lazy_result<scoped_async_lock> lock(std::shared_ptr<executor> resume_executor);
@@ -71,6 +73,8 @@ namespace concurrencpp {
         bool m_owns = false;
 
        public:
+        static constexpr std::string_view k_class_name = "scoped_async_lock";
+
         scoped_async_lock() noexcept = default;
         scoped_async_lock(scoped_async_lock&& rhs) noexcept;
 
