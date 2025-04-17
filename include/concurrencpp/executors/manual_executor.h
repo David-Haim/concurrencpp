@@ -31,11 +31,15 @@ namespace concurrencpp {
             return std::chrono::system_clock::now() + ms;
         }
 
-        size_t loop_impl(size_t max_count);
-        size_t loop_until_impl(size_t max_count, std::chrono::time_point<std::chrono::system_clock> deadline);
+        size_t loop_impl(size_t max_count, const char* calling_method);
+        size_t loop_until_impl(size_t max_count,
+                               std::chrono::time_point<std::chrono::system_clock> deadline,
+                               const char* calling_method);
 
-        void wait_for_tasks_impl(size_t count);
-        size_t wait_for_tasks_impl(size_t count, std::chrono::time_point<std::chrono::system_clock> deadline);
+        void wait_for_tasks_impl(size_t count, const char* calling_method);
+        size_t wait_for_tasks_impl(size_t count,
+                                   std::chrono::time_point<std::chrono::system_clock> deadline,
+                                   const char* calling_method);
 
        public:
         manual_executor();

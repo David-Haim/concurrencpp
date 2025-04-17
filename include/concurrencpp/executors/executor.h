@@ -10,7 +10,6 @@
 #include <string_view>
 
 namespace concurrencpp::details {
-    [[noreturn]] CRCPP_API void throw_runtime_shutdown_exception(std::string_view executor_name);
     CRCPP_API std::string make_executor_worker_name(std::string_view executor_name);
 }  // namespace concurrencpp::details
 
@@ -111,11 +110,11 @@ namespace concurrencpp {
         }
 
        public:
+        const std::string name;
+
         executor(std::string_view name) : name(name) {}
 
         virtual ~executor() noexcept = default;
-
-        const std::string name;
 
         virtual void enqueue(concurrencpp::task task) = 0;
         virtual void enqueue(std::span<concurrencpp::task> tasks) = 0;

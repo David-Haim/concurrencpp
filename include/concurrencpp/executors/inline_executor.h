@@ -12,7 +12,7 @@ namespace concurrencpp {
 
         void throw_if_aborted() const {
             if (m_abort.load(std::memory_order_relaxed)) {
-                details::throw_runtime_shutdown_exception(name);
+                details::throw_helper::throw_worker_shutdown_exception(name, "enqueue");
             }
         }
 

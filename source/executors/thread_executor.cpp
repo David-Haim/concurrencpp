@@ -1,3 +1,4 @@
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/executors/constants.h"
 #include "concurrencpp/executors/thread_executor.h"
 
@@ -31,7 +32,7 @@ void thread_executor::enqueue_impl(std::unique_lock<std::mutex>& lock, concurren
 void thread_executor::enqueue(concurrencpp::task task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        details::throw_helper::throw_worker_shutdown_exception(name, "enqueue");
     }
 
     enqueue_impl(lock, task);
@@ -40,7 +41,7 @@ void thread_executor::enqueue(concurrencpp::task task) {
 void thread_executor::enqueue(std::span<concurrencpp::task> tasks) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        details::throw_runtime_shutdown_exception(name);
+        details::throw_helper::throw_worker_shutdown_exception(name, "enqueue");
     }
 
     for (auto& task : tasks) {

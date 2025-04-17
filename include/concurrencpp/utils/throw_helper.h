@@ -6,7 +6,7 @@
 #include "concurrencpp/errors.h"
 
 namespace concurrencpp::details {
-    struct throw_helper {
+    struct CRCPP_API throw_helper {
 
         template<class exception_type, class state_type>
         static void throw_if_empty_object(const state_type& state, std::string_view class_name, const char* method) {

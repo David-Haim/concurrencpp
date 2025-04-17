@@ -1,3 +1,4 @@
+#include "concurrencpp/utils/throw_helper.h"
 #include "concurrencpp/executors/thread_pool_executor.h"
 
 #include <semaphore>
@@ -411,7 +412,7 @@ void thread_pool_worker::ensure_worker_active(bool first_enqueuer, std::unique_l
 void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -424,7 +425,7 @@ void thread_pool_worker::enqueue_foreign(concurrencpp::task& task) {
 void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -437,7 +438,7 @@ void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task> tasks) {
 void thread_pool_worker::enqueue_foreign(std::deque<task>::iterator begin, std::deque<task>::iterator end) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -450,7 +451,7 @@ void thread_pool_worker::enqueue_foreign(std::deque<task>::iterator begin, std::
 void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task>::iterator begin, std::span<concurrencpp::task>::iterator end) {
     std::unique_lock<std::mutex> lock(m_lock);
     if (m_abort) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_task_found_or_abort.store(true, std::memory_order_relaxed);
@@ -462,7 +463,7 @@ void thread_pool_worker::enqueue_foreign(std::span<concurrencpp::task>::iterator
 
 void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
     if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_private_queue.emplace_back(std::move(task));
@@ -470,7 +471,7 @@ void thread_pool_worker::enqueue_local(concurrencpp::task& task) {
 
 void thread_pool_worker::enqueue_local(std::span<concurrencpp::task> tasks) {
     if (m_atomic_abort.load(std::memory_order_relaxed)) {
-        throw_runtime_shutdown_exception(m_parent_pool.name);
+        throw_helper::throw_worker_shutdown_exception(m_parent_pool.name, "enqueue");
     }
 
     m_private_queue.insert(m_private_queue.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
