@@ -7,6 +7,7 @@
 #include <atomic>
 #include <memory>
 #include <chrono>
+#include <string_view>
 
 namespace concurrencpp::details {
     class CRCPP_API timer_state_base : public std::enable_shared_from_this<timer_state_base> {
