@@ -1,51 +1,51 @@
 [
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 11,
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "ubuntu-20.04, clang-11, libc++, shared=false, tsan=false"
+		"name" : "ubuntu-24.04, clang-11, libc++, shared=false, tsan=false"
 	},
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 11,	
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "ubuntu-20.04, clang-11, libc++, shared=true, tsan=false"
+		"name" : "ubuntu-24.04, clang-11, libc++, shared=true, tsan=false"
 	},
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 12,	
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "ubuntu-20.04, clang-12, libc++, shared=false, tsan=false"
+		"name" : "ubuntu-24.04, clang-12, libc++, shared=false, tsan=false"
 	},
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 12,
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "ubuntu-20.04, clang-12, libc++, shared=true, tsan=false"
+		"name" : "ubuntu-24.04, clang-12, libc++, shared=true, tsan=false"
 	},
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 13,
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "ubuntu-20.04, clang-13, libc++, shared=false, tsan=false"
+		"name" : "ubuntu-24.04, clang-13, libc++, shared=false, tsan=false"
 	},
 	{
-		"os": "ubuntu-20.04",
+		"os": "ubuntu-24.04",
 		"clang-version": 13,
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "ubuntu-20.04, clang-13, libc++, shared=true, tsan=false"
+		"name" : "ubuntu-24.04, clang-13, libc++, shared=true, tsan=false"
 	},
 	{
 		"os": "ubuntu-22.04",
@@ -250,40 +250,40 @@
 		"name" : "windows-2022, clang-16, msvc-stl, shared=true, tsan=false"
 	},
 	{
-		"os": "macos-12",
+		"os": "macos-15",
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "macos-12, clang, libc++, shared=false, tsan=false"		
+		"name" : "macos-15, clang, libc++, shared=false, tsan=false"		
 	},
 	{
-		"os": "macos-12",
+		"os": "macos-15",
 		"stdlib": "libc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "macos-12, clang, libc++, shared=true, tsan=false"
+		"name" : "macos-15, clang, libc++, shared=true, tsan=false"
 	},
 	{
-		"os": "macos-12",
+		"os": "macos-15",
 		"stdlib": "libc++",
 		"tsan": true,
 		"shared": false,
-		"name" : "macos-12, clang, libc++, shared=false, tsan=true"
+		"name" : "macos-15, clang, libc++, shared=false, tsan=true"
 	},
 	{
-		"os": "macos-12",
+		"os": "macos-15",
 		"gcc-version": 13,
 		"stdlib": "libstdc++",
 		"tsan": false,
 		"shared": false,
-		"name" : "macos-12, gcc-13, libstdc++-13, shared=false, tsan=false"		
+		"name" : "macos-15, gcc-13, libstdc++-13, shared=false, tsan=false"		
 	},
 	{
-		"os": "macos-12",
+		"os": "macos-15",
 		"gcc-version": 13,
 		"stdlib": "libstdc++",
 		"tsan": false,
 		"shared": true,
-		"name" : "macos-12, gcc-13, libstdc++-13, shared=true, tsan=false"
+		"name" : "macos-15, gcc-13, libstdc++-13, shared=true, tsan=false"
 	}
 ]
