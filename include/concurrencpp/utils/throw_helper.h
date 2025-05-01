@@ -1,9 +1,12 @@
 #ifndef CONCURRENCPP_THROW_HELPER_H
 #define CONCURRENCPP_THROW_HELPER_H
 
+#include "concurrencpp/errors.h"
+
 #include <string_view>
 
-#include "concurrencpp/errors.h"
+#include <cstring>
+#include <cassert>
 
 namespace concurrencpp::details {
     struct CRCPP_API throw_helper {
@@ -31,6 +34,9 @@ namespace concurrencpp::details {
 
         template<class exception_type>
         static exception_type make_empty_object_exception(std::string_view class_name, const char* method) {
+            assert(class_name.data() != nullptr);
+            assert(method != nullptr && std::strlen(method) != 0);
+            
             char buffer[256];
             std::snprintf(buffer,
                           std::size(buffer),
@@ -38,37 +44,15 @@ namespace concurrencpp::details {
                           class_name.data(),
                           method,
                           class_name.data());
+
             return exception_type(buffer);
         }
 
         static std::invalid_argument make_empty_argument_exception(std::string_view class_name,
                                                                    const char* method,
-                                                                   const char* arg_name) {
-            char buffer[256];
-            if (class_name.empty()) {
-                std::snprintf(buffer, std::size(buffer), "concurrencpp::%s() - given %s is null or empty.", method, arg_name);
-            } else {
-                std::snprintf(buffer,
-                              std::size(buffer),
-                              "concurrencpp::%s::%s() - given %s is null or empty.",
-                              class_name.data(),
-                              method,
-                              arg_name);
-            }
+                                                                   const char* arg_name);
 
-            return std::invalid_argument(buffer);
-        }
-
-        static errors::runtime_shutdown make_worker_shutdown_exception(std::string_view class_name, const char* method) {
-            char buffer[256];
-            std::snprintf(buffer,
-                          std::size(buffer),
-                          "concurrencpp::%s::%s() - %s has already been shut down.",
-                          class_name.data(),
-                          method,
-                          class_name.data());
-            return errors::runtime_shutdown(buffer);
-        }
+        static errors::runtime_shutdown make_worker_shutdown_exception(std::string_view class_name, const char* method);
     };
 }  // namespace concurrencpp::details
 
