@@ -6,7 +6,7 @@
 #include <functional>
 #include <string_view>
 #include <thread>
-
+#include<string>
 namespace concurrencpp::details {
     class CRCPP_API thread {
 
