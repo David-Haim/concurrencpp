@@ -10,6 +10,7 @@
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <type_traits>
 
 namespace concurrencpp::details {
     class CRCPP_API executor_collection {
